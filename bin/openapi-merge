@@ -42,7 +42,7 @@ parser = OptionParser.new do |opts|
   opts.separator ''
   opts.separator 'Options (equivalent environment variable and value in parentheses):'
   opts.on('-o', '--output FILE', 'Output result to FILE, not stdout (OUT=FILE).') do |f|
-    env (:out, f)
+    env(:out, f)
   end
   opts.on('--yaml', 'Output format is YAML (default).') do
     env(:format, 'YAML')
@@ -57,8 +57,7 @@ parser = OptionParser.new do |opts|
 end
 parser.parse!
 
-aargh("Format neither JSON nor YAML: #{env(:format)}", 1) unless %w[JSON YAML].i
-nclude? env(:format)
+aargh("Format neither JSON nor YAML: #{env(:format)}", 1) unless %w[JSON YAML].include? env(:format)
 
 def read_source(filename)
   YAML.safe_load(File.read(filename))
@@ -79,7 +78,7 @@ def add_undefined(merged, incoming, filename, path, max_depths)
       next
     end
     m = merged[key]
-    unless m.class == value.class throw "Path #{path.join('.')} merged type #{m.class} differs from type #{value.class} in #{filename}"
+    throw "Path #{path.join('.')} merged type #{m.class} differs from type #{value.class} in #{filename}" unless m.class == value.class
     throw("Re-definition of #{path.join('.')} in #{filename}") unless max_depths[path.first] <= path.size
     if m.is_a? Hash # paths or similar
       path.push key
@@ -129,3 +128,4 @@ case env(:format)
 when 'JSON' then output.puts JSON.generate(merged)
 when 'YAML' then output.puts YAML.dump(merged)
 end
+output.close()

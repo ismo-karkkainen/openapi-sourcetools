@@ -1,0 +1,40 @@
+####COMMAND Invalid output file
+####CODE 1
+####OUT
+####ERR
+Failed to open for writing: /in/valid
+####COMMAND Invalid input file
+####CODE 2
+####OUT
+####ERR
+Could not read /in/valid
+####COMMAND Output file
+####CODE 0
+####OUT
+--- {}
+####ERR
+####COMMAND Output file via env
+####CODE 0
+####OUT
+--- {}
+####ERR
+####COMMAND No input file, YAML
+####CODE 0
+####OUT
+--- {}
+####ERR
+####COMMAND No input file, JSON
+####CODE 0
+####OUT
+{}
+####ERR
+####COMMAND No input file, JSON via env
+####CODE 0
+####OUT
+{}
+####ERR
+####COMMAND Invalid format
+####CODE 1
+####OUT
+####ERR
+Format neither JSON nor YAML: INVALID

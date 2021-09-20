@@ -1,0 +1,166 @@
+####COMMAND components
+####CODE 0
+####OUT
+---
+openapi:
+  version: 3.1.0
+info:
+  title: test
+jsonSchemaDialect: https://somewhere.tld/something
+servers:
+- url: https:://test.somewhere.tld
+  description: Server test object.
+  variables:
+    test: {}
+paths:
+  "/test":
+    get: {}
+webhooks:
+  test:
+    get: {}
+components:
+  schemas:
+    test: {}
+    test2: {}
+  responses:
+    test: {}
+    test2: {}
+  parameters:
+    test: {}
+    test2: {}
+  examples:
+    test: {}
+    test2: {}
+  requestBodies:
+    test: {}
+    test2: {}
+  headers:
+    test: {}
+    test2: {}
+  securitySchemes:
+    test: {}
+    test2: {}
+  links:
+    test: {}
+    test2: {}
+  callbacks:
+    test: {}
+    test2: {}
+  pathItems:
+    test: {}
+    test2: {}
+security:
+- api_key: []
+tags:
+- name: test
+  description: Test tag.
+externalDocs:
+- url: https://someplace.tld
+  description: Test external document.
+####ERR
+####COMMAND paths
+####CODE 0
+####OUT
+---
+openapi:
+  version: 3.1.0
+info:
+  title: test
+jsonSchemaDialect: https://somewhere.tld/something
+servers:
+- url: https:://test.somewhere.tld
+  description: Server test object.
+  variables:
+    test: {}
+paths:
+  "/test":
+    get: {}
+    post: {}
+  "/test2":
+    get: {}
+webhooks:
+  test:
+    get: {}
+components:
+  schemas:
+    test: {}
+  responses:
+    test: {}
+  parameters:
+    test: {}
+  examples:
+    test: {}
+  requestBodies:
+    test: {}
+  headers:
+    test: {}
+  securitySchemes:
+    test: {}
+  links:
+    test: {}
+  callbacks:
+    test: {}
+  pathItems:
+    test: {}
+security:
+- api_key: []
+tags:
+- name: test
+  description: Test tag.
+externalDocs:
+- url: https://someplace.tld
+  description: Test external document.
+####ERR
+####COMMAND webhooks
+####CODE 0
+####OUT
+---
+openapi:
+  version: 3.1.0
+info:
+  title: test
+jsonSchemaDialect: https://somewhere.tld/something
+servers:
+- url: https:://test.somewhere.tld
+  description: Server test object.
+  variables:
+    test: {}
+paths:
+  "/test":
+    get: {}
+webhooks:
+  test:
+    get: {}
+    post: {}
+  test2:
+    get: {}
+components:
+  schemas:
+    test: {}
+  responses:
+    test: {}
+  parameters:
+    test: {}
+  examples:
+    test: {}
+  requestBodies:
+    test: {}
+  headers:
+    test: {}
+  securitySchemes:
+    test: {}
+  links:
+    test: {}
+  callbacks:
+    test: {}
+  pathItems:
+    test: {}
+security:
+- api_key: []
+tags:
+- name: test
+  description: Test tag.
+externalDocs:
+- url: https://someplace.tld
+  description: Test external document.
+####ERR

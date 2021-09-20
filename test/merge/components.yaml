@@ -1,0 +1,21 @@
+components:
+  schemas:
+    test: {}
+  responses:
+    test: {}
+  parameters:
+    test: {}
+  examples:
+    test: {}
+  requestBodies:
+    test: {}
+  headers:
+    test: {}
+  securitySchemes:
+    test: {}
+  links:
+    test: {}
+  callbacks:
+    test: {}
+  pathItems:
+    test: {}

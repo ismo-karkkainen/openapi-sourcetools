@@ -1,0 +1,45 @@
+openapi:
+  version: "3.1.0"
+info:
+  title: test
+jsonSchemaDialect: https://somewhere.tld/something
+servers:
+- url: https:://test.somewhere.tld
+  description: Server test object.
+  variables:
+    test: {}
+paths:
+  /test:
+    get: {}
+webhooks:
+  test:
+    get: {}
+components:
+  schemas:
+    test: {}
+  responses:
+    test: {}
+  parameters:
+    test: {}
+  examples:
+    test: {}
+  requestBodies:
+    test: {}
+  headers:
+    test: {}
+  securitySchemes:
+    test: {}
+  links:
+    test: {}
+  callbacks:
+    test: {}
+  pathItems:
+    test: {}
+security:
+- api_key: []
+tags:
+- name: test
+  description: Test tag.
+externalDocs:
+- url: https://someplace.tld
+  description: Test external document.

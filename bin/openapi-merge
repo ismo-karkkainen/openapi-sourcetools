@@ -71,6 +71,19 @@ def throw(message)
   raise StandardError, message
 end
 
+def path_combo(path, prefix = true)
+  if prefix
+    path.empty? ? 'at root' : "under #{path.join('.')}"
+  else
+    path.empty? ? 'root' : path.join('.')
+  end
+end
+
+def too_deep(path, max_depths)
+  return false if path.empty?
+  max_depths.fetch(path.first) <= path.size
+end
+
 def add_undefined(merged, incoming, filename, path, max_depths)
   incoming.each_pair do |key, value|
     unless merged.has_key? key
@@ -78,11 +91,11 @@ def add_undefined(merged, incoming, filename, path, max_depths)
       next
     end
     m = merged[key]
-    throw "Path #{path.join('.')} merged type #{m.class} differs from type #{value.class} in #{filename}" unless m.class == value.class
-    throw("Re-definition of #{path.join('.')} in #{filename}") unless max_depths[path.first] <= path.size
+    throw "Path #{path_combo(path, false)} merged type #{m.class} differs from type #{value.class} in #{filename}" unless m.class == value.class
+    throw("Re-definition of #{key} #{path_combo(path)} in #{filename}") if too_deep(path, max_depths)
     if m.is_a? Hash # paths or similar
       path.push key
-      add_undefined(m, value, filename, path)
+      add_undefined(m, value, filename, path, max_depths)
       path.pop
     elsif m.is_a? Array
       value.each do |v|
@@ -90,7 +103,7 @@ def add_undefined(merged, incoming, filename, path, max_depths)
         m.push v
       end
     else
-      throw "Re-definition of #{path.join('.')} in #{filename}"
+      throw "Re-definition of #{key} #{path_combo(path)} in #{filename}"
     end
   end
 rescue StandardError => e
@@ -100,14 +113,12 @@ end
 max_depths = Hash.new(0)
 max_depths['openapi'] = 1
 max_depths['info'] = 1
-max_depths['jsonSchemaDialect'] = 0
 max_depths['servers'] = 1
 max_depths['paths'] = 2 # Allows get, post, options, etc. from different files.
 max_depths['webhooks'] = 2
 max_depths['components'] = 2
 max_depths['security'] = 1
 max_depths['tags'] = 1
-max_depths['externalDocs'] = 0
 merged = {}
 ARGV.each do |filename|
   add_undefined(merged, read_source(filename), filename, [], max_depths)

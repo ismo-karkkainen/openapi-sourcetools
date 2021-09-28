@@ -1,0 +1,31 @@
+####COMMAND prune
+####CODE 0
+####OUT
+---
+paths:
+  "/root":
+    get:
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Get"
+        default:
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+components:
+  schemas:
+    Get:
+      properties:
+        id:
+          type: integer
+          format: int64
+    Error:
+      properties:
+        code:
+          type: integer
+          format: int32
+####ERR

@@ -1,9 +1,9 @@
 #!/bin/sh
 
-M="../../bin/openapi-merge"
+M="../bin/openapi-merge"
 
 (
-cd merge
+cd ../test-merge
 for C in components info jsonSchemaDialect openapi paths webhooks
 do
     echo "####COMMAND $C"

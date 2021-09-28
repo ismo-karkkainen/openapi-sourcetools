@@ -1,13 +1,13 @@
 #!/bin/sh
 
-M="../bin/openapi-merge"
+M="../bin/openapi-merge --prune"
 
 (
 cd ../test-merge
-for C in components paths webhooks
+for C in prune
 do
     echo "####COMMAND $C"
-    $M all.yaml $C-ok.yaml >o 2>e
+    $M $C.yaml >o 2>e
     echo "####CODE $?"
     echo "####OUT"
     cat o

@@ -1,0 +1,16 @@
+paths:
+  /health:
+    get:
+      summary: Health check.
+      description: |
+        Unauthenticated health check path meant to be used by systems that
+        execute the container and use this to determine if the container
+        is healthy or if it should be terminated.
+      tags: [ healthCheck ]
+      operationId: healthCheck
+      security: [ {} ]
+      responses:
+        "204":
+          description: Healthy.
+        "404":
+          description: Unhealthy.

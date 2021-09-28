@@ -4,35 +4,16 @@
 # Copyright © 2021 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
+require '../lib/common.rb'
 require 'optparse'
 require 'yaml'
 require 'json'
+require 'set'
 
-
-def aargh(message, exit_code = nil)
-  $stderr.puts message
-  exit exit_code unless exit_code.nil?
-end
-
-def env(var, value = nil)
-  k = var.to_s.upcase
-  ENV[k] = { false => '0', true => '1' }.fetch(value, value) unless value.nil?
-  v = ENV.fetch(k, nil)
-  case v
-  when '0' then false
-  when '1' then true
-  else
-    v
-  end
-end
-
-def default_env(var, value)
-  v = env(var)
-  env(var, value) if v.nil?
-end
 
 default_env(:out, '')
 default_env(:format, 'YAML')
+default_env(:prune, false);
 
 ENV['POSIXLY_CORRECT'] = '1'
 parser = OptionParser.new do |opts|
@@ -43,6 +24,9 @@ parser = OptionParser.new do |opts|
   opts.separator 'Options (equivalent environment variable and value in parentheses):'
   opts.on('-o', '--output FILE', 'Output result to FILE, not stdout (OUT=FILE).') do |f|
     env(:out, f)
+  end
+  opts.on('-p', '--prune', 'Remove all unreferenced objects under components.') do
+    env(:prune, true)
   end
   opts.on('--yaml', 'Output format is YAML (default).') do
     env(:format, 'YAML')
@@ -67,7 +51,7 @@ rescue StandardError => e
   aargh(e.to_s, 3)
 end
 
-def throw(message)
+def raise_se(message)
   raise StandardError, message
 end
 
@@ -91,8 +75,8 @@ def add_undefined(merged, incoming, filename, path, max_depths)
       next
     end
     m = merged[key]
-    throw "Path #{path_combo(path, false)} merged type #{m.class} differs from type #{value.class} in #{filename}" unless m.class == value.class
-    throw("Re-definition of #{key} #{path_combo(path)} in #{filename}") if too_deep(path, max_depths)
+    raise_se "Path #{path_combo(path, false)} merged type #{m.class} differs from type #{value.class} in #{filename}" unless m.class == value.class
+    raise_se("Re-definition of #{key} #{path_combo(path)} in #{filename}") if too_deep(path, max_depths)
     if m.is_a? Hash # paths or similar
       path.push key
       add_undefined(m, value, filename, path, max_depths)
@@ -103,7 +87,7 @@ def add_undefined(merged, incoming, filename, path, max_depths)
         m.push v
       end
     else
-      throw "Re-definition of #{key} #{path_combo(path)} in #{filename}"
+      raise_se "Re-definition of #{key} #{path_combo(path)} in #{filename}"
     end
   end
 rescue StandardError => e
@@ -122,6 +106,49 @@ max_depths['tags'] = 1
 merged = {}
 ARGV.each do |filename|
   add_undefined(merged, read_source(filename), filename, [], max_depths)
+end
+
+def gather_refs(doc, found)
+  doc.each_pair do |key, value|
+    if value.is_a? Hash
+      gather_refs(value, found)
+    elsif value.is_a? Array
+      value.each do |v|
+        next unless v.is_a? Hash
+        gather_refs(v, found)
+      end
+    elsif value.is_a?(String) && key == '$ref'
+      found.add(value)
+    end
+  end
+end
+
+if env(:prune)
+  refs = Set.new
+  gather_refs(merged, refs)
+  used = {}
+  all = merged.fetch('components', {})
+  refs.each do |ref|
+    p = ref.split('/')
+    next unless 2 < p.size && p.first == '#' && p[1] == 'components'
+    p.shift(2)
+    item = all
+    p.each do |key|
+      item = item.fetch(key, nil)
+      break if item.nil?
+    end
+    next if item.nil?
+    sub = used
+    p.each_index do |k|
+      if k + 1 < p.size
+        sub[p[k]] = {} unless sub.has_key? p[k]
+        sub = sub[p[k]]
+      else
+        sub[p[k]] = item
+      end
+    end
+  end
+  merged['components'] = used
 end
 
 output = env(:out)

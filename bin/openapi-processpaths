@@ -1,0 +1,142 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright © 2021 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require '../lib/common.rb'
+require 'optparse'
+require 'yaml'
+require 'json'
+
+
+default_env(:in, '')
+default_env(:out, '')
+default_env(:format, 'YAML')
+default_env(:freq, '')
+default_env(:error, true)
+
+parser = OptionParser.new do |opts|
+  opts.summary_indent = '  '
+  opts.summary_width = 24
+  opts.banner = 'Usage: openapi-processpaths [options]'
+  opts.separator ''
+  opts.separator 'Options (equivalent environment variable and value in parentheses):'
+  opts.on('-i', '--input FILE', 'Read source from FILE, not stdin (IN=FILE).') do |f|
+    env(:in, f)
+  end
+  opts.on('-o', '--output FILE', 'Output result to FILE, not stdout (OUT=FILE).') do |f|
+    env(:out, f)
+  end
+  opts.on('-f', '--frequencies FILE', 'Optional path frequency file name (FREQ=FILE).') do |f|
+    env(:freq, f)
+  end
+  opts.on('--warn', 'Only warn of paths with same fixed parts (ERROR=0).') do
+    env(:error, false)
+  end
+  opts.on('--yaml', 'Output format is YAML (default) (FORMAT=YAML).') do
+    env(:format, 'YAML')
+  end
+  opts.on('--json', 'Output format is JSON. (FORMAT=JSON)') do
+    env(:format, 'JSON')
+  end
+  opts.on('-h', '--help', 'Print this help and exit.') do
+    $stdout.puts opts
+    exit 0
+  end
+end
+parser.parse!
+
+aargh("Format neither JSON nor YAML: #{env(:format)}", 1) unless %w[JSON YAML].include? env(:format)
+
+def read_source(filename)
+  YAML.safe_load(filename.empty? ? $stdin : File.read(filename))
+rescue Errno::ENOENT => e
+  aargh("Could not read #{filename.empty? ? 'stdin' : filename}", 2)
+rescue StandardError => e
+  aargh(e.to_s, 3)
+end
+doc = read_source(env(:in))
+
+processed = {}
+doc.fetch('paths', {}).each_pair do |path, value|
+  parts = split_path(path, true)
+  processed[path] = {
+    parts: parts,
+    orig: value,
+    freq: 0,
+    lookalike: [],
+    path: ServerPath.new(parts)
+  }
+end
+
+# Find lookalike sets.
+lookalikes = false
+paths = processed.keys.sort
+paths.each_index do |k|
+  pk = paths[k]
+  a = processed[pk]
+  (0...k).each do |n|
+    pn = paths[n]
+    b = processed[pn]
+    next unless (a[:path] <=> b[:path]) == 0
+    a[:lookalike].push pk
+    b[:lookalike].push pn
+    $stderr.puts("Similar: #{pk} #{pn}")
+    lookalikes = true
+  end
+end
+aargh('Similar paths found.', 7) if lookalikes && env(:error)
+
+# Update frequencies if given.
+fn = env(:freq)
+unless fn.empty?
+  begin
+    # Expect one path per line with nothing else. Query is allowed and ignored.
+    f = File.new(fn, chomp: true)
+    f.each do |line|
+      p = ServerPath.new(split_path(line))
+      processed.each_value do |info|
+        next unless (p <=> info[:path]) == 0
+        info[:freq] = info[:freq] + 1
+        # Lookalikes are the others that can be matched, since path has no
+        # variables so any change in fixed parts (not a lookalike) will be a
+        # mismatch with path.
+        info[:lookalike].each do |path|
+          cand = processed[path]
+          next unless (p <=> cand[:path]) == 0
+          cand[:freq] = cand[:freq] + 1
+        end
+        break
+      end
+    end
+  rescue Errno::ENOENT => e
+    aargh("Could not read frequency file: #{fn}", 4)
+  rescue StandardError => e
+    aargh(e.to_s, 5)
+  end
+end
+
+# Clean-up temporary fields.
+processed.each_value do |v|
+  v.delete(:path)
+  # Leave zero frequencies be since it indicates unused paths to user.
+end
+doc['paths'] = processed
+
+output = env(:out)
+if output.empty?
+  output = $stdout
+else
+  begin
+    output = File.open(output, 'w')
+  rescue StandardError
+    aargh("Failed to open for writing: #{output}", 6)
+  end
+end
+
+case env(:format)
+when 'JSON' then output.puts JSON.generate(doc)
+when 'YAML' then output.puts YAML.dump(doc)
+end
+output.close()

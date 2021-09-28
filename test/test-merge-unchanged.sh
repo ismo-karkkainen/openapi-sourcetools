@@ -1,9 +1,9 @@
 #!/bin/sh
 
-M="../../bin/openapi-merge"
+M="../bin/openapi-merge"
 
 (
-cd merge
+cd ../test-merge
 for C in externalDocs security servers tags
 do
     echo "####COMMAND $C"

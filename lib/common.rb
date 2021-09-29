@@ -24,6 +24,7 @@ end
 
 def split_path(p, spec = false)
   parts = []
+  p = p.strip
   unless spec
     q = p.index('?')
     p.slice!(0...q) unless q.nil?
@@ -33,6 +34,7 @@ def split_path(p, spec = false)
     s = { var: s } if spec && s.include?('{')
     parts.push(s)
   end
+  parts
 end
 
 ServerPath = Struct.new(:parts) do

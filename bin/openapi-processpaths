@@ -80,9 +80,9 @@ paths.each_index do |k|
     pn = paths[n]
     b = processed[pn]
     next unless (a[:path] <=> b[:path]) == 0
-    a[:lookalike].push pk
-    b[:lookalike].push pn
-    $stderr.puts("Similar: #{pk} #{pn}")
+    a[:lookalike].push pn
+    b[:lookalike].push pk
+    $stderr.puts("Similar: #{pn} #{pk}")
     lookalikes = true
   end
 end
@@ -93,8 +93,8 @@ fn = env(:freq)
 unless fn.empty?
   begin
     # Expect one path per line with nothing else. Query is allowed and ignored.
-    f = File.new(fn, chomp: true)
-    f.each do |line|
+    f = File.new(fn, 'rt')
+    f.each_line do |line|
       p = ServerPath.new(split_path(line))
       processed.each_value do |info|
         next unless (p <=> info[:path]) == 0
@@ -110,6 +110,7 @@ unless fn.empty?
         break
       end
     end
+    f.close
   rescue Errno::ENOENT => e
     aargh("Could not read frequency file: #{fn}", 4)
   rescue StandardError => e

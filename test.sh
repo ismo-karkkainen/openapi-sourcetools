@@ -1,8 +1,14 @@
 #!/bin/sh
 
+if [ $# -ne 1 ]; then
+    echo "Usage: $(basename $0) program-suffix-name"
+    echo "  E.g. merge to test openapi-merge"
+    exit 2
+fi
+
 RV=0
 cd test
-for S in ./test-*.sh
+for S in ./test-${1}*.sh
 do
     echo $S
     $S

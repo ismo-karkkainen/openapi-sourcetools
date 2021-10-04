@@ -41,7 +41,12 @@ parser = OptionParser.new do |opts|
     env(:format, 'JSON')
   end
   opts.on('-h', '--help', 'Print this help and exit.') do
-    $stdout.puts opts
+    $stdout.puts %(#{opts}
+
+Processes API specification document path objects into form that is expected by
+later stage tools. Checks for paths that may be ambiguous. Optionally can match
+given file with paths to add frequency information to paths.
+)
     exit 0
   end
 end
@@ -79,7 +84,7 @@ paths.each_index do |k|
   (0...k).each do |n|
     pn = paths[n]
     b = processed[pn]
-    next unless (a[:path] <=> b[:path]) == 0
+    next unless (a[:path].compare(b[:path])) == 0
     a[:lookalike].push pn
     b[:lookalike].push pk
     $stderr.puts("Similar: #{pn} #{pk}")
@@ -97,14 +102,14 @@ unless fn.empty?
     f.each_line do |line|
       p = ServerPath.new(split_path(line))
       processed.each_value do |info|
-        next unless (p <=> info[:path]) == 0
+        next unless (p.compare(info[:path])) == 0
         info[:freq] = info[:freq] + 1
         # Lookalikes are the others that can be matched, since path has no
         # variables so any change in fixed parts (not a lookalike) will be a
         # mismatch with path.
         info[:lookalike].each do |path|
           cand = processed[path]
-          next unless (p <=> cand[:path]) == 0
+          next unless (p.compare(cand[:path])) == 0
           cand[:freq] = cand[:freq] + 1
         end
         break

@@ -35,7 +35,11 @@ parser = OptionParser.new do |opts|
     env(:format, 'JSON')
   end
   opts.on('-h', '--help', 'Print this help and exit.') do
-    $stdout.puts opts
+    $stdout.puts %(#{opts}
+
+Source files are combined to form one API specification document. Sources are
+allowed only to append to the merged document, not re-define anything in it.
+)
     exit 0
   end
 end
@@ -110,15 +114,14 @@ end
 
 def gather_refs(doc, found)
   doc.each_pair do |key, value|
-    if value.is_a? Hash
+    if key == '$ref' && value.is_a?(String) && value.start_with?('#/components/')
+      found.add(value)
+    elsif value.is_a? Hash
       gather_refs(value, found)
     elsif value.is_a? Array
       value.each do |v|
-        next unless v.is_a? Hash
-        gather_refs(v, found)
+        gather_refs(v, found) if v.is_a? Hash
       end
-    elsif value.is_a?(String) && key == '$ref'
-      found.add(value)
     end
   end
 end
@@ -130,7 +133,6 @@ if env(:prune)
   all = merged.fetch('components', {})
   refs.each do |ref|
     p = ref.split('/')
-    next unless 2 < p.size && p.first == '#' && p[1] == 'components'
     p.shift(2)
     item = all
     p.each do |key|

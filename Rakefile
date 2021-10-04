@@ -18,6 +18,14 @@ task install: [:gem] do
 end
 
 desc 'Test.'
-task :test do
-  sh './test.sh'
+task test: %i[testmerge testprocesspaths]
+
+desc 'Test merge.'
+task :testmerge do
+  sh './test.sh merge'
+end
+
+desc 'Test processpaths.'
+task :testprocesspaths do
+  sh './test.sh processpaths'
 end

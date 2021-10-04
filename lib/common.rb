@@ -38,9 +38,38 @@ def split_path(p, spec = false)
 end
 
 ServerPath = Struct.new(:parts) do
-  def <=>(p)
+  def <=>(p) # Variables are after fixed strings.
     pp = p.is_a?(Array) ? p : p.parts
     parts.each_index do |k|
+      return 1 if pp.size <= k # Longer comes after shorter.
+      pk = parts[k]
+      ppk = pp[k]
+      if pk.is_a? String
+        if ppk.is_a? String
+          c = pk <=> ppk
+        else
+          return -1
+        end
+      else
+        if ppk.is_a? String
+          return 1
+        else
+          c = pk.fetch('var', '') <=> ppk.fetch('var', '')
+        end
+      end
+      return c unless c.zero?
+    end
+    (parts.size < pp.size) ? -1 : 0
+  end
+
+  def compare(p, range = nil) # Not fit for sorting. Variable equals anything.
+    pp = p.is_a?(Array) ? p : p.parts
+    if range.nil?
+      range = 0...parts.size
+    elsif range.is_a? Number
+      range = range...(range + 1)
+    end
+    range.each do |k|
       return 1 if pp.size <= k # Longer comes after shorter.
       ppk = pp[k]
       next unless ppk.is_a? String

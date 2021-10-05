@@ -14,17 +14,15 @@ Could not read /in/valid
 ---
 paths:
   "/test":
-    :parts:
+    parts:
     - test
-    :orig: {}
-    :freq: 0
-    :lookalike: []
+    orig: {}
+    lookalike: []
   "/present":
-    :parts:
+    parts:
     - present
-    :orig: {}
-    :freq: 0
-    :lookalike: []
+    orig: {}
+    lookalike: []
 ####ERR
 ####COMMAND Files via env
 ####CODE 0
@@ -32,17 +30,15 @@ paths:
 ---
 paths:
   "/test":
-    :parts:
+    parts:
     - test
-    :orig: {}
-    :freq: 0
-    :lookalike: []
+    orig: {}
+    lookalike: []
   "/present":
-    :parts:
+    parts:
     - present
-    :orig: {}
-    :freq: 0
-    :lookalike: []
+    orig: {}
+    lookalike: []
 ####ERR
 ####COMMAND YAML
 ####CODE 0
@@ -50,56 +46,31 @@ paths:
 ---
 paths:
   "/test":
-    :parts:
+    parts:
     - test
-    :orig: {}
-    :freq: 0
-    :lookalike: []
+    orig: {}
+    lookalike: []
   "/present":
-    :parts:
+    parts:
     - present
-    :orig: {}
-    :freq: 0
-    :lookalike: []
+    orig: {}
+    lookalike: []
 ####ERR
 ####COMMAND JSON
 ####CODE 0
 ####OUT
-{"paths":{"/test":{"parts":["test"],"orig":{},"freq":0,"lookalike":[]},"/present":{"parts":["present"],"orig":{},"freq":0,"lookalike":[]}}}
+{"paths":{"/test":{"parts":["test"],"orig":{},"lookalike":[]},"/present":{"parts":["present"],"orig":{},"lookalike":[]}}}
 ####ERR
 ####COMMAND JSON via env
 ####CODE 0
 ####OUT
-{"paths":{"/test":{"parts":["test"],"orig":{},"freq":0,"lookalike":[]},"/present":{"parts":["present"],"orig":{},"freq":0,"lookalike":[]}}}
+{"paths":{"/test":{"parts":["test"],"orig":{},"lookalike":[]},"/present":{"parts":["present"],"orig":{},"lookalike":[]}}}
 ####ERR
 ####COMMAND Invalid format
 ####CODE 1
 ####OUT
 ####ERR
 Format neither JSON nor YAML: INVALID
-####COMMAND Invalid frequency file
-####CODE 4
-####OUT
-####ERR
-Could not read frequency file: /in/valid
-####COMMAND Frequency file
-####CODE 0
-####OUT
----
-paths:
-  "/test":
-    :parts:
-    - test
-    :orig: {}
-    :freq: 1
-    :lookalike: []
-  "/present":
-    :parts:
-    - present
-    :orig: {}
-    :freq: 0
-    :lookalike: []
-####ERR
 ####COMMAND Conflicting paths
 ####CODE 7
 ####OUT
@@ -112,22 +83,20 @@ Similar paths found.
 ---
 paths:
   "/test/{var}/fixed":
-    :parts:
+    parts:
     - test
     - :var: "{var}"
     - fixed
-    :orig: {}
-    :freq: 0
-    :lookalike:
+    orig: {}
+    lookalike:
     - "/test/fixed/{var}"
   "/test/fixed/{var}":
-    :parts:
+    parts:
     - test
     - fixed
     - :var: "{var}"
-    :orig: {}
-    :freq: 0
-    :lookalike:
+    orig: {}
+    lookalike:
     - "/test/{var}/fixed"
 ####ERR
 Similar: /test/fixed/{var} /test/{var}/fixed

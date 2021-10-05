@@ -1,0 +1,69 @@
+####COMMAND Invalid input file
+####CODE 2
+####OUT
+####ERR
+Could not read /in/valid
+####COMMAND Invalid path log file
+####CODE 4
+####OUT
+####ERR
+Could not read path log file: /in/valid
+####COMMAND Invalid output file
+####CODE 7
+####OUT
+####ERR
+Failed to open for writing: /in/valid
+####COMMAND Unprocessed input file
+####CODE 5
+####OUT
+####ERR
+Is input file an output of openapi-processpaths?
+####COMMAND Files via env
+####CODE 0
+####OUT
+---
+paths:
+  "/test":
+    parts:
+    - test
+    orig: {}
+    lookalike: []
+    freq: 1
+  "/present":
+    parts:
+    - present
+    orig: {}
+    lookalike: []
+####ERR
+####COMMAND YAML
+####CODE 0
+####OUT
+---
+paths:
+  "/test":
+    parts:
+    - test
+    orig: {}
+    lookalike: []
+    freq: 1
+  "/present":
+    parts:
+    - present
+    orig: {}
+    lookalike: []
+####ERR
+####COMMAND JSON
+####CODE 0
+####OUT
+{"paths":{"/test":{"parts":["test"],"orig":{},"lookalike":[],"freq":1},"/present":{"parts":["present"],"orig":{},"lookalike":[]}}}
+####ERR
+####COMMAND JSON via env
+####CODE 0
+####OUT
+{"paths":{"/test":{"parts":["test"],"orig":{},"lookalike":[],"freq":1},"/present":{"parts":["present"],"orig":{},"lookalike":[]}}}
+####ERR
+####COMMAND Invalid format
+####CODE 1
+####OUT
+####ERR
+Format neither JSON nor YAML: INVALID

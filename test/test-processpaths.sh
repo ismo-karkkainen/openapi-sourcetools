@@ -69,22 +69,6 @@ cat o
 echo "####ERR"
 cat e
 
-echo "####COMMAND Invalid frequency file"
-$M --input small.yaml --frequencies /in/valid >o 2>e
-echo "####CODE $?"
-echo "####OUT"
-cat o
-echo "####ERR"
-cat e
-
-echo "####COMMAND Frequency file"
-$M --input small.yaml --frequencies freqs.txt >o 2>e
-echo "####CODE $?"
-echo "####OUT"
-cat o
-echo "####ERR"
-cat e
-
 echo "####COMMAND Conflicting paths"
 $M --input error.yaml >o 2>e
 echo "####CODE $?"

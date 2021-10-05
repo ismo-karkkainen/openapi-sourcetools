@@ -13,12 +13,12 @@ require 'json'
 default_env(:in, '')
 default_env(:out, '')
 default_env(:format, 'YAML')
-default_env(:error, true)
+default_env(:paths, '')
 
 parser = OptionParser.new do |opts|
   opts.summary_indent = '  '
   opts.summary_width = 24
-  opts.banner = 'Usage: openapi-processpaths [options]'
+  opts.banner = 'Usage: openapi-frequencies [options]'
   opts.separator ''
   opts.separator 'Options (equivalent environment variable and value in parentheses):'
   opts.on('-i', '--input FILE', 'Read source from FILE, not stdin (IN=FILE).') do |f|
@@ -27,8 +27,8 @@ parser = OptionParser.new do |opts|
   opts.on('-o', '--output FILE', 'Output result to FILE, not stdout (OUT=FILE).') do |f|
     env(:out, f)
   end
-  opts.on('--warn', 'Only warn of paths with same fixed parts (ERROR=0).') do
-    env(:error, false)
+  opts.on('-p', '--paths FILE', 'Path log file name (PATHS=FILE).') do |f|
+    env(:paths, f)
   end
   opts.on('--yaml', 'Output format is YAML (default) (FORMAT=YAML).') do
     env(:format, 'YAML')
@@ -39,8 +39,7 @@ parser = OptionParser.new do |opts|
   opts.on('-h', '--help', 'Print this help and exit.') do
     $stdout.puts %(#{opts}
 
-Processes API specification document path objects into form that is expected by
-later stage tools. Checks for paths that may be ambiguous.
+Matches given file with paths and adds frequency information.
 )
     exit 0
   end
@@ -48,6 +47,8 @@ end
 parser.parse!
 
 aargh("Format neither JSON nor YAML: #{env(:format)}", 1) unless %w[JSON YAML].include? env(:format)
+fn = env(:paths)
+aargh("Path log file name must be given.") if fn.empty?
 
 def read_source(filename)
   YAML.safe_load(filename.empty? ? $stdin : File.read(filename))
@@ -58,40 +59,33 @@ rescue StandardError => e
 end
 doc = read_source(env(:in))
 
-processed = {}
-doc.fetch('paths', {}).each_pair do |path, value|
-  parts = split_path(path, true)
-  processed[path] = {
-    'parts' => parts,
-    'orig' => value,
-    'lookalike' => [],
-    path: ServerPath.new(parts)
-  }
-end
-
-# Find lookalike sets.
-lookalikes = false
-paths = processed.keys.sort
-paths.each_index do |k|
-  pk = paths[k]
-  a = processed[pk]
-  (0...k).each do |n|
-    pn = paths[n]
-    b = processed[pn]
-    next unless (a[:path].compare(b[:path])) == 0
-    a['lookalike'].push pn
-    b['lookalike'].push pk
-    $stderr.puts("Similar: #{pn} #{pk}")
-    lookalikes = true
+begin
+  # Expect one path per line with nothing else. Query is allowed and ignored.
+  f = File.new(fn, 'rt')
+  f.each_line do |line|
+    p = ServerPath.new(split_path(line))
+    doc['paths'].each_value do |info|
+      next unless (p <=> info['parts']) == 0
+      info['freq'] = info.fetch('freq', 0) + 1
+      # Lookalikes are the others that can be matched, since path has no
+      # variables so any change in fixed parts (not a lookalike) will be a
+      # mismatch with path.
+      info['lookalike'].each do |path|
+        cand = doc['paths'][path]
+        next unless (p <=> cand['parts']) == 0
+        cand['freq'] = cand.fetch('freq', 0) + 1
+      end
+      break
+    end
   end
+  f.close
+rescue Errno::ENOENT => e
+  aargh("Could not read path log file: #{fn}", 4)
+rescue NoMethodError
+  aargh('Is input file an output of openapi-processpaths?', 5)
+rescue StandardError => e
+  aargh(e.to_s, 6)
 end
-aargh('Similar paths found.', 7) if lookalikes && env(:error)
-
-# Clean-up temporary fields.
-processed.each_value do |v|
-  v.keys.each { |k| v.delete(k) if k.is_a? Symbol }
-end
-doc['paths'] = processed
 
 output = env(:out)
 if output.empty?
@@ -100,7 +94,7 @@ else
   begin
     output = File.open(output, 'w')
   rescue StandardError
-    aargh("Failed to open for writing: #{output}", 6)
+    aargh("Failed to open for writing: #{output}", 7)
   end
 end
 
@@ -108,4 +102,4 @@ case env(:format)
 when 'JSON' then output.puts JSON.generate(doc)
 when 'YAML' then output.puts YAML.dump(doc)
 end
-output.close()
+output.close

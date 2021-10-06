@@ -108,4 +108,4 @@ case env(:format)
 when 'JSON' then output.puts JSON.generate(doc)
 when 'YAML' then output.puts YAML.dump(doc)
 end
-output.close()
+output.close

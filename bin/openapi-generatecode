@@ -28,6 +28,7 @@ parser = OptionParser.new do |opts|
     env(:out, f)
   end
   opts.on('-t', '--template FILE', 'Read template from FILE (TEMPLATE=FILE).') do |f|
+    env(:template, f)
   end
   opts.on('-h', '--help', 'Print this help and exit.') do
     $stdout.puts %(#{opts}
@@ -61,13 +62,17 @@ class Generator
     @template = template_content
   end
 
+  def get_binding
+    binding
+  end
+
   def add(name, content, strip_suffix)
     @full_name_order.push({ filename: name, contents: content })
     name = File.basename(name)
     @order.push name
     if strip_suffix
       idx = name.rindex('.')
-      name.slice!(0, idx - 1) unless idx.nil?
+      name = name.slice(0, idx) unless idx.nil?
     end
     @addition[name] = content
   end
@@ -81,12 +86,14 @@ rescue StandardError => e
 end
 
 ARGV.each do |name|
-  aargh('Addition file name is empty.', 1)
+  aargh('Addition file name is empty.', 1) if name.empty?
   if name.end_with? '.rb'
     begin
-      require name
+      require File.absolute_path(name)
+    rescue SyntaxError => e
+      aargh("Syntax error in addition #{name}: #{e.to_s}", 4)
     rescue StandardError => e
-      aargh("Failed to require addition #{name}: #{e.to_s}", 4)
+      aargh("Failed to require addition #{name}: #{e.to_s}", 5)
     end
   else
     c = load_content(name)
@@ -95,11 +102,17 @@ ARGV.each do |name|
     rescue StandardError
       d = c
     end
-    $generator.add(name, d, name.end_with?('.yaml') || name.end_with?('.json'))
+    $generator.add(name, d, name.upcase.end_with?('.YAML') || name.upcase.end_with?('.JSON'))
   end
 end
 
-out = ERB.new($generator.template).result($generator.binding)
+begin
+  out = ERB.new($generator.template).result($generator.get_binding)
+rescue SyntaxError => e
+  aargh("Template syntax error: #{e.to_s}", 6)
+rescue StandardError => e
+  aargh("Template error: #{e.to_s}", 7)
+end
 
 output = env(:out)
 if output.empty?
@@ -112,4 +125,4 @@ else
   end
 end
 output.write(out)
-output.close()
+output.close

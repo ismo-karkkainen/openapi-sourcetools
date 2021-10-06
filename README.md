@@ -28,6 +28,9 @@ Takes an ERB-template, processed API document, and optional files that have
 their contents added to the context passed to the ERB. Output is what the
 ERB-template produces.
 
+If you pass files with yaml and/or json extension with same base name, the
+last one will remain in $generator.additions hash map.
+
 # License
 
 Copyright © 2021 Ismo Kärkkäinen

@@ -1,0 +1,49 @@
+#!/bin/sh
+
+M="../bin/openapi-generatecode"
+
+(
+cd ../test-generatecode
+
+echo "####COMMAND Invalid input file"
+$M --input /in/valid --template simple.erb >o 2>e
+echo "####CODE $?"
+echo "####OUT"
+cat o
+echo "####ERR"
+cat e
+
+echo "####COMMAND Invalid template file"
+$M --input processed.yaml --template /in/valid >o 2>e
+echo "####CODE $?"
+echo "####OUT"
+cat o
+echo "####ERR"
+cat e
+
+echo "####COMMAND Invalid output file"
+$M --input processed.yaml --template simple.erb --output /in/valid >o 2>e
+echo "####CODE $?"
+echo "####OUT"
+cat o
+echo "####ERR"
+cat e
+
+echo "####COMMAND Proper input files"
+$M --input processed.yaml --template simple.erb >o 2>e
+echo "####CODE $?"
+echo "####OUT"
+cat o
+echo "####ERR"
+cat e
+
+echo "####COMMAND Files via env"
+OUT=x IN=processed.yaml TEMPLATE=simple.erb $M >o 2>e
+echo "####CODE $?"
+echo "####OUT"
+cat x o
+echo "####ERR"
+cat e
+
+rm -f x o e
+) > $(basename $0 .sh).res

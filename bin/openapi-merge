@@ -168,4 +168,4 @@ case env(:format)
 when 'JSON' then output.puts JSON.generate(merged)
 when 'YAML' then output.puts YAML.dump(merged)
 end
-output.close()
+output.close

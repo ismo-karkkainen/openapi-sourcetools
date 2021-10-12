@@ -35,7 +35,7 @@ echo "####CODE $?"
 echo "####OUT"
 cat o
 echo "####ERR"
-cat e | sed "s#$PWD#...#"
+# Error message depends on Ruby version so ignore it. Exit code 4 ok.
 
 echo "####COMMAND Run-time error in extension"
 $M --input processed.yaml --template runerror.erb runerror.rb >o 2>e

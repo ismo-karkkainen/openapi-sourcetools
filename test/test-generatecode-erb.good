@@ -60,9 +60,6 @@ out = []]
 ####CODE 4
 ####OUT
 ####ERR
-Syntax error in addition error.rb: .../error.rb:2: syntax error, unexpected ')', expecting `end'
-  @order.join(' '))
-                  ^
 ####COMMAND Run-time error in extension
 ####CODE 7
 ####OUT

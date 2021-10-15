@@ -4,7 +4,7 @@
 # Copyright © 2021 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
-require '../lib/common.rb'
+require_relative '../lib/common.rb'
 require 'optparse'
 require 'yaml'
 require 'json'

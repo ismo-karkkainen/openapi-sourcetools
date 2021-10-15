@@ -127,30 +127,35 @@ def gather_refs(doc, found)
 end
 
 if env(:prune)
-  refs = Set.new
-  gather_refs(merged, refs)
-  used = {}
-  all = merged.fetch('components', {})
-  refs.each do |ref|
-    p = ref.split('/')
-    p.shift(2)
-    item = all
-    p.each do |key|
-      item = item.fetch(key, nil)
-      break if item.nil?
-    end
-    next if item.nil?
-    sub = used
-    p.each_index do |k|
-      if k + 1 < p.size
-        sub[p[k]] = {} unless sub.has_key? p[k]
-        sub = sub[p[k]]
-      else
-        sub[p[k]] = item
+  prev_refs = Set.new
+  loop do # May have references from deleted so repeat until nothing deleted.
+    refs = Set.new
+    gather_refs(merged, refs)
+    used = {}
+    all = merged.fetch('components', {})
+    refs.each do |ref|
+      p = ref.split('/')
+      p.shift(2)
+      item = all
+      p.each do |key|
+        item = item.fetch(key, nil)
+        break if item.nil?
+      end
+      next if item.nil?
+      sub = used
+      p.each_index do |k|
+        if k + 1 < p.size
+          sub[p[k]] = {} unless sub.has_key? p[k]
+          sub = sub[p[k]]
+        else
+          sub[p[k]] = item
+        end
       end
     end
+    merged['components'] = used
+    break if refs == prev_refs
+    prev_refs = refs
   end
-  merged['components'] = used
 end
 
 output = env(:out)

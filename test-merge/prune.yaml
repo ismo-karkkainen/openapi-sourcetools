@@ -23,6 +23,15 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/Get"
+    Unused2:
+      properties:
+        id:
+          type: integer
+          format: int64
+    Unused3:
+      type: array
+      items:
+        $ref: "#/components/schemas/Unused2"
     Error:
       properties:
         code:

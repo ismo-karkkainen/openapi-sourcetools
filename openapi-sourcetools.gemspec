@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'openapi-sourcetools'
-  s.version     = '0.4.1'
+  s.version     = '0.4.2'
   s.date        = '2021-10-15'
   s.summary     = "Tools for creating source code from API specification."
   s.description = %q(

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-M="../bin/openapi-merge --prune"
+M="../bin/openapi-merge"
 
 (
 cd ../test-merge

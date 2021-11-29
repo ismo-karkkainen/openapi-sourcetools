@@ -13,7 +13,7 @@ require 'set'
 
 default_env(:out, '')
 default_env(:format, 'YAML')
-default_env(:prune, false);
+default_env(:prune, true);
 
 ENV['POSIXLY_CORRECT'] = '1'
 parser = OptionParser.new do |opts|
@@ -25,7 +25,10 @@ parser = OptionParser.new do |opts|
   opts.on('-o', '--output FILE', 'Output result to FILE, not stdout (OUT=FILE).') do |f|
     env(:out, f)
   end
-  opts.on('-p', '--prune', 'Remove all unreferenced objects under components.') do
+  opts.on('-k', '--keep', 'Keep all unreferenced objects under components.') do
+    env(:prune, false)
+  end
+  opts.on('-p', '--prune', 'Prune all unreferenced objects under components (default).') do
     env(:prune, true)
   end
   opts.on('--yaml', 'Output format is YAML (default).') do
@@ -131,6 +134,11 @@ if env(:prune)
   loop do # May have references from deleted so repeat until nothing deleted.
     refs = Set.new
     gather_refs(merged, refs)
+    merged.fetch('security', []).each do |sec|
+      sec.each_key do |key|
+        refs.add("#/components/securitySchemes/#{key}")
+      end
+    end
     used = {}
     all = merged.fetch('components', {})
     refs.each do |ref|

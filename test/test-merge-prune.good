@@ -16,6 +16,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/Error"
+security:
+- scheme_name: []
 components:
   schemas:
     Get:
@@ -28,4 +30,6 @@ components:
         code:
           type: integer
           format: int32
+  securitySchemes:
+    scheme_name: {}
 ####ERR

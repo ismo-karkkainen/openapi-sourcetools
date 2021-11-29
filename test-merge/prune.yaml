@@ -12,7 +12,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+security:
+- scheme_name: []
 components:
+  securitySchemes:
+    scheme_name: {}
+    scheme_name2: {}
   schemas:
     Get:
       properties:

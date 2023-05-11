@@ -31,8 +31,11 @@ ERB-template produces.
 If you pass files with yaml and/or json extension with same base name, the
 last one will remain in $generator.additions hash map.
 
+This requires additional code to make more information available via the
+$generator to be actually useful.
+
 # License
 
-Copyright © 2021 Ismo Kärkkäinen
+Copyright © 2021-2023 Ismo Kärkkäinen
 
 Licensed under Universal Permissive License. See LICENSE.txt.

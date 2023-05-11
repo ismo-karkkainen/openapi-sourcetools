@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'rubocop/rake_task'
+
 task default: [:install]
 
 desc 'Clean.'
@@ -38,4 +40,9 @@ end
 desc 'Test generatecode.'
 task :testgeneratecode do
   sh './test.sh generatecode'
+end
+
+desc 'Lint using Rubocop'
+RuboCop::RakeTask.new(:lint) do |t|
+  t.patterns = [ 'bin', 'openapi-sourcetools.gemspec' ]
 end

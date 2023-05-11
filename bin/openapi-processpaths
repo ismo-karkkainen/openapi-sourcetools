@@ -1,10 +1,10 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright © 2021 Ismo Kärkkäinen
+# Copyright © 2021-2023 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
-require_relative '../lib/common.rb'
+require_relative '../lib/common'
 require 'optparse'
 require 'yaml'
 require 'json'
@@ -51,7 +51,7 @@ aargh("Format neither JSON nor YAML: #{env(:format)}", 1) unless %w[JSON YAML].i
 
 def read_source(filename)
   YAML.safe_load(filename.empty? ? $stdin : File.read(filename))
-rescue Errno::ENOENT => e
+rescue Errno::ENOENT
   aargh("Could not read #{filename.empty? ? 'stdin' : filename}", 2)
 rescue StandardError => e
   aargh(e.to_s, 3)
@@ -78,7 +78,7 @@ paths.each_index do |k|
   (0...k).each do |n|
     pn = paths[n]
     b = processed[pn]
-    next unless (a[:path].compare(b[:path])) == 0
+    next unless a[:path].compare(b[:path]).zero?
     a['lookalike'].push pn
     b['lookalike'].push pk
     $stderr.puts("Similar: #{pn} #{pk}")

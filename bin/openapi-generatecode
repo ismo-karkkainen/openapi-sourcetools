@@ -1,10 +1,10 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright © 2021 Ismo Kärkkäinen
+# Copyright © 2021-2023 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
-require_relative '../lib/common.rb'
+require_relative '../lib/common'
 require 'optparse'
 require 'yaml'
 require 'erb'
@@ -60,9 +60,14 @@ class Generator
     @full_name_order = []
     @document = document_content
     @template = template_content
+    # This should pull a lot more information out of the document to keep
+    # the templates simpler. Mainly language-independent things that are
+    # in general useful. Possibly arranging same information in different
+    # ways for convenience. Or adding methods that arrange and return the
+    # information in different ways.
   end
 
-  def get_binding
+  def context_binding
     binding
   end
 
@@ -107,11 +112,11 @@ ARGV.each do |name|
 end
 
 begin
-  out = ERB.new($generator.template).result($generator.get_binding)
+  out = ERB.new($generator.template).result($generator.context_binding)
 rescue SyntaxError => e
-  aargh("Template syntax error: #{e.to_s}", 6)
+  aargh("Template syntax error: #{e}", 6)
 rescue StandardError => e
-  aargh("Template error: #{e.to_s}", 7)
+  aargh("Template error: #{e}", 7)
 end
 
 output = env(:out)

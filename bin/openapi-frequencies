@@ -1,10 +1,10 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright © 2021 Ismo Kärkkäinen
+# Copyright © 2021-2023 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
-require_relative '../lib/common.rb'
+require_relative '../lib/common'
 require 'optparse'
 require 'yaml'
 require 'json'
@@ -48,11 +48,11 @@ parser.parse!
 
 aargh("Format neither JSON nor YAML: #{env(:format)}", 1) unless %w[JSON YAML].include? env(:format)
 fn = env(:paths)
-aargh("Path log file name must be given.") if fn.empty?
+aargh('Path log file name must be given.') if fn.empty?
 
 def read_source(filename)
   YAML.safe_load(filename.empty? ? $stdin : File.read(filename))
-rescue Errno::ENOENT => e
+rescue Errno::ENOENT
   aargh("Could not read #{filename.empty? ? 'stdin' : filename}", 2)
 rescue StandardError => e
   aargh(e.to_s, 3)
@@ -65,21 +65,21 @@ begin
   f.each_line do |line|
     p = ServerPath.new(split_path(line))
     doc['paths'].each_value do |info|
-      next unless (p <=> info['parts']) == 0
+      next unless (p <=> info['parts']).zero?
       info['freq'] = info.fetch('freq', 0) + 1
       # Lookalikes are the others that can be matched, since path has no
       # variables so any change in fixed parts (not a lookalike) will be a
       # mismatch with path.
       info['lookalike'].each do |path|
         cand = doc['paths'][path]
-        next unless (p <=> cand['parts']) == 0
+        next unless (p <=> cand['parts']).zero?
         cand['freq'] = cand.fetch('freq', 0) + 1
       end
       break
     end
   end
   f.close
-rescue Errno::ENOENT => e
+rescue Errno::ENOENT
   aargh("Could not read path log file: #{fn}", 4)
 rescue NoMethodError
   aargh('Is input file an output of openapi-processpaths?', 5)

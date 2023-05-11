@@ -1,10 +1,10 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright © 2021 Ismo Kärkkäinen
+# Copyright © 2021-2023 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
-require_relative '../lib/common.rb'
+require_relative '../lib/common'
 require 'optparse'
 require 'yaml'
 require 'json'
@@ -13,7 +13,7 @@ require 'set'
 
 default_env(:out, '')
 default_env(:format, 'YAML')
-default_env(:prune, true);
+default_env(:prune, true)
 
 ENV['POSIXLY_CORRECT'] = '1'
 parser = OptionParser.new do |opts|
@@ -52,7 +52,7 @@ aargh("Format neither JSON nor YAML: #{env(:format)}", 1) unless %w[JSON YAML].i
 
 def read_source(filename)
   YAML.safe_load(File.read(filename))
-rescue Errno::ENOENT => e
+rescue Errno::ENOENT
   aargh("Could not read #{filename}", 2)
 rescue StandardError => e
   aargh(e.to_s, 3)
@@ -77,12 +77,12 @@ end
 
 def add_undefined(merged, incoming, filename, path, max_depths)
   incoming.each_pair do |key, value|
-    unless merged.has_key? key
+    unless merged.key? key
       merged[key] = value
       next
     end
     m = merged[key]
-    raise_se "Path #{path_combo(path, false)} merged type #{m.class} differs from type #{value.class} in #{filename}" unless m.class == value.class
+    raise_se("Path #{path_combo(path, false)} merged type #{m.class} differs from type #{value.class} in #{filename}") unless m.instance_of?(value.class)
     raise_se("Re-definition of #{key} #{path_combo(path)} in #{filename}") if too_deep(path, max_depths)
     if m.is_a? Hash # paths or similar
       path.push key
@@ -153,7 +153,7 @@ if env(:prune)
       sub = used
       p.each_index do |k|
         if k + 1 < p.size
-          sub[p[k]] = {} unless sub.has_key? p[k]
+          sub[p[k]] = {} unless sub.key? p[k]
           sub = sub[p[k]]
         else
           sub[p[k]] = item

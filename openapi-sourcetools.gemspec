@@ -1,8 +1,9 @@
+# frozen_string_literal: true
+
 Gem::Specification.new do |s|
   s.name        = 'openapi-sourcetools'
   s.version     = '0.4.3'
-  s.date        = '2021-11-29'
-  s.summary     = "Tools for creating source code from API specification."
+  s.summary     = 'Tools for creating source code from API specification.'
   s.description = %q(
 Tools for generating source code from API specification in OpenAPI format.
 )
@@ -16,4 +17,3 @@ Tools for generating source code from API specification in OpenAPI format.
   s.homepage    = 'https://xn--ismo-krkkinen-gfbd.fi/openapi-sourcetools/index.html'
   s.license     = 'UPL-1.0'
 end
-

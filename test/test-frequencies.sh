@@ -37,14 +37,6 @@ cat o
 echo "####ERR"
 cat e
 
-echo "####COMMAND Files via env"
-OUT=x IN=processed.yaml PATHS=paths.txt $M >o 2>e
-echo "####CODE $?"
-echo "####OUT"
-cat x o
-echo "####ERR"
-cat e
-
 echo "####COMMAND YAML"
 $M --input processed.yaml --paths paths.txt >o 2>e
 echo "####CODE $?"

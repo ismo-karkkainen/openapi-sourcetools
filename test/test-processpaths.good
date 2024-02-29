@@ -1,30 +1,15 @@
 ####COMMAND Invalid output file
-####CODE 6
+####CODE 3
 ####OUT
 ####ERR
-Failed to open for writing: /in/valid
+No such file or directory @ rb_sysopen - /in/valid
+Failed to write output: /in/valid
 ####COMMAND Invalid input file
 ####CODE 2
 ####OUT
 ####ERR
-Could not read /in/valid
+Could not load /in/valid
 ####COMMAND Output file
-####CODE 0
-####OUT
----
-paths:
-  "/test":
-    parts:
-    - test
-    orig: {}
-    lookalike: []
-  "/present":
-    parts:
-    - present
-    orig: {}
-    lookalike: []
-####ERR
-####COMMAND Files via env
 ####CODE 0
 ####OUT
 ---
@@ -72,7 +57,7 @@ paths:
 ####ERR
 Format neither JSON nor YAML: INVALID
 ####COMMAND Conflicting paths
-####CODE 7
+####CODE 4
 ####OUT
 ####ERR
 Similar: /test/fixed/{var} /test/{var}/fixed

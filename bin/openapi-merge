@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright © 2021-2023 Ismo Kärkkäinen
+# Copyright © 2021-2024 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
 require_relative '../lib/common'
@@ -9,54 +9,6 @@ require 'optparse'
 require 'yaml'
 require 'json'
 require 'set'
-
-
-default_env(:out, '')
-default_env(:format, 'YAML')
-default_env(:prune, true)
-
-ENV['POSIXLY_CORRECT'] = '1'
-parser = OptionParser.new do |opts|
-  opts.summary_indent = '  '
-  opts.summary_width = 26
-  opts.banner = 'Usage: openapi-merge [options] sources...'
-  opts.separator ''
-  opts.separator 'Options (equivalent environment variable and value in parentheses):'
-  opts.on('-o', '--output FILE', 'Output result to FILE, not stdout (OUT=FILE).') do |f|
-    env(:out, f)
-  end
-  opts.on('-k', '--keep', 'Keep all unreferenced objects under components.') do
-    env(:prune, false)
-  end
-  opts.on('-p', '--prune', 'Prune all unreferenced objects under components (default).') do
-    env(:prune, true)
-  end
-  opts.on('--yaml', 'Output format is YAML (default).') do
-    env(:format, 'YAML')
-  end
-  opts.on('--json', 'Output format is JSON.') do
-    env(:format, 'JSON')
-  end
-  opts.on('-h', '--help', 'Print this help and exit.') do
-    $stdout.puts %(#{opts}
-
-Source files are combined to form one API specification document. Sources are
-allowed only to append to the merged document, not re-define anything in it.
-)
-    exit 0
-  end
-end
-parser.parse!
-
-aargh("Format neither JSON nor YAML: #{env(:format)}", 1) unless %w[JSON YAML].include? env(:format)
-
-def read_source(filename)
-  YAML.safe_load(File.read(filename))
-rescue Errno::ENOENT
-  aargh("Could not read #{filename}", 2)
-rescue StandardError => e
-  aargh(e.to_s, 3)
-end
 
 def raise_se(message)
   raise StandardError, message
@@ -97,22 +49,6 @@ def add_undefined(merged, incoming, filename, path, max_depths)
       raise_se "Re-definition of #{key} #{path_combo(path)} in #{filename}"
     end
   end
-rescue StandardError => e
-  aargh(e.to_s, 3)
-end
-
-max_depths = Hash.new(0)
-max_depths['openapi'] = 1
-max_depths['info'] = 1
-max_depths['servers'] = 1
-max_depths['paths'] = 2 # Allows get, post, options, etc. from different files.
-max_depths['webhooks'] = 2
-max_depths['components'] = 2
-max_depths['security'] = 1
-max_depths['tags'] = 1
-merged = {}
-ARGV.each do |filename|
-  add_undefined(merged, read_source(filename), filename, [], max_depths)
 end
 
 def gather_refs(doc, found)
@@ -129,7 +65,7 @@ def gather_refs(doc, found)
   end
 end
 
-if env(:prune)
+def prune(merged)
   prev_refs = Set.new
   loop do # May have references from deleted so repeat until nothing deleted.
     refs = Set.new
@@ -166,19 +102,71 @@ if env(:prune)
   end
 end
 
-output = env(:out)
-if output.empty?
-  output = $stdout
-else
-  begin
-    output = File.open(output, 'w')
-  rescue StandardError
-    aargh("Failed to open for writing: #{output}", 1)
+def main
+  output_file = nil
+  default_env(:format, 'YAML')
+  keep = false
+
+  ENV['POSIXLY_CORRECT'] = '1'
+  parser = OptionParser.new do |opts|
+    opts.summary_indent = '  '
+    opts.summary_width = 26
+    opts.banner = 'Usage: openapi-merge [options] sources...'
+    opts.separator ''
+    opts.separator 'Options (equivalent environment variable and value in parentheses):'
+    opts.on('-o', '--output FILE', 'Output result to FILE, not stdout.') do |f|
+      output_file = f
+    end
+    opts.on('-k', '--keep', 'Keep all unreferenced objects under components.') do
+      keep = true
+    end
+    opts.on('-p', '--prune', 'Prune all unreferenced objects under components (default).') do
+      keep = false
+    end
+    opts.on('--yaml', 'Output format is YAML (default, FORMAT=YAML).') do
+      env(:format, 'YAML')
+    end
+    opts.on('--json', 'Output format is JSON (FORMAT=JSON).') do
+      env(:format, 'JSON')
+    end
+    opts.on('-h', '--help', 'Print this help and exit.') do
+      $stdout.puts %(#{opts}
+
+Source files are combined to form one API specification document. Sources are
+allowed only to append to the merged document, not re-define anything in it.
+)
+      exit 0
+    end
   end
+  parser.parse!
+
+  return aargh("Format neither JSON nor YAML: #{env(:format)}", 1) unless %w[JSON YAML].include? env(:format)
+
+  max_depths = Hash.new(0)
+  max_depths['openapi'] = 1
+  max_depths['info'] = 1
+  max_depths['servers'] = 1
+  max_depths['paths'] = 2 # Allows get, post, etc. from different files.
+  max_depths['webhooks'] = 2
+  max_depths['components'] = 2
+  max_depths['security'] = 1
+  max_depths['tags'] = 1
+  merged = {}
+  ARGV.each do |filename|
+    s = load_source(filename)
+    return 2 if s.nil?
+    add_undefined(merged, s, filename, [], max_depths)
+  rescue StandardError => e
+    return aargh(e.to_s, 4)
+  end
+
+  prune(merged) unless keep
+
+  case env(:format)
+  when 'JSON' then doc = JSON.generate(merged)
+  when 'YAML' then doc = YAML.dump(merged)
+  end
+  dump_result(output_file, doc, 3)
 end
 
-case env(:format)
-when 'JSON' then output.puts JSON.generate(merged)
-when 'YAML' then output.puts YAML.dump(merged)
-end
-output.close
+exit(main) if (defined? $unit_test).nil?

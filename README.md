@@ -7,7 +7,7 @@ A collection of small tools for OpenAPI format API specifications.
 Takes multiple documents and adds content without over-writing.
 
 Intended use is to keep common components in one file and add them to
-multiple API documents without having to duplicate information. Also
+multiple API documents to avoid information duplication. Also
 applies to adding health check path or similar.
 
 # openapi-processpaths
@@ -22,20 +22,24 @@ Takes the output of openapi-processpaths and a log file with one path per line
 and counts occurrences for each path in the processed API document and saves
 the count under "freq" key.
 
-# openapi-generatecode
+# openapi-addschemas
 
-Takes an ERB-template, processed API document, and optional files that have
-their contents added to the context passed to the ERB. Output is what the
-ERB-template produces.
+Reads an API specification and for all inlined schemas, creates a reference to
+a new schema. Also creates schemas for arrays and objects that are not already
+schemas.
 
-If you pass files with yaml and/or json extension with same base name, the
-last one will remain in $generator.additions hash map.
+The purpose is to take everything that might be considered a type in a
+programming language and place them under "#/components/schemas/" so that in a
+template there is no need to keep track of whether a type has been defined or
+not. The program does the substitytion of type to common schema to the point of
+being annoying to humans, as even a simple "type: string" will be turned into a reference and separate schema. Likewise integers with different limits will
+each become a separate schema. It is easier to recognize these cases and use
+common type with value checks elsewhere than keep track of all occurrences in
+case a separate type is actually desired.
 
-This requires additional code to make more information available via the
-$generator to be actually useful.
 
 # License
 
-Copyright © 2021-2023 Ismo Kärkkäinen
+Copyright © 2021-2024 Ismo Kärkkäinen
 
 Licensed under Universal Permissive License. See LICENSE.txt.

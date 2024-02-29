@@ -27,14 +27,6 @@ cat x o
 echo "####ERR"
 cat e
 
-echo "####COMMAND Output file via env"
-OUT=x $M >o 2>e
-echo "####CODE $?"
-echo "####OUT"
-cat x o
-echo "####ERR"
-cat e
-
 echo "####COMMAND No input file, YAML"
 $M >o 2>e
 echo "####CODE $?"

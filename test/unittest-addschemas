@@ -1,0 +1,65 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright 2024 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require './unittest.rb'
+
+$unit_test = 0
+load '../bin/openapi-addschemas'
+
+$context = 'remove_subitem'
+obj = { a: { b: 'c', b2: 'd' }}
+path = [ :a, :b ]
+assert(remove_subitem(obj, path), 'c', 'Remove value')
+assert(obj[path.first].key?(path.last), false, 'No last key')
+assert(obj[path.first].fetch(:b2), 'd', 'Other key remains')
+obj = { a: 'sub', b: 'remain' }
+path = [ :a ]
+assert(remove_subitem(obj, path), 'sub', 'Remove value at root')
+assert(obj.key?(path.last), false, 'No single key')
+assert(obj.fetch(:b), 'remain', 'Other key and value remains')
+
+$context = 'put_subitem'
+obj = { a: { c: 'c' } }
+path = [ :a, :b ]
+put_subitem(obj, path, 'b')
+assert(obj.dig(*path), 'b', 'New key inserted')
+obj = { a: { c: {} } }
+path = [ :a, :c, :d ]
+put_subitem(obj, path, 'd')
+assert(obj.dig(*path), 'd', 'New item found')
+obj = {}
+put_subitem(obj, path, 'd')
+assert(obj.dig(*path), 'd', 'New items along path found')
+
+$context = 'same'
+assert(same(1, 'b'), false, 'Number is not string')
+assert(same({ 'b' => 1 }, 'b'), false, 'Hash is not string')
+assert(same(1, { 'b' => 1 }), false, 'Number is not Hash')
+assert(same(1, 1), true, 'Equal numbers')
+a = { a: 5, b: [ 1, 2 ] }
+b = { a: 5, b: 'b' }
+assert(same(a, b), false, 'Different types')
+b = { a: 5, b: [ 1 ] }
+assert(same(a, b), false, 'Different lengths')
+b = { a: 5, b: [ 1, 2 ], c: 'c' }
+assert(same(a, b), false, 'Different keys')
+b = { a: 5, b: [ 1, 2 ] }
+assert(same(a, b), true, 'Same contents')
+
+$context = 'reference'
+a = { a: 5, b: [ 1, 2 ] }
+b = { a: 5, b: 'b' }
+s = { 'bref' => b }
+path = 'testing'
+r = reference(a, s, path)
+assert(s.size, 2, 'New name added')
+r2 = reference(a, s, path)
+assert(r, r2, 'Same object yields same reference')
+assert(s.size, 2, 'No new name added')
+r = reference(b, s, path)
+assert(s.size, 2, 'No new name added either')
+
+exit $unit_test

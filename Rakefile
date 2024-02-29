@@ -20,7 +20,7 @@ task install: [:gem] do
 end
 
 desc 'Test.'
-task test: %i[testmerge testprocesspaths testfrequencies testgeneratecode]
+task test: %i[testmerge testprocesspaths testfrequencies testaddschemas testgeneratecode]
 
 desc 'Test merge.'
 task :testmerge do
@@ -37,6 +37,11 @@ task :testfrequencies do
   sh './test.sh frequencies'
 end
 
+desc 'Test addschemas.'
+task :testaddschemas do
+  sh './test.sh addschemas'
+end
+
 desc 'Test generatecode.'
 task :testgeneratecode do
   sh './test.sh generatecode'
@@ -44,5 +49,5 @@ end
 
 desc 'Lint using Rubocop'
 RuboCop::RakeTask.new(:lint) do |t|
-  t.patterns = [ 'bin', 'openapi-sourcetools.gemspec' ]
+  t.patterns = [ 'bin', 'lib', 'openapi-sourcetools.gemspec' ]
 end

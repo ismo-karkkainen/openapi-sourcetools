@@ -1,0 +1,139 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright © 2024 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../lib/common'
+require 'optparse'
+require 'yaml'
+
+
+def remove_subitem(obj, path)
+  return obj.delete(path.first) || {} if path.size == 1
+  parent = obj.dig(*path.take(path.size - 1))
+  return {} if parent.nil?
+  parent.delete(path.last) || {}
+end
+
+def put_subitem(obj, path, item)
+  path.take(path.size - 1).each do |key|
+    obj[key] = {} unless obj.key?(key)
+    obj = obj[key]
+  end
+  obj[path.last] = item
+end
+
+def same(a, b)
+  return a == b unless a.is_a?(Hash) && b.is_a?(Hash)
+  return false unless a.size == b.size
+  a.keys.each do |k|
+    return false unless b.key?(k)
+    return false unless same(a[k], b[k])
+  end
+  true
+end
+
+def ref_string(name, schema_path)
+  "#{schema_path}/#{name}"
+end
+
+def reference(obj, schemas, schema_path)
+  # Check if identical schema has been added and if so, return the $ref string.
+  schemas.keys.sort.each do |k|
+    return ref_string(k, schema_path) if same(obj, schemas[k])
+  end
+  # One of the numbers will not match existing keys. More number than keys.
+  (schemas.size + 1).times do |n|
+    # 'x' is to simplify find and replace (Schema1x vs Schema1 and Schema10)
+    k = "Schema#{n}x"
+    next if schemas.key?(k)
+    schemas[k] = {}.merge(obj)
+    return ref_string(k, schema_path)
+  end
+end
+
+def replace_inlines(obj, obj_name, schemas, schema_path)
+  if obj.is_a?(Array)
+    obj.each do |o|
+      return false unless replace_inlines(o, obj_name, schemas, schema_path)
+    end
+    return true
+  end
+  return true unless obj.is_a?(Hash)
+  unless obj_name == 'schema' || obj_name == 'top'
+    (obj.keys.sort { |a, b| a.to_s <=> b.to_s }).each do |key|
+      return false unless replace_inlines(obj[key], key, schemas, schema_path)
+    end
+    return true
+  end
+  # Prior return would be the place to get rid of other keys if so desired.
+  return true if obj.key? '$ref'
+  # Is inlined, process parts recursively.
+  items = obj['allOf']
+  items = obj['anyOf'] if items.nil?
+  items = obj['oneOf'] if items.nil?
+  # All above need special treatment in code generation templates.
+  return replace_inlines(items, 'schema', schemas, schema_path) unless items.nil?
+  case obj['type']
+  when 'array'
+    return false unless replace_inlines(obj['items'], 'schema', schemas, schema_path)
+  when 'object'
+    props = obj.fetch('properties', {})
+    props.keys.sort.each do |name|
+      return false unless replace_inlines(props[name], 'schema', schemas, schema_path)
+    end
+  else
+    obj.replace({ '$ref' => reference(obj, schemas, schema_path) }) unless obj_name == 'top'
+  end
+  true
+end
+
+def main
+  input_name = nil
+  output_name = nil
+  root = ''
+  schema_path = '#/components/schemas'
+
+  ENV['POSIXLY_CORRECT'] = '1'
+  parser = OptionParser.new do |opts|
+    opts.summary_indent = '  '
+    opts.summary_width = 26
+    opts.banner = 'Usage: openapi-addschemas [options]'
+    opts.separator ''
+    opts.separator 'Options (equivalent environment variable and value in parentheses):'
+    opts.on('-i', '--input FILE', 'Read API spec from FILE, not stdin.') do |f|
+      input_name = f
+    end
+    opts.on('-o', '--output FILE', 'Output to FILE, not stdout .') do |f|
+      output_name = f
+    end
+    opts.on('-h', '--help', 'Print this help and exit.') do
+      $stdout.puts %(#{opts}
+
+Loads API document in OpenAPI format and adds a schema for each inline type.
+)
+      exit 0
+    end
+  end
+  parser.parse!
+
+  doc = load_source(input_name)
+  return 2 if doc.nil?
+
+  # Find schema object and remove it temporarily to prevent being
+  # processed again.
+  path = schema_path.split('/').select { |x| !(x == '#' || x.empty?) }
+  schemas = remove_subitem(doc, path)
+  # Get rid of inlined types within existing schemas first.
+  schemas.keys.sort.each do |k|
+    return 4 unless replace_inlines(schemas[k], 'top', schemas, schema_path)
+  end
+  return 4 unless replace_inlines(doc, root, schemas, schema_path)
+  # Put schema object back where it was.
+  put_subitem(doc, path, schemas)
+
+  dump_result(output_name, YAML.dump(doc, line_width: 1_000_000), 3)
+end
+
+exit(main) if (defined? $unit_test).nil?

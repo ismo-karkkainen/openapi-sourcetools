@@ -1,30 +1,30 @@
 ####COMMAND components
-####CODE 3
+####CODE 4
 ####OUT
 ####ERR
 Re-definition of test under components.schemas in components.yaml
 ####COMMAND info
-####CODE 3
+####CODE 4
 ####OUT
 ####ERR
 Re-definition of title under info in info.yaml
 ####COMMAND jsonSchemaDialect
-####CODE 3
+####CODE 4
 ####OUT
 ####ERR
 Re-definition of jsonSchemaDialect at root in jsonSchemaDialect.yaml
 ####COMMAND openapi
-####CODE 3
+####CODE 4
 ####OUT
 ####ERR
 Re-definition of version under openapi in openapi.yaml
 ####COMMAND paths
-####CODE 3
+####CODE 4
 ####OUT
 ####ERR
 Re-definition of get under paths./test in paths.yaml
 ####COMMAND webhooks
-####CODE 3
+####CODE 4
 ####OUT
 ####ERR
 Re-definition of get under webhooks.test in webhooks.yaml

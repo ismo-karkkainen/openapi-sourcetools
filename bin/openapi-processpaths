@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright © 2021-2023 Ismo Kärkkäinen
+# Copyright © 2021-2024 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
 require_relative '../lib/common'
@@ -10,102 +10,89 @@ require 'yaml'
 require 'json'
 
 
-default_env(:in, '')
-default_env(:out, '')
-default_env(:format, 'YAML')
-default_env(:error, true)
+def main
+  input_name = nil
+  output_name = nil
+  default_env(:format, 'YAML')
+  default_env(:error, true)
 
-parser = OptionParser.new do |opts|
-  opts.summary_indent = '  '
-  opts.summary_width = 24
-  opts.banner = 'Usage: openapi-processpaths [options]'
-  opts.separator ''
-  opts.separator 'Options (equivalent environment variable and value in parentheses):'
-  opts.on('-i', '--input FILE', 'Read source from FILE, not stdin (IN=FILE).') do |f|
-    env(:in, f)
-  end
-  opts.on('-o', '--output FILE', 'Output result to FILE, not stdout (OUT=FILE).') do |f|
-    env(:out, f)
-  end
-  opts.on('--warn', 'Only warn of paths with same fixed parts (ERROR=0).') do
-    env(:error, false)
-  end
-  opts.on('--yaml', 'Output format is YAML (default) (FORMAT=YAML).') do
-    env(:format, 'YAML')
-  end
-  opts.on('--json', 'Output format is JSON. (FORMAT=JSON)') do
-    env(:format, 'JSON')
-  end
-  opts.on('-h', '--help', 'Print this help and exit.') do
-    $stdout.puts %(#{opts}
+  parser = OptionParser.new do |opts|
+    opts.summary_indent = '  '
+    opts.summary_width = 24
+    opts.banner = 'Usage: openapi-processpaths [options]'
+    opts.separator ''
+    opts.separator 'Options (equivalent environment variable and value in parentheses):'
+    opts.on('-i', '--input FILE', 'Read source from FILE, not stdin.') do |f|
+      input_name = f
+    end
+    opts.on('-o', '--output FILE', 'Output result to FILE, not stdout.') do |f|
+      output_name = f
+    end
+    opts.on('--warn', 'Only warn of paths with same fixed parts (ERROR=0).') do
+      env(:error, false)
+    end
+    opts.on('--yaml', 'Output format is YAML (default) (FORMAT=YAML).') do
+      env(:format, 'YAML')
+    end
+    opts.on('--json', 'Output format is JSON. (FORMAT=JSON)') do
+      env(:format, 'JSON')
+    end
+    opts.on('-h', '--help', 'Print this help and exit.') do
+      $stdout.puts %(#{opts}
 
 Processes API specification document path objects into form that is expected by
 later stage tools. Checks for paths that may be ambiguous.
 )
-    exit 0
+      exit 0
+    end
   end
-end
-parser.parse!
+  parser.parse!
 
-aargh("Format neither JSON nor YAML: #{env(:format)}", 1) unless %w[JSON YAML].include? env(:format)
+  return aargh("Format neither JSON nor YAML: #{env(:format)}", 1) unless %w[JSON YAML].include? env(:format)
 
-def read_source(filename)
-  YAML.safe_load(filename.empty? ? $stdin : File.read(filename))
-rescue Errno::ENOENT
-  aargh("Could not read #{filename.empty? ? 'stdin' : filename}", 2)
-rescue StandardError => e
-  aargh(e.to_s, 3)
-end
-doc = read_source(env(:in))
+  doc = load_source(input_name)
+  return 2 if doc.nil?
 
-processed = {}
-doc.fetch('paths', {}).each_pair do |path, value|
-  parts = split_path(path, true)
-  processed[path] = {
-    'parts' => parts,
-    'orig' => value,
-    'lookalike' => [],
-    path: ServerPath.new(parts)
-  }
-end
+  processed = {}
+  doc.fetch('paths', {}).each_pair do |path, value|
+    parts = split_path(path, true)
+    processed[path] = {
+      'parts' => parts,
+      'orig' => value,
+      'lookalike' => [],
+      path: ServerPath.new(parts)
+    }
+  end
 
-# Find lookalike sets.
-lookalikes = false
-paths = processed.keys.sort
-paths.each_index do |k|
+  # Find lookalike sets.
+  lookalikes = false
+  paths = processed.keys.sort
+  paths.each_index do |k|
   pk = paths[k]
-  a = processed[pk]
-  (0...k).each do |n|
-    pn = paths[n]
-    b = processed[pn]
-    next unless a[:path].compare(b[:path]).zero?
-    a['lookalike'].push pn
-    b['lookalike'].push pk
-    $stderr.puts("Similar: #{pn} #{pk}")
-    lookalikes = true
+    a = processed[pk]
+    (0...k).each do |n|
+      pn = paths[n]
+      b = processed[pn]
+      next unless a[:path].compare(b[:path]).zero?
+      a['lookalike'].push pn
+      b['lookalike'].push pk
+      $stderr.puts("Similar: #{pn} #{pk}")
+      lookalikes = true
+    end
   end
-end
-aargh('Similar paths found.', 7) if lookalikes && env(:error)
+  return aargh('Similar paths found.', 4) if lookalikes && env(:error)
 
-# Clean-up temporary fields.
-processed.each_value do |v|
-  v.keys.each { |k| v.delete(k) if k.is_a? Symbol }
-end
-doc['paths'] = processed
-
-output = env(:out)
-if output.empty?
-  output = $stdout
-else
-  begin
-    output = File.open(output, 'w')
-  rescue StandardError
-    aargh("Failed to open for writing: #{output}", 6)
+  # Clean-up temporary fields.
+  processed.each_value do |v|
+    v.keys.each { |k| v.delete(k) if k.is_a? Symbol }
   end
+  doc['paths'] = processed
+
+  case env(:format)
+  when 'JSON' then doc = JSON.generate(doc)
+  when 'YAML' then doc = YAML.dump(doc)
+  end
+  dump_result(output_name, doc, 3)
 end
 
-case env(:format)
-when 'JSON' then output.puts JSON.generate(doc)
-when 'YAML' then output.puts YAML.dump(doc)
-end
-output.close
+exit(main) if (defined? $unit_test).nil?

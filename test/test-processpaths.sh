@@ -29,14 +29,6 @@ cat x o
 echo "####ERR"
 cat e
 
-echo "####COMMAND Files via env"
-OUT=x IN=small.yaml $M >o 2>e
-echo "####CODE $?"
-echo "####OUT"
-cat x o
-echo "####ERR"
-cat e
-
 echo "####COMMAND YAML"
 $M --input small.yaml >o 2>e
 echo "####CODE $?"

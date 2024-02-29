@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright © 2021-2023 Ismo Kärkkäinen
+# Copyright © 2021-2024 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
 require_relative '../lib/common'
@@ -9,97 +9,82 @@ require 'optparse'
 require 'yaml'
 require 'json'
 
+def main
+  input_name = nil
+  output_name = nil
+  default_env(:format, 'YAML')
+  paths_name = nil
 
-default_env(:in, '')
-default_env(:out, '')
-default_env(:format, 'YAML')
-default_env(:paths, '')
-
-parser = OptionParser.new do |opts|
-  opts.summary_indent = '  '
-  opts.summary_width = 24
-  opts.banner = 'Usage: openapi-frequencies [options]'
-  opts.separator ''
-  opts.separator 'Options (equivalent environment variable and value in parentheses):'
-  opts.on('-i', '--input FILE', 'Read source from FILE, not stdin (IN=FILE).') do |f|
-    env(:in, f)
-  end
-  opts.on('-o', '--output FILE', 'Output result to FILE, not stdout (OUT=FILE).') do |f|
-    env(:out, f)
-  end
-  opts.on('-p', '--paths FILE', 'Path log file name (PATHS=FILE).') do |f|
-    env(:paths, f)
-  end
-  opts.on('--yaml', 'Output format is YAML (default) (FORMAT=YAML).') do
-    env(:format, 'YAML')
-  end
-  opts.on('--json', 'Output format is JSON. (FORMAT=JSON)') do
-    env(:format, 'JSON')
-  end
-  opts.on('-h', '--help', 'Print this help and exit.') do
-    $stdout.puts %(#{opts}
+  parser = OptionParser.new do |opts|
+    opts.summary_indent = '  '
+    opts.summary_width = 24
+    opts.banner = 'Usage: openapi-frequencies [options]'
+    opts.separator ''
+    opts.separator 'Options (equivalent environment variable and value in parentheses):'
+    opts.on('-i', '--input FILE', 'Read source from FILE, not stdin.') do |f|
+      input_name = f
+    end
+    opts.on('-o', '--output FILE', 'Output result to FILE, not stdout.') do |f|
+      output_name = f
+    end
+    opts.on('-p', '--paths FILE', 'Path log file name.') do |f|
+      paths_name = f
+    end
+    opts.on('--yaml', 'Output format is YAML (default) (FORMAT=YAML).') do
+      env(:format, 'YAML')
+    end
+    opts.on('--json', 'Output format is JSON. (FORMAT=JSON)') do
+      env(:format, 'JSON')
+    end
+    opts.on('-h', '--help', 'Print this help and exit.') do
+      $stdout.puts %(#{opts}
 
 Matches given file with paths and adds frequency information.
 )
-    exit 0
-  end
-end
-parser.parse!
-
-aargh("Format neither JSON nor YAML: #{env(:format)}", 1) unless %w[JSON YAML].include? env(:format)
-fn = env(:paths)
-aargh('Path log file name must be given.') if fn.empty?
-
-def read_source(filename)
-  YAML.safe_load(filename.empty? ? $stdin : File.read(filename))
-rescue Errno::ENOENT
-  aargh("Could not read #{filename.empty? ? 'stdin' : filename}", 2)
-rescue StandardError => e
-  aargh(e.to_s, 3)
-end
-doc = read_source(env(:in))
-
-begin
-  # Expect one path per line with nothing else. Query is allowed and ignored.
-  f = File.new(fn, 'rt')
-  f.each_line do |line|
-    p = ServerPath.new(split_path(line))
-    doc['paths'].each_value do |info|
-      next unless (p <=> info['parts']).zero?
-      info['freq'] = info.fetch('freq', 0) + 1
-      # Lookalikes are the others that can be matched, since path has no
-      # variables so any change in fixed parts (not a lookalike) will be a
-      # mismatch with path.
-      info['lookalike'].each do |path|
-        cand = doc['paths'][path]
-        next unless (p <=> cand['parts']).zero?
-        cand['freq'] = cand.fetch('freq', 0) + 1
-      end
-      break
+      exit 0
     end
   end
-  f.close
-rescue Errno::ENOENT
-  aargh("Could not read path log file: #{fn}", 4)
-rescue NoMethodError
-  aargh('Is input file an output of openapi-processpaths?', 5)
-rescue StandardError => e
-  aargh(e.to_s, 6)
-end
+  parser.parse!
 
-output = env(:out)
-if output.empty?
-  output = $stdout
-else
+  return aargh("Format neither JSON nor YAML: #{env(:format)}", 1) unless %w[JSON YAML].include? env(:format)
+  return aargh('Path log file name must be given.', 1) if paths_name.nil?
+
+  doc = load_source(input_name)
+  return 2 if doc.nil?
+
   begin
-    output = File.open(output, 'w')
-  rescue StandardError
-    aargh("Failed to open for writing: #{output}", 7)
+    # Expect one path per line with nothing else. Query is allowed and ignored.
+    f = File.new(paths_name, 'rt')
+    f.each_line do |line|
+      p = ServerPath.new(split_path(line))
+      doc['paths'].each_value do |info|
+        next unless (p <=> info['parts']).zero?
+        info['freq'] = info.fetch('freq', 0) + 1
+        # Lookalikes are the others that can be matched, since path has no
+        # variables so any change in fixed parts (not a lookalike) will be a
+        # mismatch with path.
+        info['lookalike'].each do |path|
+          cand = doc['paths'][path]
+          next unless (p <=> cand['parts']).zero?
+          cand['freq'] = cand.fetch('freq', 0) + 1
+        end
+        break
+      end
+    end
+    f.close
+  rescue Errno::ENOENT
+    return aargh("Could not read path log file: #{paths_name}", 4)
+  rescue NoMethodError
+    return aargh('Is input file an output of openapi-processpaths?', 5)
+  rescue StandardError => e
+    return aargh(e.to_s, 6)
   end
+
+  case env(:format)
+  when 'JSON' then doc = JSON.generate(doc)
+  when 'YAML' then doc = YAML.dump(doc)
+  end
+  dump_result(output_name, doc, 3)
 end
 
-case env(:format)
-when 'JSON' then output.puts JSON.generate(doc)
-when 'YAML' then output.puts YAML.dump(doc)
-end
-output.close
+exit(main) if (defined? $unit_test).nil?

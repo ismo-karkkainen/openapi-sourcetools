@@ -20,7 +20,7 @@ task install: [:gem] do
 end
 
 desc 'Test.'
-task test: %i[testmerge testprocesspaths testfrequencies testaddschemas testgeneratecode]
+task test: %i[testmerge testprocesspaths testfrequencies testaddschemas testaddresponses testaddheaders testcheckschemas testgeneratecode]
 
 desc 'Test merge.'
 task :testmerge do
@@ -40,6 +40,21 @@ end
 desc 'Test addschemas.'
 task :testaddschemas do
   sh './test.sh addschemas'
+end
+
+desc 'Test addresponses.'
+task :testaddresponses do
+  sh './test.sh addresponses'
+end
+
+desc 'Test addheaders.'
+task :testaddheaders do
+  sh './test.sh addheaders'
+end
+
+desc 'Test checkschemas.'
+task :testcheckschemas do
+  sh './test.sh checkschemas'
 end
 
 desc 'Test generatecode.'

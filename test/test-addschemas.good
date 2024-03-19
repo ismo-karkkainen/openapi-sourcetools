@@ -1,0 +1,263 @@
+####COMMAND Invalid output file
+####CODE 3
+####OUT
+####ERR
+No such file or directory @ rb_sysopen - ./in/valid
+Failed to write output: ./in/valid
+####COMMAND Invalid input file
+####CODE 2
+####OUT
+####ERR
+Could not load ./in/valid
+####COMMAND Output file
+####CODE 0
+####OUT
+---
+openapi: 3.1.0
+####ERR
+####COMMAND No input file
+####CODE 2
+####OUT
+####ERR
+####COMMAND Input and output
+####CODE 0
+####OUT
+---
+openapi: 3.1.0
+info:
+  title: SomeAPI
+  version: 1.0.0
+  description: Test stuff
+  license:
+    name: UPL 1.0
+    url: https://opensource.org/license/UPL
+tags:
+- name: test
+  description: Only for testing purposes.
+paths:
+  "/root/{par}":
+    parameters:
+    - name: par
+      in: path
+      required: true
+      description: Something.
+      schema:
+        "$ref": "#/components/schemas/Schema6x"
+    get:
+      tags:
+      - test
+      summary: Parameter in path
+      description: Afterwards, inlined string type should be a reference.
+      operationId: getRootPar
+      responses:
+        200:
+          description: Blah blah blah.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Schema2x"
+          headers:
+            content-type:
+              schema:
+                "$ref": "#/components/schemas/Schema4x"
+            content-length:
+              schema:
+                "$ref": "#/components/schemas/Schema3x"
+        404:
+          description: Error.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Schema5x"
+  "/something":
+    post:
+      summary: Similar types should become equivalent references
+      operationId: postSomething
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Schema2x"
+      responses:
+        204:
+          description: Empty.
+        404:
+          description: Error.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Schema5x"
+components:
+  schemas:
+    Schema0x:
+      type: string
+      minLength: 10
+      maxLength: 32
+    Schema1x:
+      type: number
+    Schema2x:
+      description: Object.
+      type: object
+      required:
+      - field
+      properties:
+        field:
+          "$ref": "#/components/schemas/Schema0x"
+        other:
+          "$ref": "#/components/schemas/Schema1x"
+    Schema3x:
+      type: integer
+      minimum: 0
+    Schema4x:
+      type: string
+      pattern: application/json
+    Schema5x:
+      description: Whatever.
+      type: object
+    Schema6x:
+      type: string
+####ERR
+####COMMAND Processed output
+####CODE 0
+####OUT
+---
+openapi: 3.1.0
+info:
+  title: SomeAPI
+  version: 1.0.0
+  description: 'Test API doc.
+
+    '
+  license:
+    name: UPL
+    url: https://opensource.org/license/upl
+tags:
+- name: action
+  description: Action taken.
+- name: health
+  description: Health checks.
+servers: []
+paths:
+  "/act":
+    post:
+      tags:
+      - action
+      summary: Action summary
+      description: Action description.
+      operationId: postAction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Schema2x"
+        required: true
+      responses:
+        '204':
+          description: Empty reply when payload ok.
+        '403':
+          description: Error response with an error object, possibly empty.
+          headers:
+            headername:
+              description: Description of the header.
+              schema:
+                "$ref": "#/components/schemas/Schema4x"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Schema3x"
+        '404':
+          description: Error response with an error object, possibly empty.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Schema3x"
+              examples:
+                name:
+                  summary: Summary.
+                  value: any
+        '500':
+          description: Error response with an error object, possibly empty.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Schema3x"
+  "/health":
+    get:
+      tags:
+      - health
+      summary: Health check
+      description: Health check description.
+      operationId: healthCheck
+      responses:
+        '204':
+          description: Empty reply on health check.
+        '403':
+          description: Error response with an error object, possibly empty.
+          headers:
+            headername:
+              description: Header description.
+              schema:
+                "$ref": "#/components/schemas/Schema4x"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Schema3x"
+        '404':
+          description: Error response with an error object, possibly empty.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Schema3x"
+        '405':
+          description: Error response with an error object, possibly empty.
+          headers:
+            headername:
+              description: Header description.
+              schema:
+                "$ref": "#/components/schemas/Schema4x"
+              example: string
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Schema3x"
+        '500':
+          description: Error response with an error object, possibly empty.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Schema3x"
+              examples:
+                name:
+                  summary: yrammuS
+                  value:
+                    key: value
+components:
+  schemas:
+    Schema0x:
+      description: Another description.
+      type: string
+      pattern: ".+"
+      minLength: 1
+      maxLength: 32768
+    Schema1x:
+      description: Field description.
+      type: string
+      pattern: "^(?:[A-Za-z\\d+/]{4})+(?:[A-Za-z\\d+/]{3}=|[A-Za-z\\d+/]{2}==)?$"
+      minLength: 32
+      maxLength: 1024
+    Schema2x:
+      description: Request body description.
+      type: object
+      required:
+      - field
+      properties:
+        field:
+          "$ref": "#/components/schemas/Schema1x"
+        another:
+          "$ref": "#/components/schemas/Schema0x"
+    Schema3x:
+      description: Whatever is deemed appropriate, if anything.
+      type: object
+    Schema4x:
+      type: string
+####ERR

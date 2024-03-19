@@ -19,7 +19,7 @@ Failed to write output: /in/valid
 ####OUT
 ####ERR
 Is input file an output of openapi-processpaths?
-####COMMAND YAML
+####COMMAND Output
 ####CODE 0
 ####OUT
 ---
@@ -36,18 +36,3 @@ paths:
     orig: {}
     lookalike: []
 ####ERR
-####COMMAND JSON
-####CODE 0
-####OUT
-{"paths":{"/test":{"parts":["test"],"orig":{},"lookalike":[],"freq":1},"/present":{"parts":["present"],"orig":{},"lookalike":[]}}}
-####ERR
-####COMMAND JSON via env
-####CODE 0
-####OUT
-{"paths":{"/test":{"parts":["test"],"orig":{},"lookalike":[],"freq":1},"/present":{"parts":["present"],"orig":{},"lookalike":[]}}}
-####ERR
-####COMMAND Invalid format
-####CODE 1
-####OUT
-####ERR
-Format neither JSON nor YAML: INVALID

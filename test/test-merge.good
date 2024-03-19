@@ -14,23 +14,8 @@ Could not load /in/valid
 ####OUT
 --- {}
 ####ERR
-####COMMAND No input file, YAML
+####COMMAND No input file
 ####CODE 0
 ####OUT
 --- {}
 ####ERR
-####COMMAND No input file, JSON
-####CODE 0
-####OUT
-{}
-####ERR
-####COMMAND No input file, JSON via env
-####CODE 0
-####OUT
-{}
-####ERR
-####COMMAND Invalid format
-####CODE 1
-####OUT
-####ERR
-Format neither JSON nor YAML: INVALID

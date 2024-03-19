@@ -7,12 +7,10 @@
 require_relative '../lib/common'
 require 'optparse'
 require 'yaml'
-require 'json'
 
 def main
   input_name = nil
   output_name = nil
-  default_env(:format, 'YAML')
   paths_name = nil
 
   parser = OptionParser.new do |opts|
@@ -20,7 +18,7 @@ def main
     opts.summary_width = 24
     opts.banner = 'Usage: openapi-frequencies [options]'
     opts.separator ''
-    opts.separator 'Options (equivalent environment variable and value in parentheses):'
+    opts.separator 'Options:'
     opts.on('-i', '--input FILE', 'Read source from FILE, not stdin.') do |f|
       input_name = f
     end
@@ -30,23 +28,17 @@ def main
     opts.on('-p', '--paths FILE', 'Path log file name.') do |f|
       paths_name = f
     end
-    opts.on('--yaml', 'Output format is YAML (default) (FORMAT=YAML).') do
-      env(:format, 'YAML')
-    end
-    opts.on('--json', 'Output format is JSON. (FORMAT=JSON)') do
-      env(:format, 'JSON')
-    end
     opts.on('-h', '--help', 'Print this help and exit.') do
       $stdout.puts %(#{opts}
 
-Matches given file with paths and adds frequency information.
+Matches given OpenAPI document file paths with paths from file and adds
+into each path object matching count as "freq".
 )
       exit 0
     end
   end
   parser.parse!
 
-  return aargh("Format neither JSON nor YAML: #{env(:format)}", 1) unless %w[JSON YAML].include? env(:format)
   return aargh('Path log file name must be given.', 1) if paths_name.nil?
 
   doc = load_source(input_name)
@@ -80,11 +72,7 @@ Matches given file with paths and adds frequency information.
     return aargh(e.to_s, 6)
   end
 
-  case env(:format)
-  when 'JSON' then doc = JSON.generate(doc)
-  when 'YAML' then doc = YAML.dump(doc)
-  end
-  dump_result(output_name, doc, 3)
+  dump_result(output_name, YAML.dump(doc), 3)
 end
 
 exit(main) if (defined? $unit_test).nil?

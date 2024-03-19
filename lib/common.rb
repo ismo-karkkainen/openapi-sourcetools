@@ -12,21 +12,22 @@ def aargh(message, return_value = nil)
   return_value
 end
 
-def env(var, value = nil)
-  k = var.to_s.upcase
-  ENV[k] = { false => '0', true => '1' }.fetch(value, value) unless value.nil?
-  v = ENV.fetch(k, nil)
-  case v
-  when '0' then false
-  when '1' then true
-  else
-    v
+def bury(doc, path, value)
+  (path.size - 1).times do |k|
+    p = path[k]
+    doc[p] = {} unless doc.key?(p)
+    doc = doc[p]
   end
+  doc[path.last] = value
 end
 
-def default_env(var, value)
-  v = env(var)
-  env(var, value) if v.nil?
+module Output
+  attr_reader :count
+
+  def put(message)
+    aargh(message)
+    count += 1
+  end
 end
 
 def split_path(p, spec = false)

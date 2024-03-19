@@ -7,7 +7,6 @@
 require_relative '../lib/common'
 require 'optparse'
 require 'yaml'
-require 'json'
 require 'set'
 
 def raise_se(message)
@@ -104,7 +103,6 @@ end
 
 def main
   output_file = nil
-  default_env(:format, 'YAML')
   keep = false
 
   ENV['POSIXLY_CORRECT'] = '1'
@@ -113,7 +111,7 @@ def main
     opts.summary_width = 26
     opts.banner = 'Usage: openapi-merge [options] sources...'
     opts.separator ''
-    opts.separator 'Options (equivalent environment variable and value in parentheses):'
+    opts.separator 'Options:'
     opts.on('-o', '--output FILE', 'Output result to FILE, not stdout.') do |f|
       output_file = f
     end
@@ -122,12 +120,6 @@ def main
     end
     opts.on('-p', '--prune', 'Prune all unreferenced objects under components (default).') do
       keep = false
-    end
-    opts.on('--yaml', 'Output format is YAML (default, FORMAT=YAML).') do
-      env(:format, 'YAML')
-    end
-    opts.on('--json', 'Output format is JSON (FORMAT=JSON).') do
-      env(:format, 'JSON')
     end
     opts.on('-h', '--help', 'Print this help and exit.') do
       $stdout.puts %(#{opts}
@@ -139,8 +131,6 @@ allowed only to append to the merged document, not re-define anything in it.
     end
   end
   parser.parse!
-
-  return aargh("Format neither JSON nor YAML: #{env(:format)}", 1) unless %w[JSON YAML].include? env(:format)
 
   max_depths = Hash.new(0)
   max_depths['openapi'] = 1
@@ -162,11 +152,7 @@ allowed only to append to the merged document, not re-define anything in it.
 
   prune(merged) unless keep
 
-  case env(:format)
-  when 'JSON' then doc = JSON.generate(merged)
-  when 'YAML' then doc = YAML.dump(merged)
-  end
-  dump_result(output_file, doc, 3)
+  dump_result(output_file, YAML.dump(merged), 3)
 end
 
 exit(main) if (defined? $unit_test).nil?

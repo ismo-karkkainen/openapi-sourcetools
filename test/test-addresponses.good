@@ -1,0 +1,126 @@
+####COMMAND Invalid output file
+####CODE 3
+####OUT
+####ERR
+No such file or directory @ rb_sysopen - ./in/valid
+Failed to write output: ./in/valid
+####COMMAND Invalid input file
+####CODE 2
+####OUT
+####ERR
+Could not load ./in/valid
+####COMMAND Output file
+####CODE 0
+####OUT
+---
+openapi: 3.1.0
+####ERR
+####COMMAND No input file
+####CODE 2
+####OUT
+####ERR
+####COMMAND Processed output
+####CODE 0
+####OUT
+---
+openapi: 3.1.0
+info:
+  title: SomeAPI
+  version: 1.0.0
+  description: 'Test API doc.
+
+    '
+  license:
+    name: UPL
+    url: https://opensource.org/license/upl
+tags:
+- name: action
+  description: Action taken.
+- name: health
+  description: Health checks.
+servers: []
+paths:
+  "/act":
+    post:
+      tags:
+      - action
+      summary: Action summary
+      description: Action description.
+      operationId: postAction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Request body description.
+              type: object
+              required:
+              - field
+              properties:
+                field:
+                  description: Field description.
+                  type: string
+                  pattern: "^(?:[A-Za-z\\d+/]{4})+(?:[A-Za-z\\d+/]{3}=|[A-Za-z\\d+/]{2}==)?$"
+                  minLength: 32
+                  maxLength: 1024
+                another:
+                  description: Another description.
+                  type: string
+                  pattern: ".+"
+                  minLength: 1
+                  maxLength: 32768
+        required: true
+      responses:
+        '204':
+          "$ref": "#/components/responses/Response0x"
+        '403':
+          "$ref": "#/components/responses/Response1x"
+        '404':
+          "$ref": "#/components/responses/Response2x"
+        '500':
+          "$ref": "#/components/responses/Response2x"
+  "/health":
+    get:
+      tags:
+      - health
+      summary: Health check
+      description: Health check description.
+      operationId: healthCheck
+      responses:
+        '204':
+          "$ref": "#/components/responses/Response0x"
+        '403':
+          "$ref": "#/components/responses/Response1x"
+        '404':
+          "$ref": "#/components/responses/Response2x"
+        '405':
+          "$ref": "#/components/responses/Response1x"
+        '500':
+          "$ref": "#/components/responses/Response2x"
+components:
+  responses:
+    Response0x:
+      description: Empty reply when payload ok.
+    Response1x:
+      description: Error response with an error object, possibly empty.
+      headers:
+        headername:
+          description: Description of the header.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            description: Whatever is deemed appropriate, if anything.
+            type: object
+    Response2x:
+      description: Error response with an error object, possibly empty.
+      content:
+        application/json:
+          schema:
+            description: Whatever is deemed appropriate, if anything.
+            type: object
+          examples:
+            name:
+              summary: Summary.
+              value: any
+####ERR

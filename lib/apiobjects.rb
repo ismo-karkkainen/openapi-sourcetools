@@ -1,25 +1,89 @@
 # frozen_string_literal: true
 
 require_relative './common'
+require 'set'
+
+def same(a, b, ignored_keys = Set.new(%w[summary description]))
+  return a == b unless a.is_a?(Hash) && b.is_a?(Hash)
+  keys = Set.new(a.keys + b.keys) - ignored_keys
+  keys.to_a.each do |k|
+    return false unless a.key?(k) && b.key?(k)
+    return false unless same(a[k], b[k], ignored_keys)
+  end
+  true
+end
+
+def ref_string(name, schema_path)
+  "#{schema_path}/#{name}"
+end
+
+def reference(obj, schemas, schema_path, ignored_keys = Set.new(%w[summary description]), prefix = 'Schema')
+  # Check if identical schema has been added and if so, return the $ref string.
+  schemas.keys.sort.each do |k|
+    return ref_string(k, schema_path) if same(obj, schemas[k], ignored_keys)
+  end
+  # One of the numbers will not match existing keys. More number than keys.
+  (schemas.size + 1).times do |n|
+    # 'x' is to simplify find and replace (Schema1x vs Schema1 and Schema10)
+    k = "#{prefix}#{n}x"
+    next if schemas.key?(k)
+    schemas[k] = obj.merge
+    return ref_string(k, schema_path)
+  end
+end
+
+class Components
+  attr_reader :path, :prefix
+  attr_accessor :items, :ignored_keys
+
+  def initialize(path, prefix, ignored_keys = %w[summary description examples example])
+    @items = {}
+    path = "#/#{path.join('/')}/" if path.is_a?(Array)
+    path = "#{path}/" unless path.end_with?('/')
+    @path = path
+    @prefix = prefix
+    @ignored_keys = Set.new(ignored_keys)
+  end
+
+  def add_options(opts)
+    opts.on('--use FIELD', 'Use FIELD in comparisons.') do |f|
+      @ignored_keys.delete(f)
+    end
+    opts.on('--ignore FIELD', 'Ignore FIELD in comparisons.') do |f|
+      @ignored_keys.add(f)
+    end
+  end
+
+  def help
+    %(All fields are used in object equality comparisons except:\n#{@ignored_keys.to_a.sort!.join("\n")})
+  end
+
+  def ref_string(name)
+    "#{@path}#{name}"
+  end
+
+  def reference(obj)
+    # Check if identical schema has been added. If so, return the $ref string.
+    @items.each do |k, v|
+      return ref_string(k) if same(obj, v, @ignored_keys)
+    end
+    # One of the numbers will not match existing keys. More number than keys.
+    (@items.size + 1).times do |n|
+      # 'x' is to simplify find and replace (Schema1x vs Schema1 and Schema10)
+      cand = "#{@prefix}#{n}x"
+      next if @items.key?(cand)
+      @items[cand] = obj.merge
+      return ref_string(cand)
+    end
+  end
+end
+
 
 class PathOperation
   attr_accessor :path, :operation, :info, :parameters
   attr_accessor :servers, :security, :tags
   attr_accessor :summary, :description
 end
-
-# Component storage. Schemas separately?
-# Anything that can be referenced should be fed to component storage and
-# original reference replaced with object reference?
-# Or, component storage is the one that knows what class to use in each case.
-# Hence always pass the value to components and it can return an instance of
-# the proper class.
-# Some pairs like paths and operation object are handled as they are.
-# Also webhooks look like path info object, basically.
-
-# Perhaps have a mapping from field name to handler method that creates
-# objects into storages. Each uses the same mapping to deal with children
-# they do not handle directly?
 
 # Should mapping JSON schema types to native types be a separate step?
 # Just add x-openapi-sourcetools-native: nativetype
@@ -33,116 +97,11 @@ end
 # into the item and that way be used as an indicator that the type has been
 # declared or needs a declaration.
 
-# Digging inline-defined things that should be types means a template will
-# need to go through the entire document. That probably should be avoided and
-# a scan for inline types done and implicit refs created. Inline types are
-# replaced with the ref and the inline type processing should be recursive.
-# Once we know what the content is, the type can be compared to existing ones
-# and previously seen one used. Hence recursive checking of sub-types is
-# done first.
-
-# So, if a type has multiple properties, each property is a type, possibly
-# the same as the other types. Create a situation where ref use is maximized.
-
-# Using already existing schemas implies the components scan is done fully
-# and loops in references must be flagged as invalid and error produced only
-# when the type is actually used. Inline types can not have loops so leaf
-# properties will either find an existing non-referencing type or create a
-# new type. Hence inline types will not pull in loops.
-
-# If user does not like the generated type names, the types can be declared
-# explicitly.
-
-# One option would be to perform the inline type creation and output the
-# resulting components object as is to save work from the user.
-
-# The inline and flattening to the maximum degree could be a separate
-# program. The output might be useful in its own right.
-
-class ComponentStore
-  attr_reader :objects
-  attr_reader :spec
-
-  def init(components)
-    @objects = {}
-    @spec = components
-  end
-
-  def get(ref, preceding = [])
-    ref = "#/components/securitySchemes/#{ref}" unless ref.start_with?('#/components/')
-    obj = @objects.fetch(ref, nil)
-    obj = create_object(ref, preceding) if obj.nil?
-    obj
-  end
-
-private
-  def check_loop(ref, preceding)
-    return unless preceding.include?(ref)
-    msg = "Loop with #{ref} in:\n" + ref.reverse.join("\n")
-    aargh(msg, 3)
-  end
-
-  def create_object(ref, preceding)
-    check_loop(ref, preceding)
-    parts = ref.split('/')
-    parts.shift(1) if parts.first == '#'
-    category = parts[parts.size - 2]
-    name = parts.last
-    # Get the doc and get referenced objects to create them.
-    doc = @spec.dig(*parts)
-    return nil if doc.nil?
-    # Require that inlined types have been dealt with already.
-    # Inlined type here would be second-level object or an array.
-    # Inlined type at caller is top-level object or array.
-    # Possibly better to figure out what to make a ref here. Clear.
-    preceding.push(ref)
-    case category
-    when 'schemas' then out = create_schema(doc, name, preceding)
-    when 'responses' then out = create_response(doc, name, preceding)
-    when 'parameters' then out = create_parameter(doc, name, preceding)
-    when 'requestBodies' then out = create_request_body(doc, name, preceding)
-    # Headers is limited parameters.
-    when 'headers' then out = create_header(doc, name, preceding)
-    # Callbacks is like pathItems but should be limited to path item.
-    when 'callbacks' then out = create_callback(doc, name, preceding)
-    when 'pathItems' then out = create_path_item(doc, name, preceding)
-    else # examples, securitySchemes, links
-      out = doc
-    end
-    preceding.pop
-    @objects[ref] = out
-    out
-  end
-
-  def create_schema(doc, name, preceding)
-  end
-
-  def create_response(doc, name, preceding)
-  end
-
-  def create_parameter(doc, name, preceding)
-  end
-
-  def create_request_body(doc, name, preceding)
-  end
-
-  def create_header(doc, name, preceding)
-  end
-
-  def create_callback(doc, name, preceding)
-  end
-
-  def create_path_item(doc, name, preceding)
-  end
-end
-
 def make_path_operations(apidoc)
   # Check openapi
   # Store info as is for reference
   # Store servers as is for default value for PathOperation
   # Process components. Lazy manner, only when referenced.
-  # Every time a component is referenced and the object is asked, resolve all
-  # references to sub-items and create the objects.
   # Store security as is for default value for PathOperation.
   # Store tags as mapping from name to object for use with PathOperation.
   # Process paths:
@@ -153,9 +112,17 @@ def make_path_operations(apidoc)
 end
 
 
-ServerPath = Struct.new(:parts) do
-  def <=>(p) # Variables are after fixed strings.
-    pp = p.is_a?(Array) ? p : p.parts
+class ServerPath
+  include Comparable
+
+  attr_accessor :parts
+
+  def initialize(parts)
+    @parts = parts
+  end
+
+  def <=>(other) # Variables are after fixed strings.
+    pp = other.is_a?(Array) ? other : p.parts
     parts.each_index do |k|
       return 1 if pp.size <= k # Longer comes after shorter.
       pk = parts[k]
@@ -195,5 +162,143 @@ ServerPath = Struct.new(:parts) do
       return c unless c.zero?
     end
     (parts.size < pp.size) ? -1 : 0
+  end
+end
+
+# Adds all refs found in the array to refs with given required state.
+def gather_array_refs(refs, items, required)
+  items.each do |s|
+    r = s['$ref']
+    next if r.nil?
+    refs[r] = required || refs.fetch(r, false)
+  end
+end
+
+# For any key '$ref' adds to refs whether referred type is required.
+# Requires that there are no in-lined schemas, openapi-addschemas has been run.
+def gather_refs(refs, schema)
+  # This implies types mixed together according to examples. Needs mixed type.
+  # AND. Also, mixing may fail. Adds a new schema, do here.
+  items = schema['allOf']
+  return gather_array_refs(refs, items, true) unless items.nil?
+  # As long as one schema is fulfilled, it is ok. OR, first that fits.
+  items = schema['anyOf'] if items.nil?
+  # oneOf implies selection between different types. No multiple matches. XOR.
+  # Needs to ensure that later types do not match.
+  # Should check if there is enough difference to ensure single match.
+  # Use separate program run after addschemas to create allOf mixed schema
+  # and verify the others can be dealt with.
+  items = schema['oneOf'] if items.nil?
+  return gather_array_refs(refs, items, false) unless items.nil?
+  # Defaults below handle it if "type" is not "object".
+  reqs = schema.fetch('required', [])
+  schema.fetch('properties', {}).each do |name, spec|
+    r = spec['$ref']
+    next if r.nil?
+    refs[r] = reqs.include?(name) || refs.fetch(r, false)
+  end
+end
+
+class SchemaInfo
+  attr_accessor :ref, :schema, :direct_refs, :name, :post_refs
+
+  def initialize(ref, name, schema)
+    @ref = ref
+    @name = name
+    @schema = schema
+    @direct_refs = {}
+    gather_refs(@direct_refs, schema)
+  end
+
+  def set_post_refs(seen)
+    @post_refs = Set.new(@direct_refs.keys) - seen
+  end
+
+  def to_s
+    v = @direct_refs.keys.sort.map { |k| "#{k}:#{@direct_refs[k] ? 'req' : 'opt'}" }
+    "#{@ref}: #{v.join(' ')}"
+  end
+end
+
+def var_or_method_value(x, name)
+  if name.start_with?('@')
+    n = name
+  else
+    n = "@#{name}"
+  end
+  return x.instance_variable_get(n) if x.instance_variable_defined?(n)
+  return x.public_send(name) if x.respond_to?(name)
+  raise ArgumentError, "#{name} is not #{x.class} instance variable nor public method"
+end
+
+class SchemaOrderer
+  attr_accessor :schemas, :order, :orderer
+
+  def initialize(path, schema_specs)
+    @schemas = {}
+    schema_specs.each do |name, schema|
+      r = "#{path}#{name}"
+      @schemas[r] = SchemaInfo.new(r, name, schema)
+    end
+  end
+
+  def sort!(orderer = 'required_first')
+    case orderer
+    when 'required_first' then @order = required_first
+    when '<=>' then @order = @schemas.values.sort { |a, b| a <=> b }
+    else
+      @order = @schemas.values.sort do |a, b|
+        va = var_or_method_value(a, orderer)
+        vb = var_or_method_value(b, orderer)
+        va <=> vb
+      end
+    end
+    @orderer = orderer
+    seen = Set.new
+    @order.each do |si|
+      si.set_post_refs(seen)
+      seen.add(si.ref)
+    end
+    @order
+  end
+
+  def required_first
+    chosen = []
+    until chosen.size == @schemas.size
+      used = Set.new(chosen.map { |si| si.ref })
+      avail = @schemas.values.select { |si| !used.member?(si.ref) }
+      best = nil
+      avail.each do |si|
+        prereq = chosen.count { |x| x.direct_refs.fetch(si.ref, false) }
+        fulfilled = chosen.count { |x| si.direct_refs.fetch(x.ref, false) }
+        postreq = si.direct_refs.size - (prereq + fulfilled)
+        better = false
+        if best.nil?
+          better = true
+        else
+          # Minimize preceding types requiring this.
+          if prereq < best.first
+            better = true
+          elsif prereq == best.first
+            # Minimize remaining unfulfilled requires.
+            if postreq < best[1]
+              better = true
+            elsif postreq == best[1]
+              # Check mutual direct requirements.
+              best_req_si = best.last.direct_refs.fetch(si.ref, false)
+              si_req_best = si.direct_refs.fetch(best.last.ref, false)
+              if best_req_si
+                better = true unless si_req_best
+              end
+              # Order by name if no other difference.
+              better = si.ref < best.last.ref unless better
+            end
+          end
+        end
+        best = [ prereq, postreq, si ] if better
+      end
+      chosen.push(best.last)
+    end
+    chosen
   end
 end

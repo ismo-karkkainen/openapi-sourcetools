@@ -1,0 +1,66 @@
+####COMMAND Unit tests
+####CODE 0
+####OUT
+ok: remove_subitem: Remove value
+ok: remove_subitem: No last key
+ok: remove_subitem: Other key remains
+ok: remove_subitem: Remove value at root
+ok: remove_subitem: No single key
+ok: remove_subitem: Other key and value remains
+ok: bury: New key inserted
+ok: bury: New item found
+ok: bury: New items along path found
+ok: replace_inlines: Not hash or array
+ok: replace_inlines: Array
+ok: replace_inlines: Added one type
+ok: replace_inlines: Replaced is hash
+ok: replace_inlines: Is reference
+ok: replace_inlines: Added schema is hash
+ok: replace_inlines: Added schema is type: string
+ok: replace_inlines: Hash
+ok: replace_inlines: Added one type
+ok: replace_inlines: Still is hash
+ok: replace_inlines: Has only reference
+ok: replace_inlines: Correct reference
+ok: replace_inlines: Array type
+ok: replace_inlines: Added 2 types
+ok: replace_inlines: Still is hash
+ok: replace_inlines: Has only reference
+ok: replace_inlines: Correct reference
+ok: replace_inlines: Array type with reference
+ok: replace_inlines: Added self
+ok: replace_inlines: Refers to array type
+ok: replace_inlines: Object type ref
+ok: replace_inlines: Added self again
+ok: replace_inlines: Refers to object type
+ok: replace_inlines: Object type string
+ok: replace_inlines: Added one type for string, one for base
+ok: replace_inlines: Correct reference
+ok: replace_inlines: something
+ok: replace_inlines: Added one type from something, one for string
+ok: replace_inlines: Reference for something
+ok: replace_inlines: Correct reference
+ok: replace_inlines: String in schema
+ok: replace_inlines: Other key in schema
+ok: replace_inlines: oneOf with 1
+ok: replace_inlines: Added 2 types from oneOf
+ok: replace_inlines: Correct reference for top-level type
+ok: replace_inlines: Correct reference to string type
+ok: replace_inlines: Other key in schema
+ok: replace_inlines: anyOf with 2
+ok: replace_inlines: Added 2 types from anyOf
+ok: replace_inlines: Correct reference for object type
+ok: replace_inlines: Correct reference to string type
+ok: replace_inlines: Correct second reference for string type
+ok: replace_inlines: Other key in schema
+ok: replace_inlines: allOf with 3
+ok: replace_inlines: Added 4 types from allOf
+ok: replace_inlines: Correct reference for type #[k]
+ok: replace_inlines: Type 0 referes to string type
+ok: replace_inlines: Correct reference for type #[k]
+ok: replace_inlines: Type 1 referes to string type
+ok: replace_inlines: Correct reference for type #[k]
+ok: replace_inlines: Type 2 referes to string type
+ok: replace_inlines: Type key in schema
+ok: replace_inlines: Other key in schema
+####ERR

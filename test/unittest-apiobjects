@@ -1,0 +1,243 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright 2024 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require './unittest.rb'
+require 'yaml'
+
+$unit_test = 0
+load '../lib/apiobjects.rb'
+
+$context = 'same'
+assert(same(1, 'b'), false, 'Number is not string')
+assert(same({ 'b' => 1 }, 'b'), false, 'Hash is not string')
+assert(same(1, { 'b' => 1 }), false, 'Number is not Hash')
+assert(same(1, 1), true, 'Equal numbers')
+a = { a: 5, b: [ 1, 2 ] }
+b = { a: 5, b: 'b' }
+assert(same(a, b), false, 'Different types')
+b = { a: 5, b: [ 1 ] }
+assert(same(a, b), false, 'Different lengths')
+b = { a: 5, b: [ 1, 2 ], c: 'c' }
+assert(same(a, b), false, 'Different keys')
+b = { a: 5, b: [ 1, 2 ] }
+assert(same(a, b), true, 'Same contents')
+b = { a: 5, b: [ 1, 2 ], 'summary' =>'foo' }
+assert(same(a, b), true, 'Same contents ignoring summary')
+b = { a: 5, b: [ 1, 2 ], 'description' => 'foo' }
+assert(same(a, b), true, 'Same contents ignoring description')
+b = { a: 5, b: [ 1, 2 ], 'summary' => 'foo', 'description' => 'bar' }
+assert(same(a, b), true, 'Same contents ignoring description and summary')
+
+$context = 'reference'
+a = { a: 5, b: [ 1, 2 ] }
+b = { a: 5, b: 'b' }
+s = { 'bref' => b }
+path = 'testing'
+r = reference(a, s, path)
+assert(s.size, 2, 'New name added')
+r = reference(a.merge({ 'summary' => 'foo' }), s, path)
+r2 = reference(a, s, path)
+assert(r, r2, 'Same object yields same reference')
+assert(s.size, 2, 'No new name added')
+r = reference(b, s, path)
+assert(s.size, 2, 'No new name added either')
+s = { 'bref' => b }
+prefix = 'Prefix'
+path = 'testing'
+r = reference(b, s, 'testing', Set.new(%w[summary description]), prefix)
+assert(s.size, 1, 'No new name added with prefix')
+r = reference(a, s, 'testing', Set.new(%w[summary description]), prefix)
+assert(s.size, 2, 'New reference added with prefix')
+assert(r.start_with?("#{path}/#{prefix}"), true, 'Reference starts with prefix')
+
+$context = 'Components.reference'
+path = 'testing'
+prefix = 'Prefix'
+cmp = Components.new(path, prefix)
+a = { a: 5, b: [ 1, 2 ] }
+b = { a: 5, b: 'b' }
+cmp.items = { 'bref' => b }
+r = cmp.reference(a)
+s = cmp.items
+assert(s.size, 2, 'New name added')
+r = cmp.reference(a.merge({ 'summary' => 'foo' }))
+r2 = cmp.reference(a)
+assert(r, r2, 'Same object yields same reference')
+assert(s.size, 2, 'No new name added')
+r = cmp.reference(b)
+assert(s.size, 2, 'No new name added either')
+cmp.items = { 'bref' => b }
+r = cmp.reference(b)
+s = cmp.items
+assert(s.size, 1, 'No new name added with prefix')
+r = cmp.reference(a)
+assert(s.size, 2, 'New reference added with prefix')
+assert(r.start_with?("#{path}/#{prefix}"), true, 'Reference starts with prefix')
+
+$context = 'gather_array_refs'
+items = YAML.safe_load(%(
+---
+- noref: value
+- $ref: ref1
+- noref: value
+  $ref: ref2
+- $ref: ref3
+))
+r = {}
+gather_array_refs(r, items, false)
+assert(r['ref1'], false, 'ref1 present on not required')
+assert(r['ref2'], false, 'ref2 present on not required')
+assert(r['ref3'], false, 'ref3 present on not required')
+r = { 'ref1' => true, 'ref2' => false }
+gather_array_refs(r, items, false)
+assert(r['ref1'], true, 'ref1 present on not required, pre-filled')
+assert(r['ref2'], false, 'ref2 present on not required, pre-filled')
+assert(r['ref3'], false, 'ref3 present on not required, pre-filled')
+r = { 'ref1' => true, 'ref2' => false }
+gather_array_refs(r, items, true)
+assert(r['ref1'], true, 'ref1 present on required, pre-filled')
+assert(r['ref2'], true, 'ref2 present on required, pre-filled')
+assert(r['ref3'], true, 'ref3 present on required, pre-filled')
+r = {}
+gather_array_refs(r, items, true)
+assert(r['ref1'], true, 'ref1 present on required')
+assert(r['ref2'], true, 'ref2 present on required')
+assert(r['ref3'], true, 'ref3 present on required')
+
+$context = 'gather_refs'
+r = { 'rc' => true }
+s = YAML.safe_load(%(
+---
+required:
+- a
+properties:
+  a:
+    $ref: ra
+  b:
+    $ref: rb
+  c:
+    $ref: rc
+))
+gather_refs(r, s)
+assert(r['ra'], true, 'ra found')
+assert(r['rb'], false, 'rb found')
+assert(r['rc'], true, 'rc found')
+
+$context = 'SchemaInfo:initialize'
+spec = YAML.safe_load(%(
+---
+components:
+  schemas:
+    Solo:
+      foo: bar
+    RefSolo:
+      properties:
+        foo:
+          $ref: Solo
+    Second:
+      type: something
+      properties:
+        foo:
+          $ref: Solo
+    LoopA:
+      allOf:
+      - $ref: Second
+      - $ref: LoopB
+    LoopB:
+      anyOf:
+      - $ref: LoopA
+      - $ref: Solo
+    LoopC:
+      properties:
+        foo:
+          $ref: LoopD
+    LoopD:
+      properties:
+        foo:
+          $ref: LoopE
+    LoopE:
+      properties:
+        foo:
+          $ref: LoopC
+    Loop1:
+      properties:
+        foo:
+          $ref: Loop2
+    Loop6:
+      properties:
+        foo:
+          $ref: Loop1
+    Loop2:
+      properties:
+        foo:
+          $ref: Loop3
+    Loop5:
+      properties:
+        foo:
+          $ref: Loop6
+    Loop3:
+      properties:
+        foo:
+          $ref: Loop4
+    Loop4:
+      properties:
+        foo:
+          $ref: Loop5
+))
+schemas = {}
+path = %w[components schemas]
+spec.dig(*path).each do |name, schema|
+  si = SchemaInfo.new("ref#{name}", name, schema)
+  schemas[name] = si
+  assert(si.ref.end_with?(name), true, "#{name} ends ref")
+end
+dr = schemas['Solo'].direct_refs
+assert(dr.empty?, true, 'Solo has no direct refs')
+dr = schemas['RefSolo'].direct_refs
+assert(dr.size, 1, 'RefSolo has one direct ref')
+assert(dr.member?('Solo'), true, 'RefSolo refers to Solo')
+dr = schemas['Second'].direct_refs
+assert(dr.size, 1, 'Second has one direct ref')
+assert(dr.member?('Solo'), true, 'Second refers to Solo')
+dr = schemas['LoopA'].direct_refs
+assert(dr.size, 2, 'LoopA has two direct refs')
+assert(dr.member?('Second'), true, 'LoopA refers to Second')
+assert(dr.member?('LoopB'), true, 'LoopA refers to LoopB')
+dr = schemas['LoopB'].direct_refs
+assert(dr.size, 2, 'LoopB has two direct refs')
+assert(dr.member?('Solo'), true, 'LoopB refers to Solo')
+assert(dr.member?('LoopA'), true, 'LoopB refers to LoopA')
+dr = schemas['LoopC'].direct_refs
+assert(dr.size, 1, 'LoopC has one direct ref')
+assert(dr.member?('LoopD'), true, 'LoopC refers to LoopD')
+dr = schemas['LoopD'].direct_refs
+assert(dr.size, 1, 'LoopD has one direct ref')
+assert(dr.member?('LoopE'), true, 'LoopD refers to LoopE')
+
+$context = 'var_or_method_value'
+class Tester
+  attr_reader :attribute
+
+  def initialize
+    @attribute = 'a'
+  end
+
+  def method
+    'x'
+  end
+end
+t = Tester.new
+assert(var_or_method_value(t, 'attribute'), t.attribute, 'attribute found')
+assert(var_or_method_value(t, '@attribute'), t.attribute, '@attribute found')
+assert(var_or_method_value(t, 'method'), t.method, 'method found')
+begin
+  var_or_method_value(t, 'missing')
+  assert(true, false, 'missing did not throw')
+rescue Exception => e
+  assert(e.class.name, 'ArgumentError', 'missing name throws ArgumentError')
+end
+
+exit $unit_test

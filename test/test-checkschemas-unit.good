@@ -1,0 +1,16 @@
+####COMMAND Unit tests
+####CODE 0
+####OUT
+ok: typesame: Different strings are not equal
+ok: typesame: Same strings are equal
+ok: typesame: Hash and array not equal
+ok: typesame: Schema equals itself
+ok: typesame: Schemas equal, changed property name
+ok: typesame: Schemas equal, ignored field
+ok: typesame: Schemas not equal, not required field
+ok: typesame: Schemas not equal, reverse order
+ok: typesame: Schemas equal, not required
+ok: typesame: Schemas equal, not required reversed
+ok: typesame: Schemas not equal, extra field
+ok: typesame: Schemas not equal, extra field reversed
+####ERR

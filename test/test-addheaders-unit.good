@@ -1,0 +1,10 @@
+####COMMAND Unit tests
+####CODE 0
+####OUT
+ok: replace_headers: Ref1 made
+ok: replace_headers: Ref2 made
+ok: replace_headers: Ref2 made
+ok: replace_headers: Same ref
+ok: replace_headers: Ref remains
+ok: replace_headers: 1 header added
+####ERR

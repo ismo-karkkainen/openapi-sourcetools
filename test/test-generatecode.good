@@ -2,24 +2,13 @@
 ####CODE 2
 ####OUT
 ####ERR
-Could not load /in/valid
-####COMMAND Invalid template file
+Could not load ./in/valid
+####COMMAND Invalid tasks file
 ####CODE 2
 ####OUT
 ####ERR
-Could not load /in/valid
-####COMMAND Invalid output file
-####CODE 1
-####OUT
-####ERR
-Failed to open for writing: /in/valid
-####COMMAND Proper input files
+Could not load ./in/valid
+####COMMAND Invalid output directory
 ####CODE 0
 ####OUT
-# Some text.
-####ERR
-####COMMAND Files via env
-####CODE 0
-####OUT
-# Some text.
 ####ERR

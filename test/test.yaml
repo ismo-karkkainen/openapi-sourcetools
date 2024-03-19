@@ -1,0 +1,133 @@
+---
+openapi: 3.1.0
+info:
+  title: SomeAPI
+  version: 1.0.0
+  description: |
+    Test API doc.
+  license:
+    name: UPL
+    url: https://opensource.org/license/upl
+tags:
+- name: action
+  description: Action taken.
+- name: health
+  description: Health checks.
+servers: []
+paths:
+  "/act":
+    post:
+      tags:
+      - action
+      summary: Action summary
+      description: Action description.
+      operationId: postAction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Request body description.
+              type: object
+              required:
+              - field
+              properties:
+                field:
+                  description: Field description.
+                  type: string
+                  pattern: "^(?:[A-Za-z\\d+/]{4})+(?:[A-Za-z\\d+/]{3}=|[A-Za-z\\d+/]{2}==)?$"
+                  minLength: 32
+                  maxLength: 1024
+                another:
+                  description: Another description.
+                  type: string
+                  pattern: ".+"
+                  minLength: 1
+                  maxLength: 32768
+        required: true
+      responses:
+        '204':
+          description: Empty reply when payload ok.
+        '403':
+          description: Error response with an error object, possibly empty.
+          headers:
+            headername:
+              description: Description of the header.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                description: Whatever is deemed appropriate, if anything.
+                type: object
+        '404':
+          description: Error response with an error object, possibly empty.
+          content:
+            application/json:
+              schema:
+                description: Whatever is deemed appropriate, if anything.
+                type: object
+              examples:
+                name:
+                  summary: Summary.
+                  value: any
+        '500':
+          description: Error response with an error object, possibly empty.
+          content:
+            application/json:
+              schema:
+                description: Whatever is deemed appropriate, if anything.
+                type: object
+  "/health":
+    get:
+      tags:
+      - health
+      summary: Health check
+      description: Health check description.
+      operationId: healthCheck
+      responses:
+        '204':
+          description: Empty reply on health check.
+        '403':
+          description: Error response with an error object, possibly empty.
+          headers:
+            headername:
+              description: Header description.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                description: Whatever is deemed appropriate, if anything.
+                type: object
+        '404':
+          description: Error response with an error object, possibly empty.
+          content:
+            application/json:
+              schema:
+                description: Whatever is deemed appropriate, if anything.
+                type: object
+        '405':
+          description: Error response with an error object, possibly empty.
+          headers:
+            headername:
+              description: Header description.
+              schema:
+                type: string
+              example: string
+          content:
+            application/json:
+              schema:
+                description: Whatever is deemed appropriate, if anything.
+                type: object
+        '500':
+          description: Error response with an error object, possibly empty.
+          content:
+            application/json:
+              schema:
+                description: Whatever is deemed appropriate, if anything.
+                type: object
+              examples:
+                name:
+                  summary: yrammuS
+                  value:
+                    key: value

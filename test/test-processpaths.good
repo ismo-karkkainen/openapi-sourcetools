@@ -25,7 +25,7 @@ paths:
     orig: {}
     lookalike: []
 ####ERR
-####COMMAND YAML
+####COMMAND Simple output
 ####CODE 0
 ####OUT
 ---
@@ -41,21 +41,6 @@ paths:
     orig: {}
     lookalike: []
 ####ERR
-####COMMAND JSON
-####CODE 0
-####OUT
-{"paths":{"/test":{"parts":["test"],"orig":{},"lookalike":[]},"/present":{"parts":["present"],"orig":{},"lookalike":[]}}}
-####ERR
-####COMMAND JSON via env
-####CODE 0
-####OUT
-{"paths":{"/test":{"parts":["test"],"orig":{},"lookalike":[]},"/present":{"parts":["present"],"orig":{},"lookalike":[]}}}
-####ERR
-####COMMAND Invalid format
-####CODE 1
-####OUT
-####ERR
-Format neither JSON nor YAML: INVALID
 ####COMMAND Conflicting paths
 ####CODE 4
 ####OUT

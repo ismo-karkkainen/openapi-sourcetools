@@ -9,8 +9,11 @@ Tools for generating source code from API specification in OpenAPI format.
 )
   s.authors     = [ 'Ismo Kärkkäinen' ]
   s.email       = 'ismokarkkainen@icloud.com'
-  s.files       = [ 'lib/common.rb', 'LICENSE.txt' ]
-  s.executables << 'openapi-addschemes'
+  s.files       = [ 'lib/common.rb', 'lib/apiobjects.rb', 'LICENSE.txt' ]
+  s.executables << 'openapi-addheaders'
+  s.executables << 'openapi-addresponses'
+  s.executables << 'openapi-addschemas'
+  s.executables << 'openapi-checkschemas'
   s.executables << 'openapi-frequencies'
   s.executables << 'openapi-merge'
   s.executables << 'openapi-processpaths'

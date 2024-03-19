@@ -1,0 +1,11 @@
+---
+tasks:
+- files: [ relative-names ]
+  all: true
+  select:
+    paths: regex
+- files: []
+  all: false
+  select:
+    components:
+      schemas: regex

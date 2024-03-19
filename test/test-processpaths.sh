@@ -29,32 +29,8 @@ cat x o
 echo "####ERR"
 cat e
 
-echo "####COMMAND YAML"
+echo "####COMMAND Simple output"
 $M --input small.yaml >o 2>e
-echo "####CODE $?"
-echo "####OUT"
-cat o
-echo "####ERR"
-cat e
-
-echo "####COMMAND JSON"
-$M --input small.yaml --json >o 2>e
-echo "####CODE $?"
-echo "####OUT"
-cat o
-echo "####ERR"
-cat e
-
-echo "####COMMAND JSON via env"
-FORMAT=JSON $M --input small.yaml >o 2>e
-echo "####CODE $?"
-echo "####OUT"
-cat o
-echo "####ERR"
-cat e
-
-echo "####COMMAND Invalid format"
-FORMAT=INVALID $M --input small.yaml >o 2>e
 echo "####CODE $?"
 echo "####OUT"
 cat o

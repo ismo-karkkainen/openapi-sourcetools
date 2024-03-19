@@ -97,6 +97,7 @@ match all regular expressions are selected.
   return 2 if t.nil?
   a = load_source(input_name)
   return 2 if a.nil?
+  return 0
   $generator = Generator.new(a, t)
 
   # Not really proper code.

@@ -1,0 +1,15 @@
+####COMMAND Unit tests
+####CODE 0
+####OUT
+ok: replace_responses: Ref1 made
+ok: replace_responses: Ref retained
+ok: replace_responses: Ref2 made
+ok: replace_responses: 2 references added
+ok: replace_responses: Ref made
+ok: replace_responses: Ref not made
+ok: replace_responses: Ref exists
+ok: replace_responses: Same reference
+ok: replace_responses: Same reference again
+ok: replace_responses: Ref 2 exists
+ok: replace_responses: Same reference 2
+####ERR

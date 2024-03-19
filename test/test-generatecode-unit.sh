@@ -2,7 +2,7 @@
 
 (
 echo "####COMMAND Unit tests"
-./unittest-addschemas >o 2>e
+./unittest-apiobjects >o 2>e
 echo "####CODE $?"
 echo "####OUT"
 cat o

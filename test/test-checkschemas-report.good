@@ -1,0 +1,32 @@
+####COMMAND Input and output
+####CODE 0
+####OUT
+---
+equivalent:
+  Schema0b:
+  - Schema0x
+  Schema0x:
+  - Schema0b
+typematch:
+  Schema0b:
+  - Schema0x
+  Schema0x:
+  - Schema0b
+  Schema2b:
+  - Schema2x
+  Schema2x:
+  - Schema2b
+reference:
+  "#/components/schemas/Schema0b":
+  - components/schemas/Schema2c/properties/foo
+  "#/components/schemas/Schema0x":
+  - components/schemas/Schema2b/properties/foo
+  - components/schemas/Schema2x/properties/field
+  "#/components/schemas/Schema2x":
+  - paths//root/{par}/get/responses/200/content/application/json/schema
+  - paths//something/post/requestBody/content/application/json/schema
+count:
+  "#/components/schemas/Schema0b": 1
+  "#/components/schemas/Schema0x": 2
+  "#/components/schemas/Schema2x": 2
+####ERR

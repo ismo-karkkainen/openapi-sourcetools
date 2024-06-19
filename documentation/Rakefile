@@ -1,0 +1,39 @@
+# frozen_string_literal: true
+
+require 'rubocop/rake_task'
+
+def osd(suffix)
+  "openapi-sourcetools-documentation#{suffix}"
+end
+
+task default: [:install]
+
+desc 'Clean.'
+task :clean do
+  sh "rm -f #{osd('-*.gem')}"
+end
+
+desc 'Build gem.'
+task gem: [:clean] do
+  sh "gem build #{osd('.gemspec')}"
+end
+
+desc 'Build and install gem.'
+task install: [:gem] do
+  sh "gem install #{osd('-*.gem')}"
+end
+
+desc 'Diagram template'
+task :template do
+  sh "diagrammatron-template --out template/diagram_template.yaml --root diagram/root.yaml template diagram/svg_1.1.erb"
+end
+
+desc 'Test.'
+task :test do
+  sh './test.sh'
+end
+
+desc 'Lint using Rubocop'
+RuboCop::RakeTask.new(:lint) do |t|
+  t.patterns = [ 'lib', osd('.gemspec') ]
+end

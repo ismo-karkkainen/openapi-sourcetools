@@ -1,0 +1,96 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright 2024 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require 'set'
+
+module Gen
+  attr_accessor :items
+  module_function :items, :items=
+  attr_accessor :writes
+  module_function :writes, :writes=
+  attr_accessor :doc
+  module_function :doc, :doc=
+
+  def self.add(source:, template:, template_name:)
+    @items.push({ source: source, template: template, template_name: template_name })
+  end
+
+  def self.add_write_content(name:, content:, executable: false)
+    @writes.push({ name: name, content: content, executable: executable })
+  end
+end
+
+Gen.items = []
+Gen.writes = []
+Gen.doc = 'doc'
+
+require_relative '../../shared/unittest'
+require_relative '../lib/tasks'
+
+$context = 'template_names'
+tns = `ls ../template/*.erb | sort`.lines.sort!.map { |n| File.basename(n).strip! }
+r = OpenAPISourceToolsDocumentation.template_names
+assert(r.size, tns.size, 'Same number of files')
+seen = Set.new
+tns.each do |name|
+  assert(seen.member?(name), false, "#{name} not seen before")
+  seen.add(name)
+  assert(r.include?(name), true, "#{name} is in template names")
+end
+r.each do |name|
+  assert(tns.include?(name), true, "#{name} is in listed files")
+end
+
+$context = 'write_content_names'
+tns = `ls ../template/*.yaml | sort`.lines.sort!.map { |n| File.basename(n).strip! }
+r = OpenAPISourceToolsDocumentation.write_content_names
+assert(r.size, tns.size, 'Same number of files')
+seen = Set.new
+tns.each do |name|
+  assert(seen.member?(name), false, "#{name} not seen before")
+  seen.add(name)
+  assert(r.include?(name), true, "#{name} is in content names")
+end
+r.each do |name|
+  assert(tns.include?(name), true, "#{name} is in listed files")
+end
+
+$context = 'load'
+def get_content(name)
+  `cat ../template/#{name}`
+end
+OpenAPISourceToolsDocumentation.template_names.each do |name|
+  c = get_content(name)
+  r = OpenAPISourceToolsDocumentation.load(name)
+  assert(r, c, "Template #{name} contents loaded")
+end
+OpenAPISourceToolsDocumentation.write_content_names.each do |name|
+  c = get_content(name)
+  r = OpenAPISourceToolsDocumentation.load(name)
+  assert(r, c, "#{name} contents loaded")
+end
+
+$context = 'Gen'
+tns = OpenAPISourceToolsDocumentation.template_names
+assert(Gen.items.size, tns.size, 'Tasks added')
+# Also checks that the order is the same.
+Gen.items.size.times do |k|
+  item = Gen.items[k]
+  name = tns[k]
+  assert(name, item[:template_name], "#{name} was added as item #{k}")
+  c = get_content(name)
+  assert(c, item[:template], "#{name} content is ok")
+  assert(item[:source], Gen.doc, 'Document is in place')
+end
+tns = OpenAPISourceToolsDocumentation.write_content_names
+assert(Gen.writes.size, tns.size, 'Tasks added')
+# Also checks that the order is the same.
+Gen.writes.size.times do |k|
+  item = Gen.writes[k]
+  name = tns[k]
+  assert(name, item[:name], "#{name} was added as item #{k}")
+  assert(item[:content].nil?, false, "#{name} content is present")
+end

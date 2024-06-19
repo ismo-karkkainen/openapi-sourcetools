@@ -1,0 +1,92 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright 2024 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../../shared/unittest'
+require 'yaml'
+
+$unit_test = 0
+load '../bin/openapi-checkschemas'
+
+def ref(path, name)
+  "#{path}/#{name}"
+end
+
+$context = 'typesame'
+ign = Set.new(%w[summary description])
+assert(typesame('a', 'b', ign), false, 'Different strings are not equal')
+assert(typesame('a', 'a', ign), true, 'Same strings are equal')
+assert(typesame({ a: 1 }, [ 'b' ], ign), false, 'Hash and array not equal')
+a = YAML.safe_load(%(
+---
+type: object
+required:
+- a
+properties:
+  a:
+    $ref: 'reference'
+))
+assert(typesame(a, a, ign), true, 'Schema equals itself')
+b = YAML.safe_load(%(
+---
+type: object
+required:
+- b
+properties:
+  b:
+    $ref: 'reference'
+))
+assert(typesame(a, b, ign), true, 'Schemas equal, changed property name')
+b = YAML.safe_load(%(
+---
+type: object
+required:
+- b
+properties:
+  b:
+    $ref: 'reference'
+    #{ign.to_a.first}: ignored
+))
+assert(typesame(a, b, ign), true, 'Schemas equal, ignored field')
+b = YAML.safe_load(%(
+---
+type: object
+properties:
+  a:
+    $ref: 'reference'
+))
+assert(typesame(a, b, ign), false, 'Schemas not equal, not required field')
+assert(typesame(b, a, ign), false, 'Schemas not equal, reverse order')
+a = YAML.safe_load(%(
+---
+type: object
+properties:
+  a:
+    $ref: 'reference'
+))
+b = YAML.safe_load(%(
+---
+type: object
+properties:
+  b:
+    $ref: 'reference'
+))
+assert(typesame(a, b, ign), true, 'Schemas equal, not required')
+assert(typesame(b, a, ign), true, 'Schemas equal, not required reversed')
+b = YAML.safe_load(%(
+---
+type: object
+required:
+- c
+properties:
+  b:
+    $ref: 'reference'
+  c:
+    type: string
+))
+assert(typesame(a, b, ign), false, 'Schemas not equal, extra field')
+assert(typesame(b, a, ign), false, 'Schemas not equal, extra field reversed')
+
+exit $unit_test

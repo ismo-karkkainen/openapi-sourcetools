@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright 2024 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../../shared/unittest'
+require 'yaml'
+
+$unit_test = 0
+load '../lib/gen.rb'
+
+$context = 'setup'
+Gen.setup('doc', 'dir/name.ext', 'outdir')
+assert(Gen.doc, 'doc', 'doc set')
+assert(Gen.outdir, 'outdir', 'outdir set')
+assert(Gen.in_name, 'name.ext', 'in_name set')
+assert(Gen.in_basename, 'name', 'in_basename set')
+assert(Gen.tasks.is_a?(Array), true, 'tasks set')
+assert(Gen.tasks.size, 1, 'tasks has default task')
+assert(Gen.g.is_a?(Hash), true, 'g set')
+assert(Gen.a.nil?, true, 'a set')
+assert(Gen.t.nil?, true, 't set')
+assert(Gen.task_index.nil?, true, 'task_index set')
+assert(Gen.loaders.is_a?(Array), true, 'loaders set')
+assert(Gen.loaders.empty?, true, 'loaders is empty')
+Gen.setup('doc', nil, 'outdir')
+assert(Gen.in_name.nil?, true, 'in_name not set')
+assert(Gen.in_basename.nil?, true, 'in_basename not set')
+
+exit $unit_test

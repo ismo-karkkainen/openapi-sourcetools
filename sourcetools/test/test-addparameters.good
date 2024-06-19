@@ -1,0 +1,67 @@
+####COMMAND Invalid output file
+####CODE 3
+####OUT
+####ERR
+No such file or directory @ rb_sysopen - ./in/valid
+Failed to write output: ./in/valid
+####COMMAND Invalid input file
+####CODE 2
+####OUT
+####ERR
+Could not load ./in/valid
+####COMMAND Output file
+####CODE 0
+####OUT
+---
+openapi: 3.1.0
+####ERR
+####COMMAND No input file
+####CODE 2
+####OUT
+####ERR
+####COMMAND Input and output
+####CODE 0
+####OUT
+---
+openapi: 3.1.0
+info:
+  title: SomeAPI
+  version: 1.0.0
+  description: Test stuff
+  license:
+    name: UPL 1.0
+    url: https://opensource.org/license/UPL
+tags:
+- name: test
+  description: Only for testing purposes.
+paths:
+  "/root":
+    parameters:
+    - "$ref": "#/components/parameters/Parameter0x"
+    get:
+      parameters:
+      - "$ref": "#/components/parameters/Param1"
+  "/something":
+    parameters:
+    - "$ref": "#/components/parameters/Param1"
+    post:
+      parameters:
+      - "$ref": "#/components/parameters/Parameter1x"
+components:
+  parameters:
+    Param1:
+      name: add
+      in: path
+      schema:
+        "$ref": "#/components/schemas/Name2"
+    Parameter0x:
+      name: top
+      in: path
+      schema:
+        "$ref": "#/components/schemas/Name"
+    Parameter1x:
+      name: other
+      in: header
+      schema:
+        "$ref": "#/components/schemas/Name"
+####ERR

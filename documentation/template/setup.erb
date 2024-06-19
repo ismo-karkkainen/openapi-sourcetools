@@ -1,0 +1,17 @@
+<%=
+class SharedInfo
+  attr_reader :base, :diagram_name, :diagram_base
+
+  def initialize
+    pcs = []
+    pcs.push(Gen.in_basename) unless Gen.in_basename.nil?
+    pcs.push(Gen.doc.dig('info', 'title') || 'untitled') if pcs.empty?
+    @base = pcs.join('_')
+    pcs.push('diagram')
+    @diagram_base = pcs.join('_')
+    @diagram_name = "#{@diagram_base}.yaml"
+  end
+end
+Gen.a = SharedInfo.new
+Gen.t.discard = true
+%>

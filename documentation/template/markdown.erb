@@ -1,0 +1,305 @@
+# <%=
+Gen.t.name = "#{Gen.a.base}.md"
+Gen.t.src.dig('info', 'title') || 'Untitled'
+%>
+
+<%=
+out = []
+v = Gen.t.src.dig('info', 'summary')
+out.push("Summary: #{v}") unless v.nil?
+v = Gen.t.src.dig('info', 'version')
+out.push("Version #{v}") unless v.nil?
+v = Gen.t.src.dig('info', 'description')
+out.push(v) unless v.nil?
+v = Gen.t.src.dig('info', 'termsOfService')
+out.push("Terms of service: #{v}") unless v.nil?
+v = Gen.t.src.dig('info', 'license', 'name')
+u = Gen.t.src.dig('info', 'license', 'url')
+out.push("License name: #{v} and URL: #{u}") unless v.nil? || u.nil?
+v = Gen.t.src.dig('openapi')
+out.push("OpenAPI version #{v}") unless v.nil?
+out.join("\n\n")
+%>
+
+## Schemas
+
+<%=
+def find_prefix(item, prefix)
+  item.keys.sort!.each do |key|
+    return item[key] if key.start_with?(prefix)
+  end
+  nil
+end
+
+def range_description(min, max, prop = 'length')
+  if min.nil?
+    return "unspecified #{prop}" if max.nil?
+    return "maximum #{prop} of #{max}"
+  end
+  return "minimum #{prop} of #{min}" if max.nil?
+  "#{prop} in range [#{min}, #{max}]"
+end
+
+out = []
+s = Gen.t.src.dig('components', 'schemas')
+s.keys.sort!.each do |name|
+  schema = s[name]
+  out.push("### #{name}")
+  %w[summary description].each do |field|
+    v = schema[field]
+    out.push(v) unless v.nil? || out.last == v
+  end
+  t = schema['type']
+  min = find_prefix(schema, 'min')
+  max = find_prefix(schema, 'max')
+  len = range_description(min, max)
+  if t == 'object'
+    # Loop over properties and indicate which one is required.
+    reqs = schema.fetch('required', [])
+    props = schema.fetch('properties', {})
+    o = [ 'Properties:' ]
+    props.keys.sort!.each do |prop|
+      p = props[prop]
+      r = p['$ref'] || 'unspecified'
+      idx = r.rindex('/')
+      r = r[(idx + 1)...(r.size)] unless idx.nil?
+      o.push("- #{prop}#{reqs.include?(prop) ? ' (required)' : ''}: #{r}")
+    end
+    o = [ 'Object properties unspecified.' ] if o.size == 1
+    out.push(o.join("\n"))
+  elsif t == 'array'
+    # Array lengths and item type.
+    c = 'items'
+    it = schema.dig('items', '$ref')
+    unless it.nil?
+      idx = it.rindex('/') || -1
+      c = it[(idx + 1)...(it.size)]
+    end
+    out.push("Array of #{len} containing #{c}.")
+  elsif t == 'string'
+    # String lengths and pattern.
+    p = 'unspecified content.'
+    pat = schema['pattern']
+    p = "matching pattern: #{pat}" unless pat.nil?
+    out.push("String of #{len}, #{p}")
+  else
+    # Some kind of minimum and maximum for a scalar.
+    range = range_description(min, max, 'value')
+    f = schema['format']
+    f = f.nil? ? '' : " of format #{f}."
+    out.push("#{range.capitalize!}#{f}")
+  end
+end
+out.join("\n\n")
+%>
+
+## Headers
+
+<%=
+def schema_name(item)
+  s = item['schema']
+  return nil if s.nil?
+  r = s['$ref']
+  idx = r.rindex('/')
+  r = r[(idx + 1)...(r.size)] unless idx.nil?
+  r
+end
+
+def content(item)
+  c = item['content']
+  return nil if c.nil?
+  out = []
+  c.keys.sort!.each do |type|
+    t = c[type]
+    out.push("#{type}: #{schema_name(t)}")
+  end
+  c.join("\n")
+end
+
+out = []
+
+h = Gen.t.src.dig('components', 'headers')
+h.keys.sort!.each do |name|
+  item = h[name]
+  out.push("### #{name}#{item.fetch('required', false) ? ' (required)' : ''}#{item.fetch('deprecated', false) ? ' (deprecated)' : ''}")
+  out.push(item.fetch('description', 'No description.'))
+  s = schema_name(item)
+  out.push("Schema: #{s}") unless s.nil?
+  c = content(item)
+  out.push("Content: #{c}") unless c.nil?
+end
+
+out.join("\n\n")
+%>
+
+## Responses
+
+<%=
+def ref_name(r)
+  r = r['$ref']
+  return nil if r.nil?
+  idx = r.rindex('/')
+  r = r[(idx + 1)...(r.size)] unless idx.nil?
+  r
+end
+
+def schema_name(item)
+  s = item['schema']
+  return nil if s.nil?
+  ref_name(s)
+end
+
+def headers(item)
+  h = item['headers']
+  return nil if h.nil?
+  out = []
+  h.keys.sort!.each do |name|
+    r = h[name]
+    rn = ref_name(r)
+    if name == rn
+      out.push("- #{name}")
+    else
+      out.push("- #{name}: #{rn}")
+    end
+  end
+  out.join("\n")
+end
+
+def content(item)
+  c = item['content']
+  return nil if c.nil?
+  out = []
+  c.keys.sort!.each do |type|
+    t = c[type]
+    out.push("#{type}: #{schema_name(t)}")
+  end
+  out.join("\n")
+end
+
+out = []
+
+r = Gen.t.src.dig('components', 'responses')
+r.keys.sort!.each do |name|
+  item = r[name]
+  out.push("### #{name}")
+  out.push(item.fetch('description', 'No description.').strip)
+  h = headers(item)
+  out.push("Headers:\n#{h}") unless h.nil?
+  c = content(item)
+  out.push("Content: #{c}") unless c.nil?
+end
+
+out.join("\n\n")
+%>
+
+## Parameters
+
+<%=
+def ref_name(item)
+  Gen.h.basename(item['schema'])
+end
+
+out = []
+
+params = Gen.doc.dig('components', 'parameters') || {}
+params.keys.sort!.each do |key|
+  item = params[key]
+  out.push("### #{key}#{item.fetch('required', false) ? ' (required)' : ''}#{item.fetch('deprecated', false) ? ' (deprecated)' : ''}")
+  out.push("#{item['name']} in #{item['in']}")
+  out.push(item.fetch('description', 'No description.').strip)
+end
+
+out.join("\n\n")
+%>
+
+## Paths
+
+<%=
+def ref_name(item)
+  Gen.h.basename(item['schema'])
+end
+
+def headers(item)
+  h = item['headers']
+  return nil if h.nil?
+  out = []
+  h.keys.sort!.each do |name|
+    r = h[name]
+    out.push("#{name}: #{r['$ref']}")
+  end
+  out.join("\n")
+end
+
+def content(item)
+  c = item['content']
+  return nil if c.nil?
+  out = []
+  c.keys.sort!.each do |type|
+    t = c[type]
+    out.push("#{type}: #{ref_name(t)}")
+  end
+  out.join("\n")
+end
+
+def parameters(item)
+  p = Gen.h.parameters(item, true)
+  return nil if p.empty?
+  out = []
+  p.each do |ref|
+    par = Gen.h.dereference(ref)
+    out.push("- #{par['name']}#{par.fetch('required', false) ? ' (required)' : ''}#{par.fetch('deprecated', false) ? ' (deprecated)' : ''} in #{par['in']}")
+    d = par['description']
+    out.push("  #{d.strip}") unless d.nil?
+    r = ref_name(par)
+    out.push("  #{r.strip}") unless r.nil?
+  end
+  out.join("\n")
+end
+
+out = []
+
+skip = %w[$ref summary description servers parameters]
+paths = Gen.t.src.fetch('paths', {})
+paths.keys.sort!.each do |path|
+  item = paths[path]
+  out.push("### #{path}")
+  s = item['summary']
+  out.push(s) unless s.nil?
+  out.push(item.fetch('description', 'No description.').strip)
+  ops_have_params = (item.keys.reject { |k| skip.include?(k) }).index { |k| item[k].key?('parameters') }
+  if ops_have_params.nil?
+    p = parameters(item)
+    unless p.nil?
+      out.push('#### Parameters')
+      out.push(p)
+    end
+  end
+  item.keys.sort!.each do |op|
+    next if skip.include?(op)
+    oo = item[op]
+    s = oo['operationId']
+    out.push("#### #{op.upcase}#{s.nil? ? '' : ' ' + s}#{oo.fetch('deprecated', false) ? ' (deprecated)' : ''}")
+    s = oo['summary']
+    out.push(s) unless s.nil?
+    out.push(oo.fetch('description', 'No description.').strip)
+    p = parameters(oo)
+    out.push(p) unless p.nil?
+    rb = oo['requestBody']
+    unless rb.nil?
+      out.push("##### Request body#{rb.fetch('required', false) ? ' (required)' : ''}")
+      d = rb['description']
+      out.push(d.strip) unless d.nil?
+      c = content(rb)
+      out.push(c) unless c.nil?
+    end
+  end
+  h = headers(item)
+  out.push("Headers:\n#{h}") unless h.nil?
+  c = content(item)
+  out.push("Content:\n#{c}") unless c.nil?
+end
+
+out.join("\n\n")
+%>
+
+<%= "Generated using #{Gen.g['gem_name']} version #{Gen.g['gem_version']}" %>

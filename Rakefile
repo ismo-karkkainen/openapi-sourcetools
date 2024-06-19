@@ -2,67 +2,26 @@
 
 require 'rubocop/rake_task'
 
-task default: [:install]
+def run_in_subdirs(cmd)
+  %w[sourcetools documentation].each do |d|
+    sh "cd #{d} && #{cmd}"
+  end
+end
+
+task default: [:test, :gems]
 
 desc 'Clean.'
 task :clean do
-  `rm -f openapi-sourcetools-*.gem`
+  sh 'rm -f *.gem'
+  run_in_subdirs('rake clean')
 end
 
-desc 'Build gem.'
-task gem: [:clean] do
-  `gem build openapi-sourcetools.gemspec`
-end
-
-desc 'Build and install gem.'
-task install: [:gem] do
-  `gem install openapi-sourcetools-*.gem`
+desc 'Build gems.'
+task gems: [:clean] do
+  run_in_subdirs('rake gem && mv *.gem ..')
 end
 
 desc 'Test.'
-task test: %i[testmerge testprocesspaths testfrequencies testaddschemas testaddresponses testaddheaders testcheckschemas testgeneratecode]
-
-desc 'Test merge.'
-task :testmerge do
-  sh './test.sh merge'
-end
-
-desc 'Test processpaths.'
-task :testprocesspaths do
-  sh './test.sh processpaths'
-end
-
-desc 'Test frequencies.'
-task :testfrequencies do
-  sh './test.sh frequencies'
-end
-
-desc 'Test addschemas.'
-task :testaddschemas do
-  sh './test.sh addschemas'
-end
-
-desc 'Test addresponses.'
-task :testaddresponses do
-  sh './test.sh addresponses'
-end
-
-desc 'Test addheaders.'
-task :testaddheaders do
-  sh './test.sh addheaders'
-end
-
-desc 'Test checkschemas.'
-task :testcheckschemas do
-  sh './test.sh checkschemas'
-end
-
-desc 'Test generatecode.'
-task :testgeneratecode do
-  sh './test.sh generatecode'
-end
-
-desc 'Lint using Rubocop'
-RuboCop::RakeTask.new(:lint) do |t|
-  t.patterns = [ 'bin', 'lib', 'openapi-sourcetools.gemspec' ]
+task :test do
+  run_in_subdirs('rake test')
 end

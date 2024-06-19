@@ -50,6 +50,15 @@ identical.
 You should run openapi-addschemas beforehand to ensure that practically
 identical schemas have been replaced with identical references.
 
+## openapi-addparameters
+
+Checks for presence of parameter definitions under paths. For any definition
+found, adds a definition under components/parameters and replaces the original
+with a reference.
+
+You should run openapi-addschemas beforehand to ensure that practically
+identical schemas have been replaced with identical references.
+
 ## openapi-addresponses
 
 Checks for presence of response definitions under paths. For any definition
@@ -72,6 +81,18 @@ with a reference.
 This does not change existing schemas declared at level immediately under
 components/schemas that are practically identical to refer to one of them.
 The properties of objects will be changed to references.
+
+## openapi-generate
+
+Loads code that processes the OpenAPI format document and produces output.
+Increasingly intended to just manage things rather than to do actual work.
+
+Loaded code can add tasks during load time. After everything has been loaded,
+the tasks are run. Task would usually produce output but can omit it.
+
+Sub-directory documentation has the start of a gem that produces some kind of
+documentation about the document. A markdown file and source diagam files
+for diagrammatron are produced.
 
 ## openapi-merge
 
@@ -99,10 +120,6 @@ openapi-checkschemas is for giving the user some information about types.
 
 openapi-oftypes is intended for gathering information and making checks that
 the code generation for allOf, oneOf, and anyOf becomes simpler.
-
-openapi-generatecode is turning to something that helps in orchestrating the
-code generation processing. Duplicate checks have been separated into other
-programs to keep this simpler, in part.
 
 ## License
 

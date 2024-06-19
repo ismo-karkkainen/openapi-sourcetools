@@ -1,0 +1,16 @@
+####COMMAND Unit tests
+####CODE 0
+####OUT
+ok: replace_parameter: Same returned when not a hash
+ok: replace_parameter: Output has b
+ok: replace_parameter: Same returned when has ref
+ok: replace_parameter: Ref returned
+ok: replace_parameter: Only ref
+ok: replace_parameter: Ref in components
+ok: replace_parameters: Ref1 made
+ok: replace_parameters: Ref2 made
+ok: replace_parameters: Same ref
+ok: replace_parameters: Ref3 same as ref1
+ok: replace_parameters: Ref remains
+ok: replace_parameters: Ref added
+####ERR

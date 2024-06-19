@@ -1,0 +1,62 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright 2024 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../../shared/unittest'
+require 'yaml'
+
+$unit_test = 0
+load '../lib/loaders.rb'
+
+$context = 'loaders'
+ldrs = Loaders.loaders
+assert(ldrs.empty?, false, 'Has loaders')
+ldrs.each do |ldr|
+  assert(ldr.is_a?(Method), true, 'Loader is a method')
+end
+
+$context = 'gem_loader'
+begin
+  Loaders.gem_loader('gem:asoifgasdbvc')
+  assert(true, false, 'Exception not raised')
+rescue Exception => e
+  assert(e.is_a?(StandardError), true, 'Standard error raised')
+end
+begin
+  assert(Loaders.gem_loader('not_a_gem'), false, 'Rejects plain name')
+rescue Exception => e
+  assert(true, false, "Exception #{e}")
+end
+begin
+  assert(Loaders.gem_loader('gem:rake'), true, 'Gem loaded')
+rescue Exception => e
+  assert(true, false, "Exception #{e}")
+end
+
+$context = 'ruby_loader'
+begin
+  Loaders.ruby_loader('../test-generate/unittest-loaders-error.rb')
+  assert(true, false, 'Exception not raised')
+rescue Exception => e
+  assert(e.is_a?(StandardError), true, 'Standard error raised on error in file')
+end
+begin
+  Loaders.ruby_loader('unittest-loaders-missing.rb')
+  assert(true, false, 'Exception not raised')
+rescue Exception => e
+  assert(e.is_a?(StandardError), true, 'Standard error raised on missing file')
+end
+begin
+  assert(Loaders.ruby_loader('not_handled.so'), false, 'Rejects other name')
+rescue Exception => e
+  assert(true, false, "Exception #{e}")
+end
+begin
+  assert(Loaders.ruby_loader('../test-generate/unittest-loaders-ok.rb'), true, 'File loaded')
+rescue Exception => e
+  assert(true, false, "Exception #{e}")
+end
+
+exit $unit_test

@@ -1,0 +1,59 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright © 2021-2024 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../lib/common'
+require_relative '../lib/loaders'
+require_relative '../lib/gen'
+require_relative '../lib/generate'
+require 'optparse'
+require 'yaml'
+
+
+def main
+  input_name = nil
+  output_dir = nil
+
+  ENV['POSIXLY_CORRECT'] = '1'
+  parser = OptionParser.new do |opts|
+    opts.summary_indent = '  '
+    opts.summary_width = 26
+    opts.banner = 'Usage: openapi-generate [options] generator-names...'
+    opts.separator ''
+    opts.separator 'Options:'
+    opts.on('-i', '--input FILE', 'Read processed API from FILE, not stdin.') do |f|
+      input_name = f
+    end
+    opts.on('-o', '--outdir DIR', 'Output directory.') do |d|
+      output_dir = d
+    end
+    opts.on('-h', '--help', 'Print this help and exit.') do
+      $stdout.puts %(#{opts}
+Loads API document in OpenAPI format and generator names. Built-in generator
+loaders accept the following:
+#{Loaders.document.strip}
+
+During load each generator can add and modify tasks via Gen module:
+#{Gen.document.strip}
+
+After all generators have loaded succesfully, tasks are run.
+)
+      exit 0
+    end
+  end
+  parser.parse!
+
+  return aargh('Generator names must be given.', 1) if ARGV.empty?
+
+  a = load_source(input_name)
+  return 2 if a.nil?
+  return aargh("Not a directory: #{output_dir}", 3) unless File.directory?(output_dir)
+  gen = Generator.new(a, input_name, output_dir)
+  ec = gen.load(ARGV)
+  return ec unless ec.zero?
+  gen.run
+end
+
+exit(main) if defined?($unit_test).nil?

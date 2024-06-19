@@ -1,0 +1,32 @@
+styles:
+  diagram:
+    default:
+      edge_gap: 20
+      width_margin: 10
+      height_margin: 10
+  node:
+    default:
+      width_margin: 10
+      height_margin: 10
+      font_size: 16
+      font_ascend: 0.8
+      font_line_spacing: 0.2
+      font_height: 1
+      font_width: 0.5
+      font_fill: "#000000"
+      url_fill: "#000000"
+      fill: "#ffffff"
+      stroke: "#000000"
+      stroke_width: 2
+      depth: 0
+      size_estimator: |
+        $render.default_size($render.node['font_size'],
+        $render.node['font_width'], $render.node['font_height'],
+        $render.node['font_line_spacing'],
+        $render.node['width_margin'], $render.node['height_margin'],
+        $render.doc['diagram']['edge_gap'])
+  edge:
+    default:
+      stroke_width: 2
+      stroke: "#000000"
+      depth: 0

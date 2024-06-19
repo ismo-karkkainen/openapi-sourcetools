@@ -1,0 +1,166 @@
+####COMMAND Unit tests
+####CODE 0
+####OUT
+ok: same: Number is not string
+ok: same: Hash is not string
+ok: same: Number is not Hash
+ok: same: Equal numbers
+ok: same: Different types
+ok: same: Different lengths
+ok: same: Different keys
+ok: same: Same contents
+ok: same: Same contents ignoring summary
+ok: same: Same contents ignoring description
+ok: same: Same contents ignoring description and summary
+ok: reference: New name added
+ok: reference: Same object yields same reference
+ok: reference: No new name added
+ok: reference: No new name added either
+ok: reference: No new name added with prefix
+ok: reference: New reference added with prefix
+ok: reference: Reference starts with prefix
+ok: Components.reference: New name added
+ok: Components.reference: Same object yields same reference
+ok: Components.reference: No new name added
+ok: Components.reference: No new name added either
+ok: Components.reference: No new name added with prefix
+ok: Components.reference: New reference added with prefix
+ok: Components.reference: Reference starts with prefix
+ok: gather_array_refs: ref1 present on not required
+ok: gather_array_refs: ref2 present on not required
+ok: gather_array_refs: ref3 present on not required
+ok: gather_array_refs: ref1 present on not required, pre-filled
+ok: gather_array_refs: ref2 present on not required, pre-filled
+ok: gather_array_refs: ref3 present on not required, pre-filled
+ok: gather_array_refs: ref1 present on required, pre-filled
+ok: gather_array_refs: ref2 present on required, pre-filled
+ok: gather_array_refs: ref3 present on required, pre-filled
+ok: gather_array_refs: ref1 present on required
+ok: gather_array_refs: ref2 present on required
+ok: gather_array_refs: ref3 present on required
+ok: gather_refs: ra found
+ok: gather_refs: rb found
+ok: gather_refs: rc found
+ok: SchemaInfo:initialize: Solo ends ref
+ok: SchemaInfo:initialize: RefSolo ends ref
+ok: SchemaInfo:initialize: Second ends ref
+ok: SchemaInfo:initialize: LoopA ends ref
+ok: SchemaInfo:initialize: LoopB ends ref
+ok: SchemaInfo:initialize: LoopC ends ref
+ok: SchemaInfo:initialize: LoopD ends ref
+ok: SchemaInfo:initialize: LoopE ends ref
+ok: SchemaInfo:initialize: Loop1 ends ref
+ok: SchemaInfo:initialize: Loop6 ends ref
+ok: SchemaInfo:initialize: Loop2 ends ref
+ok: SchemaInfo:initialize: Loop5 ends ref
+ok: SchemaInfo:initialize: Loop3 ends ref
+ok: SchemaInfo:initialize: Loop4 ends ref
+ok: SchemaInfo:initialize: Solo has no direct refs
+ok: SchemaInfo:initialize: RefSolo has one direct ref
+ok: SchemaInfo:initialize: RefSolo refers to Solo
+ok: SchemaInfo:initialize: Second has one direct ref
+ok: SchemaInfo:initialize: Second refers to Solo
+ok: SchemaInfo:initialize: LoopA has two direct refs
+ok: SchemaInfo:initialize: LoopA refers to Second
+ok: SchemaInfo:initialize: LoopA refers to LoopB
+ok: SchemaInfo:initialize: LoopB has two direct refs
+ok: SchemaInfo:initialize: LoopB refers to Solo
+ok: SchemaInfo:initialize: LoopB refers to LoopA
+ok: SchemaInfo:initialize: LoopC has one direct ref
+ok: SchemaInfo:initialize: LoopC refers to LoopD
+ok: SchemaInfo:initialize: LoopD has one direct ref
+ok: SchemaInfo:initialize: LoopD refers to LoopE
+ok: var_or_method_value: attribute found
+ok: var_or_method_value: @attribute found
+ok: var_or_method_value: method found
+ok: var_or_method_value: missing name throws ArgumentError
+####ERR
+####COMMAND Loaders unit tests
+####CODE 0
+####OUT
+ok: loaders: Has loaders
+ok: loaders: Loader is a method
+ok: loaders: Loader is a method
+ok: gem_loader: Standard error raised
+ok: gem_loader: Rejects plain name
+ok: gem_loader: Gem loaded
+ok: ruby_loader: Standard error raised on error in file
+ok: ruby_loader: Standard error raised on missing file
+ok: ruby_loader: Rejects other name
+ok: ruby_loader: Changed to loaded file directory
+ok: ruby_loader: File loaded
+####ERR
+####COMMAND Task unit tests
+####CODE 0
+####OUT
+ok: initialize: No template info raises ArgumentError
+ok: initialize: Source set
+ok: initialize: Template name set
+ok: initialize: Template loaded
+ok: initialize: No name
+ok: initialize: Not executable
+ok: initialize: Not discarded
+ok: initialize: x not set
+ok: initialize: Source set
+ok: initialize: Template name set
+ok: initialize: Template stored
+ok: internal_generate: Gen defined
+ok: internal_generate: Returns expected value
+ok: internal_generate: Exception raised
+ok: generate: Gen defined
+ok: generate: Returns expected value
+ok: generate: Internal exception handled
+ok: output_name: Gen defined
+ok: output_name: Output name present
+ok: output_name: Output name returned
+ok: output_name: Gen defined
+ok: output_name: Output name not set
+ok: output_name: Template name used
+ok: output_name: Gen defined
+ok: output_name: Output name not set
+ok: output_name: No template name to use
+ok: WriteTask: nil arguments raise ArgumentError
+ok: WriteTask: nil name raises ArgumentError
+ok: WriteTask: nil contents raise ArgumentError
+ok: WriteTask: Name set
+ok: WriteTask: output_name ok
+ok: WriteTask: Contents returned
+ok: WriteTask: Not executable
+####ERR
+).to_s); _erbout.<< "\n".freeze
+      ^
+	from lib/task.rb:58:in `internal_generate'
+	from lib/task.rb:65:in `generate'
+	from ./unittest-task:73:in `<main>'
+####COMMAND Gen unit tests
+####CODE 0
+####OUT
+ok: setup: doc set
+ok: setup: outdir set
+ok: setup: in_name set
+ok: setup: in_basename set
+ok: setup: tasks set
+ok: setup: tasks has default task
+ok: setup: g set
+ok: setup: a set
+ok: setup: t set
+ok: setup: task_index set
+ok: setup: loaders set
+ok: setup: loaders is empty
+ok: setup: in_name not set
+ok: setup: in_basename not set
+####ERR
+####COMMAND Generate unit tests
+####CODE 0
+####OUT
+ok: executable_bits_on: all exe on
+ok: executable_bits_on: ug exe on
+ok: executable_bits_on: u exe on
+ok: executable_bits_on: unchanged
+ok: executable_bits_on: a exe on
+ok: executable_bits_on: short u exe on
+ok: executable_bits_on: all rwx
+ok: executable_bits_on: o exe on
+ok: executable_bits_on: unchanged
+ok: executable_bits_on: too short bu exe on
+####ERR

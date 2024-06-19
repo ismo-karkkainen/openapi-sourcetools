@@ -1,0 +1,203 @@
+<%=
+require 'yaml'
+require 'set'
+
+Gen.t.name = Gen.a.diagram_name
+
+doc = {}
+nodes = []
+edges = []
+refs = {}
+ref2edges = {}
+
+def ref_style(ref)
+  return 'schema' if ref.start_with?('#/components/schemas/')
+  return 'header' if ref.start_with?('#/components/headers/')
+  return 'response' if ref.start_with?('#/components/responses/')
+  nil
+end
+
+def response_style(code)
+  code = code.to_s unless code.is_a?(String)
+  return 'info' if code.start_with?('1')
+  return 'success' if code.start_with?('2')
+  return 'redirect' if code.start_with?('3')
+  return 'error' if code.start_with?('4')
+  return 'internal' if code.start_with?('5')
+  nil
+end
+
+def add_edges(edges, self_ref, obj, seen = Set.new)
+  if obj.is_a?(Array)
+    obj.each { |item| add_edges(edges, self_ref, item, seen) }
+  elsif obj.is_a?(Hash)
+    obj.each do |key, value|
+      if value.is_a?(String)
+        s = ref_style(value)
+        next if s.nil?
+        next if seen.member?(value)
+        seen.add(value)
+        edges.push({
+          between: [ self_ref, value ],
+          style: [ s ],
+          subset: [ s ]
+        })
+        next
+      end
+      add_edges(edges, self_ref, value, seen)
+    end
+  end
+end
+
+comps = Gen.t.src.fetch('components', {})
+xo = 1
+%w[schemas headers responses].each do |category|
+  style = ref_style("#/components/#{category}/Name")
+  comps.fetch(category, {}).each do |name, item|
+    nodes.push({
+      label: "#/components/#{category}/#{name}",
+      text: name,
+      style: [ style ],
+      subset: [ style ],
+      xo: xo
+    })
+    refs[nodes.last[:label]] = nodes.last
+    old = edges.size
+    add_edges(edges, nodes.last[:label], item)
+    ref2edges[nodes.last[:label]] = old < edges.size ? edges.slice(old...edges.size) : []
+  end
+  xo += 1
+end
+
+Gen.t.src.fetch('paths', {}).each do |path, po|
+  path_params = po['parameters']
+  po.each do |method, op|
+    next unless op.is_a?(Hash)
+    params = op['parameters']
+    resps = op['responses']
+    next if resps.nil?
+    nodes.push({
+      text: "#{path}:#{method.upcase}",
+      label: "#{path}:#{method}",
+      style: [ 'request' ],
+      subset: [ 'request' ],
+      xo: xo
+    })
+    add_edges(edges, nodes.last[:label], path_params) unless path_params.nil?
+    add_edges(edges, nodes.last[:label], params) unless params.nil?
+    resps.each do |code, ref_obj|
+      s = response_style(code)
+      next if s.nil?
+      ref = ref_obj['$ref']
+      next if ref.nil? # Should not happen.
+      node = refs[ref]
+      next if node.nil? # Should have added all responses as nodes.
+      #node[:style].push(s) unless node[:style].include?(s)
+      node[:subset].push(s) unless node[:subset].include?(s)
+      ref2edges[ref].each do |edge|
+        #edge[:style].push(s) unless edge[:style].include?(s)
+        edge[:subset].push(s) unless edge[:subset].include?(s)
+        aref = (edge[:between].reject { |label| label == ref }).first
+        adj = refs[aref]
+        #adj[:style].push(s) unless adj[:style].include?(s)
+        adj[:subset].push(s) unless adj[:subset].include?(s)
+      end
+    end
+    add_edges(edges, nodes.last[:label], op)
+  end
+end
+
+order = %w[success request error internal redirect info]
+[ nodes, edges ].each do |items|
+  items.each do |item|
+    styles = item[:style].reject { |style| order.include?(style) }
+    limited = item[:style].select { |style| order.include?(style) }
+    item[:style] = styles
+    next if limited.empty?
+    first = {}
+    limited.each { |name| first[order.index(name)] = name }
+    styles.push(first[first.keys.min])
+  end
+end
+
+def symbol2string(items)
+  items.map do |item|
+    result = {}
+    item.each do |key, value|
+      result[key.to_s] = value
+    end
+    result
+  end
+end
+
+doc['nodes'] = symbol2string(nodes)
+doc['edges'] = symbol2string(edges)
+
+YAML.dump(doc)
+%>
+styles:
+  diagram:
+    default:
+      edge_gap: 20
+      width_margin: 10
+      height_margin: 10
+  node:
+    default:
+      width_margin: 10
+      height_margin: 10
+      font_size: 16
+      font_ascend: 0.8
+      font_line_spacing: 0.2
+      font_height: 1
+      font_width: 0.5
+      font_fill: "#000000"
+      url_fill: "#000000"
+      fill: "#ffffff"
+      stroke: "#000000"
+      stroke_width: 2
+      depth: 0
+      size_estimator: |
+        $render.default_size($render.node['font_size'],
+        $render.node['font_width'], $render.node['font_height'],
+        $render.node['font_line_spacing'],
+        $render.node['width_margin'], $render.node['height_margin'],
+        $render.doc['diagram']['edge_gap'])
+    parameter:
+      fill: "#cfcfcf"
+    header:
+      fill: "#bfbfbf"
+    schema:
+      fill: "#dfdfdf"
+    response:
+      fill: "#efefef"
+    request:
+      stroke: "#0000ff"
+    success:
+      stroke: "#000000"
+    info:
+      stroke: "#00ff00"
+    redirect:
+      stroke: "#00ffff"
+    error:
+      stroke: "#ff0000"
+    internal:
+      stroke: "#ff00ff"
+  edge:
+    default:
+      stroke_width: 2
+      stroke: "#000000"
+      depth: 0
+    success:
+      stroke: "#000000"
+      depth: 1
+    info:
+      stroke: "#00ff00"
+    redirect:
+      stroke: "#00ffff"
+      depth: 4
+    error:
+      stroke: "#ff0000"
+      depth: 2
+    internal:
+      stroke: "#ff00ff"
+      depth: 3

@@ -1,0 +1,90 @@
+#!/bin/sh
+
+cd $(dirname $0)
+
+export R=$(mktemp)
+
+# Run in a subshell so that temporary files get deleted.
+(
+set -eu
+
+cat <<EOF > "$R"
+---
+expressions:
+- name: schemas
+  expression: schema
+- name: successes
+  expression: success + schema + header + response - error - internal - redirect - info
+- name: errors
+  expression: error + internal
+sets:
+- name: header
+  any:
+  - name: subset
+    rules: [ header ]
+- name: schema
+  any:
+  - name: subset
+    rules: [ schema ]
+- name: response
+  any:
+  - name: subset
+    rules: [ response ]
+- name: request
+  any:
+  - name: subset
+    rules: [ request ]
+- name: success
+  any:
+  - name: subset
+    rules: [ success ]
+- name: info
+  any:
+  - name: subset
+    rules: [ info ]
+- name: redirect
+  any:
+  - name: subset
+    rules: [ redirect ]
+- name: error
+  any:
+  - name: subset
+    rules: [ error ]
+- name: internal
+  any:
+  - name: subset
+    rules: [ internal ]
+EOF
+<%=
+diagram = Gen.a.diagram_name
+base = Gen.a.base
+Gen.t.name = base + '.sh'
+Gen.t.executable = true
+
+out = %w[schemas successes errors].map do |exp|
+  %(
+echo 'Diagram for #{exp}.'
+cat '#{diagram}' |
+diagrammatron-subset --select '#{exp}' "$R" |
+diagrammatron-nodes |
+diagrammatron-edges |
+diagrammatron-place |
+diagrammatron-render -t diagram_template.yaml -o '#{base}_#{exp}.svg'
+)
+end
+
+out.push(%(
+echo 'Full diagram.'
+cat '#{diagram}' |
+diagrammatron-nodes |
+diagrammatron-edges |
+diagrammatron-place |
+diagrammatron-render -t diagram_template.yaml -o '#{base}.svg'
+))
+
+out.join("\n")
+%>
+)
+E=$?
+rm -f "$R"
+exit $E

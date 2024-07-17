@@ -13,6 +13,8 @@ module Gen
   module_function :writes, :writes=
   attr_accessor :doc
   module_function :doc, :doc=
+  attr_accessor :g
+  module_function :g, :g=
 
   def self.add(source:, template:, template_name:)
     @items.push({ source: source, template: template, template_name: template_name })
@@ -26,6 +28,7 @@ end
 Gen.items = []
 Gen.writes = []
 Gen.doc = 'doc'
+Gen.g = {}
 
 require_relative '../../shared/unittest'
 require_relative '../lib/tasks'

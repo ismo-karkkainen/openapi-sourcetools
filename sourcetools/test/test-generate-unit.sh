@@ -23,7 +23,7 @@ echo "####CODE $?"
 echo "####OUT"
 cat o | sed "s#$(dirname $PWD)/##g"
 echo "####ERR"
-cat e | grep -v 'erb.rb' | sed "s#$(dirname $PWD)/##g"
+cat e | grep -v 'erb.rb' | sed "s#$(dirname $PWD)/##g" | head -n 1
 
 echo "####COMMAND Gen unit tests"
 ./unittest-gen >o 2>e

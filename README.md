@@ -12,9 +12,9 @@ The purpose of openapi-merge is to avoid duplication of parts between
 documents. Only one in this category but proved useful.
 
 The various openapi-addsomething programs are intended to ensure there is only
-one copy of each practically identical schema, header, and response. Besides
-avoiding duplicated definitions, they also ensure that code generation does
-not need to check if same type has already been declared.
+one copy of each practically identical schema, header, parameter, and response.
+Besides avoiding duplicated definitions, they also ensure that code generation
+does not need to check if same type has already been declared.
 
 The practically identical is from a programming point of view. Summary,
 description, and examples are ignored by default.
@@ -93,6 +93,16 @@ the tasks are run. Task would usually produce output but can omit it.
 Sub-directory documentation has the start of a gem that produces some kind of
 documentation about the document. A markdown file and source diagam files
 for diagrammatron are produced.
+
+The input document can in practice be anything that YAML module can load.
+There is a helper task that by default is added first. Since processors loaded
+later can modify the tasks list, it can be removed and replaced with something
+else. Hence this might be useful in processing other YAML documents besides
+API as originally intended. Main benefit in running all together is that the
+tasks can pass information between each other. Processing same file multiple
+times would have to rely on code producing exactly same results with regard to
+variable naming etc. Remains to be seen if this should be elsewhere or if there
+is something that does the job already.
 
 ## openapi-merge
 

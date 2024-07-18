@@ -128,10 +128,6 @@ ok: WriteTask: Contents returned
 ok: WriteTask: Not executable
 ####ERR
 ).to_s); _erbout.<< "\n".freeze
-      ^
-	from lib/task.rb:58:in `internal_generate'
-	from lib/task.rb:65:in `generate'
-	from ./unittest-task:73:in `<main>'
 ####COMMAND Gen unit tests
 ####CODE 0
 ####OUT

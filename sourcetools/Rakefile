@@ -20,7 +20,12 @@ task install: [:gem] do
 end
 
 desc 'Test.'
-task test: %i[testmerge testprocesspaths testfrequencies testaddschemas testaddresponses testaddheaders testaddparameters testcheckschemas testgenerate]
+task test: %i[testmodifypaths testmerge testprocesspaths testfrequencies testaddschemas testaddresponses testaddheaders testaddparameters testcheckschemas testgenerate]
+
+desc 'Test modifypaths.'
+task :testmodifypaths do
+  sh './test.sh modifypaths'
+end
 
 desc 'Test merge.'
 task :testmerge do

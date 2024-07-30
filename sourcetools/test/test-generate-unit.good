@@ -75,10 +75,84 @@ ok: var_or_method_value: @attribute found
 ok: var_or_method_value: method found
 ok: var_or_method_value: missing name throws ArgumentError
 ####ERR
+####COMMAND Docs unit tests
+####CODE 0
+####OUT
+ok: add: Added name
+ok: add: Stored ok
+ok: add: Not added
+ok: add: Stored still ok
+ok: add: Unset name
+####ERR
+####COMMAND Output unit tests
+####CODE 0
+####OUT
+ok: join: correct number of lines
+ok: join: indented 1
+ok: join: indented 3
+ok: join: indented 3 again
+ok: join: indented 1 less
+ok: join: not indented
+ok: join: indented by step
+ok: join: indented step less
+ok: join: indented same as previous
+ok: join: indented two steps more
+ok: join: indented same
+ok: join: last indent set
+ok: join: 5 lines
+ok: join: not indented
+ok: join: indented 1
+ok: join: indented 4 and replaced
+ok: join: indented 2 and replaced
+ok: join: indented 5, replaced 2
+ok: join: last indent 0 after nil
+####ERR
+####COMMAND Helper unit tests
+####CODE 0
+####OUT
+ok: store_parents/parent: Top level no parent
+ok: store_parents/parent: single parent is top
+ok: store_parents/parent: Offspring third parent is top
+ok: store_parents/parent: Offspring fourth parent is top
+ok: store_parents/parent: Child first parent is single
+ok: store_parents/parent: Child second parent is single
+ok: store_parents/parent: Child first2 parent is first
+ok: store_parents/parent: Other object has no parent
+ok: store_parents/parent: Keys have no parent
+ok: store_parents/parent: String value has no parent
+ok: category_and_name: Not string
+ok: category_and_name: ref not string
+ok: category_and_name: Not reference string
+ok: category_and_name: ref not reference string
+ok: category_and_name: Not reference string
+ok: category_and_name: category found
+ok: category_and_name: name found
+ok: category_and_name: category found again
+ok: category_and_name: name found again
+ok: dereference: invalid
+ok: dereference: no category
+ok: dereference: no name
+ok: dereference: valid
+ok: basename: invalid
+ok: basename: missing part
+ok: basename: name returned
+ok: parameters: no parameters
+ok: parameters: one parameter
+ok: parameters: name matches
+ok: parameters: one parameter
+ok: parameters: name matches
+ok: parameters: two parameters
+ok: parameters: name matches
+ok: parameters: name matches
+ok: parameters: no local parameters
+ok: parameters: no local parameters
+####ERR
 ####COMMAND Loaders unit tests
 ####CODE 0
 ####OUT
 ok: loaders: Has loaders
+ok: loaders: Loader is a method
+ok: loaders: Loader is a method
 ok: loaders: Loader is a method
 ok: loaders: Loader is a method
 ok: gem_loader: Standard error raised
@@ -89,6 +163,21 @@ ok: ruby_loader: Standard error raised on missing file
 ok: ruby_loader: Rejects other name
 ok: ruby_loader: Changed to loaded file directory
 ok: ruby_loader: File loaded
+ok: yaml_loader: No filename
+ok: yaml_loader: No name
+ok: yaml_loader: No name, no prefix
+ok: yaml_loader: Standard error raised
+ok: yaml_loader: Rejects plain name
+ok: yaml_loader: File loaded
+ok: yaml_loader: name defined
+ok: yaml_loader: File loaded with extension
+ok: yaml_loader: ext defined
+ok: bin_loader: No filename
+ok: bin_loader: No name
+ok: bin_loader: Standard error raised
+ok: bin_loader: Rejects plain name
+ok: bin_loader: File loaded
+ok: bin_loader: test defined
 ####ERR
 ####COMMAND Task unit tests
 ####CODE 0
@@ -131,20 +220,30 @@ ok: WriteTask: Not executable
 ####COMMAND Gen unit tests
 ####CODE 0
 ####OUT
+ok: mod_attr_reader: Has read-only attribute.
+ok: mod_attr_accessor: Has readable attribute.
+ok: mod_attr_accessor: Has writable attribute.
+ok: dafaults: doc nil
+ok: dafaults: outdir nil
+ok: dafaults: docs set
+ok: dafaults: in_name nil
+ok: dafaults: in_basename nil
+ok: dafaults: tasks set
+ok: dafaults: tasks is empty
+ok: dafaults: g set
+ok: dafaults: g is empty
+ok: dafaults: a nil
+ok: dafaults: h nil
+ok: dafaults: t nil
+ok: dafaults: task_index nil
+ok: dafaults: loaders set
+ok: dafaults: loaders is empty
 ok: setup: doc set
 ok: setup: outdir set
 ok: setup: in_name set
 ok: setup: in_basename set
 ok: setup: tasks set
 ok: setup: tasks has default task
-ok: setup: g set
-ok: setup: a set
-ok: setup: t set
-ok: setup: task_index set
-ok: setup: loaders set
-ok: setup: loaders is empty
-ok: setup: in_name not set
-ok: setup: in_basename not set
 ####ERR
 ####COMMAND Generate unit tests
 ####CODE 0

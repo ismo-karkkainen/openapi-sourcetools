@@ -54,6 +54,7 @@ rescue StandardError => e
 end
 
 def dump_result(output, doc, error_return)
+  doc = YAML.dump(doc, line_width: 1_000_000) unless doc.is_a?(String)
   if output.nil?
     $stdout.puts doc
   else

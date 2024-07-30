@@ -98,7 +98,7 @@ Loads API document in OpenAPI format and adds a schema for each inline type.
   return 4 unless replace_inlines(doc, components)
   bury(doc, path, components.items) unless components.items.empty?
 
-  dump_result(output_name, YAML.dump(doc, line_width: 1_000_000), 3)
+  dump_result(output_name, doc, 3)
 end
 
 exit(main) if (defined? $unit_test).nil?

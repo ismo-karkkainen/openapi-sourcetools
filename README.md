@@ -112,6 +112,10 @@ Intended use is to keep common components in one file and add them to
 multiple API documents to avoid information duplication. Also
 applies to adding health check path or similar.
 
+## openapi-modifypaths
+
+Takes a document and allows, adding, deleting, or replacing path prefixes.
+
 ## openapi-processpaths
 
 Splits paths into parts that are fixed or have a variable. Paths that do not

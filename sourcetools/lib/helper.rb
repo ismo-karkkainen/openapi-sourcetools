@@ -10,7 +10,7 @@ class Helper
   attr_reader :doc, :parents
   attr_accessor :parent_parameters
 
-  # Stores the nearesh Hash for each Hash.
+  # Stores the nearest Hash for each Hash.
   def store_parents(obj, parent = nil)
     if obj.is_a?(Hash)
       @parents[obj.object_id] = parent
@@ -26,8 +26,6 @@ class Helper
 
   def initialize(doc)
     @doc = doc
-    # For each hash in doc, set parent?
-    # Build an object_id to parent object mapping and use parent method?
     @parents = {}
     store_parents(@doc)
   end

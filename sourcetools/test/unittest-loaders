@@ -5,10 +5,17 @@
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
 require_relative '../../shared/unittest'
+require_relative '../lib/docs'
 require 'yaml'
 
 $unit_test = 0
 load '../lib/loaders.rb'
+
+module Gen
+  attr_accessor(:d)
+  module_function(:d)
+  module_function((:d.to_s + '=').to_sym)
+end
 
 $context = 'loaders'
 ldrs = Loaders.loaders
@@ -55,6 +62,82 @@ rescue Exception => e
 end
 begin
   assert(Loaders.ruby_loader('../test-generate/unittest-loaders-ok.rb'), true, 'File loaded')
+rescue Exception => e
+  assert(true, false, "Exception #{e}")
+end
+
+$context = 'yaml_loader'
+Gen.d = Docs.new
+begin
+  Loaders.yaml_loader('yaml:name:')
+  assert(true, false, 'Exception not raised')
+rescue Exception => e
+  assert(e.is_a?(StandardError), true, 'No filename')
+end
+begin
+  Loaders.yaml_loader('yaml::../test-generate/processed.yaml')
+  assert(true, false, 'Exception not raised')
+rescue Exception => e
+  assert(e.is_a?(StandardError), true, 'No name')
+end
+begin
+  Loaders.yaml_loader(':../test-generate/processed.yaml')
+  assert(true, false, 'Exception not raised')
+rescue Exception => e
+  assert(e.is_a?(StandardError), true, 'No name, no prefix')
+end
+begin
+  Loaders.yaml_loader('yaml:name:asoifgasdbvc')
+  assert(true, false, 'Exception not raised')
+rescue Exception => e
+  assert(e.is_a?(StandardError), true, 'Standard error raised')
+end
+begin
+  assert(Loaders.yaml_loader('not_yaml'), false, 'Rejects plain name')
+rescue Exception => e
+  assert(true, false, "Exception #{e}")
+end
+begin
+  assert(Loaders.yaml_loader('yaml:name:../test-generate/processed.yaml'), true, 'File loaded')
+  assert(Gen.d.name.nil?, false, 'name defined')
+rescue Exception => e
+  assert(true, false, "Exception #{e}")
+end
+begin
+  assert(Loaders.yaml_loader('ext:../test-generate/processed.yaml'), true, 'File loaded with extension')
+  assert(Gen.d.ext.nil?, false, 'ext defined')
+rescue Exception => e
+  assert(true, false, "Exception #{e}")
+end
+
+$context = 'bin_loader'
+Gen.d = Docs.new
+begin
+  Loaders.bin_loader('bin:test:')
+  assert(true, false, 'Exception not raised')
+rescue Exception => e
+  assert(e.is_a?(StandardError), true, 'No filename')
+end
+begin
+  Loaders.bin_loader('bin::../test-generate/processed.yaml')
+  assert(true, false, 'Exception not raised')
+rescue Exception => e
+  assert(e.is_a?(StandardError), true, 'No name')
+end
+begin
+  Loaders.bin_loader('bin:test:iaeugfapsdjbvpsd')
+  assert(true, false, 'Exception not raised')
+rescue Exception => e
+  assert(e.is_a?(StandardError), true, 'Standard error raised')
+end
+begin
+  assert(Loaders.bin_loader('not_bin'), false, 'Rejects plain name')
+rescue Exception => e
+  assert(true, false, "Exception #{e}")
+end
+begin
+  assert(Loaders.bin_loader('bin:test:../test-generate/processed.yaml'), true, 'File loaded')
+  assert(Gen.d.test.nil?, false, 'test defined')
 rescue Exception => e
   assert(true, false, "Exception #{e}")
 end

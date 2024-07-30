@@ -9,6 +9,30 @@ cat o
 echo "####ERR"
 cat e
 
+echo "####COMMAND Docs unit tests"
+./unittest-docs >o 2>e
+echo "####CODE $?"
+echo "####OUT"
+cat o
+echo "####ERR"
+cat e
+
+echo "####COMMAND Output unit tests"
+./unittest-output >o 2>e
+echo "####CODE $?"
+echo "####OUT"
+cat o
+echo "####ERR"
+cat e
+
+echo "####COMMAND Helper unit tests"
+./unittest-helper >o 2>e
+echo "####CODE $?"
+echo "####OUT"
+cat o
+echo "####ERR"
+cat e
+
 echo "####COMMAND Loaders unit tests"
 ./unittest-loaders >o 2>e
 echo "####CODE $?"

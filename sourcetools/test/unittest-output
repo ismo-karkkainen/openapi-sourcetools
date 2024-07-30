@@ -1,0 +1,47 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright 2024 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../../shared/unittest'
+require 'yaml'
+
+$unit_test = 0
+load '../lib/output.rb'
+
+$context = 'join'
+o = Output.new
+src = [ 1, 'a', 2, 'b', 'c', -1, 'd', nil, 'e', true, 'f', false, "g\nh", true, true, "i\nj" ]
+s = o.join(src)
+lines = s.lines(chomp: true)
+assert(lines.size, 10, 'correct number of lines')
+assert(lines[0], ' a', 'indented 1')
+assert(lines[1], '   b', 'indented 3')
+assert(lines[2], '   c', 'indented 3 again')
+assert(lines[3], '  d', 'indented 1 less')
+assert(lines[4], 'e', 'not indented')
+assert(lines[5], '    f', 'indented by step')
+assert(lines[6], 'g', 'indented step less')
+assert(lines[7], 'h', 'indented same as previous')
+assert(lines[8], '        i', 'indented two steps more')
+assert(lines[9], '        j', 'indented same')
+assert(o.last_indent, 8, 'last indent set')
+
+o = Output.new
+o.indent_character = 'xx'
+o.indent_step = 3
+o.tab = 'Y'
+o.tab_replaces_count = 2
+src = [ 'a', 1, 'b', true, 'c', -2, {}, 3, 'd', nil ]
+s = o.join(src)
+lines = s.lines(chomp: true)
+assert(lines.size, 5, '5 lines')
+assert(lines[0], 'a', 'not indented')
+assert(lines[1], 'xxb', 'indented 1')
+assert(lines[2], 'YYc', 'indented 4 and replaced')
+assert(lines[3], 'Y{}', 'indented 2 and replaced')
+assert(lines[4], 'YYxxd', 'indented 5, replaced 2')
+assert(o.last_indent, 0, 'last indent 0 after nil')
+
+exit $unit_test

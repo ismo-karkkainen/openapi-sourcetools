@@ -10,6 +10,43 @@ require 'yaml'
 $unit_test = 0
 load '../lib/gen.rb'
 
+$context = 'mod_attr_reader'
+Gen.mod_attr_reader(:readonly, 'ro-document', 5)
+begin
+  x = Gen.readonly
+  assert(x, 5, 'Has read-only attribute.')
+rescue Exception
+  assert(true, false, 'Attribute access failed')
+end
+
+$context = 'mod_attr_accessor'
+Gen.mod_attr_accessor(:readwrite, nil, 6)
+begin
+  x = Gen.readwrite
+  assert(x, 6, 'Has readable attribute.')
+  Gen.readwrite = 7
+  assert(Gen.readwrite, 7, 'Has writable attribute.')
+rescue Exception
+  assert(true, false, 'Attribute access failed')
+end
+
+$context = 'dafaults'
+assert(Gen.doc.nil?, true, 'doc nil')
+assert(Gen.outdir.nil?, true, 'outdir nil')
+assert(Gen.d.is_a?(Docs), true, 'docs set')
+assert(Gen.in_name.nil?, true, 'in_name nil')
+assert(Gen.in_basename.nil?, true, 'in_basename nil')
+assert(Gen.tasks.is_a?(Array), true, 'tasks set')
+assert(Gen.tasks.empty?, true, 'tasks is empty')
+assert(Gen.g.is_a?(Hash), true, 'g set')
+assert(Gen.g.empty?, true, 'g is empty')
+assert(Gen.a.nil?, true, 'a nil')
+assert(Gen.h.nil?, true, 'h nil')
+assert(Gen.t.nil?, true, 't nil')
+assert(Gen.task_index.nil?, true, 'task_index nil')
+assert(Gen.loaders.is_a?(Array), true, 'loaders set')
+assert(Gen.loaders.empty?, true, 'loaders is empty')
+
 $context = 'setup'
 Gen.setup('doc', 'dir/name.ext', 'outdir')
 assert(Gen.doc, 'doc', 'doc set')
@@ -18,14 +55,5 @@ assert(Gen.in_name, 'name.ext', 'in_name set')
 assert(Gen.in_basename, 'name', 'in_basename set')
 assert(Gen.tasks.is_a?(Array), true, 'tasks set')
 assert(Gen.tasks.size, 1, 'tasks has default task')
-assert(Gen.g.is_a?(Hash), true, 'g set')
-assert(Gen.a.nil?, true, 'a set')
-assert(Gen.t.nil?, true, 't set')
-assert(Gen.task_index.nil?, true, 'task_index set')
-assert(Gen.loaders.is_a?(Array), true, 'loaders set')
-assert(Gen.loaders.empty?, true, 'loaders is empty')
-Gen.setup('doc', nil, 'outdir')
-assert(Gen.in_name.nil?, true, 'in_name not set')
-assert(Gen.in_basename.nil?, true, 'in_basename not set')
 
 exit $unit_test

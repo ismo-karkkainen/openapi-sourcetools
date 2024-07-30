@@ -1,0 +1,140 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright 2024 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../../shared/unittest'
+require 'yaml'
+
+def doc1
+  YAML.safe_load(%(
+---
+name: top
+children:
+  name: single
+  children:
+  - name: first
+    children:
+    - name: first2
+  - name: second
+offspring:
+- name: third
+- name: fourth
+))
+end
+
+$unit_test = 0
+load '../lib/helper.rb'
+
+$context = 'store_parents/parent'
+d = doc1
+h = Helper.new(d)
+assert(h.parent(d).nil?, true, 'Top level no parent')
+assert(h.parent(d['children']), d, 'single parent is top')
+d['offspring'].each do |offs|
+  assert(h.parent(offs), d, "Offspring #{offs['name']} parent is top")
+end
+p = d.dig('children')
+c = p.dig('children')[0]
+assert(h.parent(c), p, "Child #{c['name']} parent is #{p['name']}")
+c = p.dig('children')[1]
+assert(h.parent(c), p, "Child #{c['name']} parent is #{p['name']}")
+p = d.dig('children', 'children')[0]
+c = p.dig('children')[0]
+assert(h.parent(c), p, "Child #{c['name']} parent is #{p['name']}")
+assert(h.parent({}).nil?, true, 'Other object has no parent')
+assert(h.parent(d.keys[0]).nil?, true, 'Keys have no parent')
+assert(h.parent(d.dig('children', 'name')).nil?, true, 'String value has no parent')
+
+$context = 'category_and_name'
+d = doc1
+h = Helper.new(d)
+assert(h.category_and_name([]).nil?, true, 'Not string')
+assert(h.category_and_name({ '$ref' => 1 }).nil?, true, 'ref not string')
+assert(h.category_and_name('not_ref').nil?, true, 'Not reference string')
+assert(h.category_and_name({ '$ref' => 'not_ref' }).nil?, true, 'ref not reference string')
+assert(h.category_and_name('#/components/nothing').nil?, true, 'Not reference string')
+cat, name = h.category_and_name('#/components/cat/name')
+assert(cat, 'cat', 'category found')
+assert(name, 'name', 'name found')
+cat, name = h.category_and_name({ '$ref' => '#/components/cat/name' })
+assert(cat, 'cat', 'category found again')
+assert(name, 'name', 'name found again')
+
+$context = 'dereference'
+def doc2
+  YAML.safe_load(%(
+---
+components:
+  category:
+    name: 5
+))
+end
+d = doc2
+h = Helper.new(d)
+assert(h.dereference('invalid').nil?, true, 'invalid')
+assert(h.dereference('#/components/missing/name').nil?, true, 'no category')
+assert(h.dereference('#/components/category/missing').nil?, true, 'no name')
+assert(h.dereference('#/components/category/name'), 5, 'valid')
+
+$context = 'basename'
+d = doc2
+h = Helper.new(d)
+assert(h.basename('invalid').nil?, true, 'invalid')
+assert(h.basename('#/components/partial').nil?, true, 'missing part')
+assert(h.basename('#/components/cat/name'), 'name', 'name returned')
+
+$context = 'parameters'
+def doc3
+  YAML.safe_load(%(
+---
+paths:
+  "/no/parameter":
+    put:
+      something: else
+    get:
+      parameters:
+      - "$ref": "#/components/parameters/param3"
+  "/parent/parameter":
+    parameters:
+    - "$ref": "#/components/parameters/param1"
+    put:
+      something: else
+    get:
+      parameters:
+      - "$ref": "#/components/parameters/param2"
+components:
+  parameters:
+    param1:
+      name: param1
+      in: query
+    param2:
+      name: param2
+      in: path
+    param3:
+      name: param3
+      in: header
+))
+end
+d = doc3
+h = Helper.new(d)
+cp = d.dig('components', 'parameters')
+p = h.parameters(d.dig('paths', '/no/parameter', 'put'))
+assert(p.empty?, true, 'no parameters')
+p = h.parameters(d.dig('paths', '/no/parameter', 'get'))
+assert(p.size, 1, 'one parameter')
+assert(p.first['$ref'].end_with?("/#{cp.dig('param3', 'name')}"), true, 'name matches')
+p = h.parameters(d.dig('paths', '/parent/parameter', 'put'))
+assert(p.size, 1, 'one parameter')
+assert(p.first['$ref'].end_with?("/#{cp.dig('param1', 'name')}"), true, 'name matches')
+p = h.parameters(d.dig('paths', '/parent/parameter', 'get'))
+assert(p.size, 2, 'two parameters')
+assert(p.first['$ref'].end_with?("/#{cp.dig('param1', 'name')}"), true, 'name matches')
+assert(p.last['$ref'].end_with?("/#{cp.dig('param2', 'name')}"), true, 'name matches')
+p = h.parameters(d.dig('paths', '/parent/parameter', 'put'), true)
+assert(p.empty?, true, 'no local parameters')
+p = h.parameters(d.dig('paths', '/no/parameter', 'put'), true)
+assert(p.empty?, true, 'no local parameters')
+
+exit $unit_test

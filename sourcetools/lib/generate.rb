@@ -8,6 +8,7 @@ require_relative 'common'
 require_relative 'loaders'
 require_relative 'gen'
 
+
 def executable_bits_on(mode)
   mode = mode.to_s(8).split('')
   mode.size.times do |k|

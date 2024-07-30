@@ -67,7 +67,7 @@ replaces the original with reference.
   replace_headers(doc.fetch('paths', {}), components)
   bury(doc, path, components.items) unless components.items.empty?
 
-  dump_result(output_name, YAML.dump(doc, line_width: 1_000_000), 3)
+  dump_result(output_name, doc, 3)
 end
 
 exit(main) if (defined? $unit_test).nil?

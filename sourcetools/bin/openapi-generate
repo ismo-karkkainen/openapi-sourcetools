@@ -16,7 +16,6 @@ def main
   input_name = nil
   output_dir = nil
 
-  ENV['POSIXLY_CORRECT'] = '1'
   parser = OptionParser.new do |opts|
     opts.summary_indent = '  '
     opts.summary_width = 26
@@ -32,7 +31,7 @@ def main
     opts.on('-h', '--help', 'Print this help and exit.') do
       $stdout.puts %(#{opts}
 Loads API document in OpenAPI format and generator names. Built-in generator
-loaders accept the following:
+or additional document loaders accept the following:
 #{Loaders.document.strip}
 
 During load each generator can add and modify tasks via Gen module:
@@ -43,7 +42,7 @@ After all generators have loaded succesfully, tasks are run.
       exit 0
     end
   end
-  parser.parse!
+  parser.order!
 
   return aargh('Generator names must be given.', 1) if ARGV.empty?
 

@@ -1,0 +1,50 @@
+####COMMAND Unit tests
+####CODE 0
+####OUT
+ok: path2pieces: One piece
+ok: path2pieces: Original string
+ok: path2pieces: Three pieces
+ok: path2pieces: First part
+ok: path2pieces: Second part
+ok: path2pieces: Third part
+ok: path2pieces: Nothing from /
+ok: path2pieces: Nothing from empty string
+ok: pieces2path: Only /
+ok: pieces2path: One part
+ok: pieces2path: Two parts
+ok: add: Normal case
+ok: add: Nothing to add
+ok: remove_complete_prefix: Nothing to remove
+ok: remove_complete_prefix: Everything removed
+ok: remove_complete_prefix: One removed
+ok: remove_complete_prefix: Two removed
+ok: remove_complete_prefix: Mismatch
+ok: remove_complete_prefix: Too long
+ok: remove: Nothing to remove
+ok: remove: Everything removed
+ok: remove: One removed
+ok: remove: Two removed
+ok: remove: Mismatch
+ok: remove: Too long
+ok: replace: Nothing to replace
+ok: replace: Everything replaced
+ok: replace: One replaced
+ok: replace: Two replaced
+ok: replace: Mismatch
+ok: replace: Too long
+ok: add_op: add_op proc
+ok: add_op: Adds original argument
+ok: remove_op: remove_op proc
+ok: remove_op: Removes original argument
+ok: remove_op: No match
+ok: replace_op: replace_op proc
+ok: replace_op: Replaces original argument
+ok: replace_op: No match
+ok: perform_operations: Size did not change
+ok: perform_operations: /add/base is present
+ok: perform_operations: /add is present
+ok: perform_operations: /add/new/base is present
+ok: perform_operations: /add/base has original value
+ok: perform_operations: /add has original value
+ok: perform_operations: /add/new/base has original value
+####ERR

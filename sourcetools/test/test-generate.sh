@@ -28,7 +28,7 @@ echo "####CODE $?"
 echo "####OUT"
 cat o
 echo "####ERR"
-cat e | head -n 2
+cat e | head -n 1
 
 echo "####COMMAND Unsupported processor"
 $M -o out --input processed.yaml sidfgoi:soefifhyaosf >o 2>e

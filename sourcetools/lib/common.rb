@@ -12,6 +12,10 @@ def aargh(message, return_value = nil)
   return_value
 end
 
+def yesno(boolean)
+  boolean ? 'yes' : 'no'
+end
+
 def bury(doc, path, value)
   (path.size - 1).times do |k|
     p = path[k]

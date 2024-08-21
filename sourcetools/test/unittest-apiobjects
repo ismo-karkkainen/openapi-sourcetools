@@ -59,7 +59,7 @@ prefix = 'Prefix'
 cmp = Components.new(path, prefix)
 a = { a: 5, b: [ 1, 2 ] }
 b = { a: 5, b: 'b' }
-cmp.items = { 'bref' => b }
+cmp.items['bref'] = b
 r = cmp.reference(a)
 s = cmp.items
 assert(s.size, 2, 'New name added')
@@ -69,13 +69,61 @@ assert(r, r2, 'Same object yields same reference')
 assert(s.size, 2, 'No new name added')
 r = cmp.reference(b)
 assert(s.size, 2, 'No new name added either')
-cmp.items = { 'bref' => b }
+cmp = Components.new(path, prefix)
+cmp.items['bref'] = b
 r = cmp.reference(b)
 s = cmp.items
 assert(s.size, 1, 'No new name added with prefix')
 r = cmp.reference(a)
 assert(s.size, 2, 'New reference added with prefix')
 assert(r.start_with?("#{path}/#{prefix}"), true, 'Reference starts with prefix')
+
+$context = 'Components.add_schema_name'
+path = 'testing'
+prefix = 'Prefix'
+cmp = Components.new(path, prefix)
+cmp.add_schema_name('name')
+assert(cmp.schema_names.member?('name'), true, 'Schema name in set')
+assert(cmp.schema_names.member?('sdohfg'), false, 'Schema name not in set')
+
+$context = 'Components.store_anchor'
+path = 'testing'
+prefix = 'Prefix'
+cmp = Components.new(path, prefix)
+cmp.store_anchor({})
+assert(cmp.anchor2ref.empty?, true, 'Not anchor, not added')
+obj = { '$anchor' => 'name' }
+cmp.store_anchor(obj, 'ref')
+assert(cmp.anchor2ref[obj['$anchor']], 'ref', 'name mapped to given ref')
+begin
+  cmp.store_anchor(obj)
+  assert(true, false, 'Exception not raised')
+rescue Exception
+  assert(true, true, 'Exception raised')
+end
+obj = { '$anchor' => 'name2', '$ref' => 'ref2' }
+cmp.store_anchor(obj)
+assert(cmp.anchor2ref[obj['$anchor']], obj['$ref'], 'name2 mapped to obj ref')
+
+$context = 'Components.alter_anchors'
+path = 'testing'
+prefix = 'Prefix'
+cmp = Components.new(path, prefix)
+cmp.add_schema_name('existing')
+cmp.store_anchor({ '$anchor' => 'name' }, 'ref')
+cmp.store_anchor({ '$anchor' => 'existing' }, 'ref2')
+assert(cmp.anchor2ref.size, 2, 'size 2')
+assert(cmp.anchor2ref['name'], 'ref', 'name to ref')
+assert(cmp.anchor2ref['existing'], 'ref2', 'existing to ref2')
+cmp.alter_anchors
+assert(cmp.anchor2ref.size, 2, 'size unchanged')
+assert(cmp.anchor2ref['name'], cmp.ref_string('name'), 'name to ref string')
+assert(cmp.anchor2ref['existing'], 'ref2', 'existing unchanged')
+
+$context = 'Components.anchor_ref_replacement'
+assert(cmp.anchor_ref_replacement('#other'), '#other', 'absent not changed')
+assert(cmp.anchor_ref_replacement('#name'), cmp.ref_string('name'), 'name found')
+assert(cmp.anchor_ref_replacement('#existing'), 'ref2', 'existing found')
 
 $context = 'gather_array_refs'
 items = YAML.safe_load(%(

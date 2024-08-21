@@ -142,7 +142,6 @@ def main
   count = true
   keep = false
 
-  ENV['POSIXLY_CORRECT'] = '1'
   parser = OptionParser.new do |opts|
     opts.summary_indent = '  '
     opts.summary_width = 26
@@ -152,22 +151,22 @@ def main
     opts.on('-i', '--input FILE', 'Read API spec from FILE, not stdin.') do |f|
       input_name = f
     end
-    opts.on('-o', '--output FILE', 'Output to FILE, not stdout .') do |f|
+    opts.on('-o', '--output FILE', 'Output to FILE, not stdout.') do |f|
       output_name = f
     end
-    opts.on('-e', '--[no-]equivalent', "Report equivalent schemas, default #{equivalent}") do |b|
+    opts.on('-e', '--[no-]equivalent', "Report equivalent schemas, default #{yesno(equivalent)}") do |b|
       equivalent = b
     end
-    opts.on('-t', '--[no-]typematch', "Report typematch schemas, default #{typematch}") do |b|
+    opts.on('-t', '--[no-]typematch', "Report typematch schemas, default #{yesno(typematch)}") do |b|
       typematch = b
     end
-    opts.on('-r', '--[no-]reference', "Report schema references, default #{references}") do |b|
+    opts.on('-r', '--[no-]reference', "Report schema references, default #{yesno(references)}") do |b|
       references = b
     end
-    opts.on('-c', '--[no-]count', "Report schema reference counts, default #{count}") do |b|
+    opts.on('-c', '--[no-]count', "Report schema reference counts, default #{yesno(count)}") do |b|
       count = b
     end
-    opts.on('-k', '--[no-]keep', "Keep all schema references/counts, default #{keep}") do |b|
+    opts.on('-k', '--[no-]keep', "Keep all schema references/counts, default #{yesno(keep)}") do |b|
       keep = b
     end
     components.add_options(opts)
@@ -182,17 +181,17 @@ names differ but types match.
 
 Search is performed only at top schema level. References to equivalent types
 are not considered equivalent when references themselves are not equivalent.
-Any allOf, anyOf, oneOf checks merely check the refernces. Hence two different
+Any allOf, anyOf, oneOf checks merely check the references. Hence two different
 allOf schemas may in practice result in equivalent types and that is not
 detected.
 
 Implicit expectation is the openapi-addschemas has been used to process the
-input, as inlined types in requests for example are ignored.
+input, as inlined types in requests, for example, are ignored.
 )
       exit 0
     end
   end
-  parser.parse!
+  parser.order!
 
   doc = load_source(input_name)
   return 2 if doc.nil?
@@ -214,4 +213,4 @@ input, as inlined types in requests for example are ignored.
   dump_result(output_name, YAML.dump(report, line_width: 80), 3)
 end
 
-exit(main) if (defined? $unit_test).nil?
+exit(main) if defined?($unit_test).nil?

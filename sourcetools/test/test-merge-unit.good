@@ -1,0 +1,19 @@
+####COMMAND Unit tests
+####CODE 0
+####OUT
+ok: raise_se: exception and message
+ok: too_deep: empty
+ok: too_deep: just root
+ok: too_deep: too deep
+ok: too_deep: not deep
+ok: too_deep: border case
+ok: gather_refs: 3 references
+ok: gather_refs: anchor in
+ok: gather_refs: arr in
+ok: gather_refs: normal in
+ok: has_refd_anchor: Refd
+ok: has_refd_anchor: Unrefd
+ok: has_refd_anchor: InArray
+ok: has_refd_anchor: Invalid
+ok: has_refd_anchor: Missing
+####ERR

@@ -37,7 +37,7 @@ into each path object matching count as "freq".
       exit 0
     end
   end
-  parser.parse!
+  parser.order!
 
   return aargh('Path log file name must be given.', 1) if paths_name.nil?
 
@@ -75,4 +75,4 @@ into each path object matching count as "freq".
   dump_result(output_name, YAML.dump(doc), 3)
 end
 
-exit(main) if (defined? $unit_test).nil?
+exit(main) if defined?($unit_test).nil?

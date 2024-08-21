@@ -52,7 +52,7 @@ end
 
 def gather_refs(doc, found)
   doc.each_pair do |key, value|
-    if key == '$ref' && value.is_a?(String) && value.start_with?('#/components/')
+    if key == '$ref' # Trust all refs to be valid.
       found.add(value)
     elsif value.is_a? Hash
       gather_refs(value, found)
@@ -62,6 +62,13 @@ def gather_refs(doc, found)
       end
     end
   end
+end
+
+def has_refd_anchor(item, refs)
+  return !((item.index { |v| has_refd_anchor(v, refs) }).nil?) if item.is_a?(Array)
+  return false unless item.is_a?(Hash)
+  return true if refs.member?('#' + item.fetch('$anchor', ''))
+  !((item.values.index { |v| has_refd_anchor(v, refs) }).nil?)
 end
 
 def prune(merged)
@@ -74,16 +81,16 @@ def prune(merged)
         refs.add("#/components/securitySchemes/#{key}")
       end
     end
+    # Add schema ref for all schemas that have referenced anchor somewhere.
+    (merged.dig(*%w[components schemas]) || {}).each do |name, schema|
+      refs.add("#/components/Schemas/#{name}") if has_refd_anchor(schema, refs)
+    end
     used = {}
     all = merged.fetch('components', {})
     refs.each do |ref|
       p = ref.split('/')
       p.shift(2)
-      item = all
-      p.each do |key|
-        item = item.fetch(key, nil)
-        break if item.nil?
-      end
+      item = all.dig(*p)
       next if item.nil?
       sub = used
       p.each_index do |k|
@@ -105,7 +112,6 @@ def main
   output_file = nil
   keep = false
 
-  ENV['POSIXLY_CORRECT'] = '1'
   parser = OptionParser.new do |opts|
     opts.summary_indent = '  '
     opts.summary_width = 26
@@ -130,7 +136,7 @@ allowed only to append to the merged document, not re-define anything in it.
       exit 0
     end
   end
-  parser.parse!
+  parser.order!
 
   max_depths = Hash.new(0)
   max_depths['openapi'] = 1
@@ -155,4 +161,4 @@ allowed only to append to the merged document, not re-define anything in it.
   dump_result(output_file, YAML.dump(merged), 3)
 end
 
-exit(main) if (defined? $unit_test).nil?
+exit(main) if defined?($unit_test).nil?

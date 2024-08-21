@@ -4,7 +4,7 @@ require 'rake'
 
 Gem::Specification.new do |s|
   s.name = 'openapi-sourcetools'
-  s.version = '0.7.0'
+  s.version = '0.7.1'
   s.summary = 'Tools for creating source code from API specification.'
   s.description = %q(
 Tools for handling API specification in OpenAPI format. Replacement of

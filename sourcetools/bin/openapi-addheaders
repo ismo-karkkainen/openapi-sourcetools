@@ -32,7 +32,6 @@ def main
   path = %w[components headers]
   components = Components.new(path, 'Header')
 
-  ENV['POSIXLY_CORRECT'] = '1'
   parser = OptionParser.new do |opts|
     opts.summary_indent = '  '
     opts.summary_width = 26
@@ -42,7 +41,7 @@ def main
     opts.on('-i', '--input FILE', 'Read API spec from FILE, not stdin.') do |f|
       input_name = f
     end
-    opts.on('-o', '--output FILE', 'Output to FILE, not stdout .') do |f|
+    opts.on('-o', '--output FILE', 'Output to FILE, not stdout.') do |f|
       output_name = f
     end
     components.add_options(opts)
@@ -57,7 +56,7 @@ replaces the original with reference.
       exit 0
     end
   end
-  parser.parse!
+  parser.order!
 
   doc = load_source(input_name)
   return 2 if doc.nil?
@@ -70,4 +69,4 @@ replaces the original with reference.
   dump_result(output_name, doc, 3)
 end
 
-exit(main) if (defined? $unit_test).nil?
+exit(main) if defined?($unit_test).nil?

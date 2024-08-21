@@ -38,7 +38,7 @@ later stage tools. Checks for paths that may be ambiguous.
       exit 0
     end
   end
-  parser.parse!
+  parser.order!
 
   doc = load_source(input_name)
   return 2 if doc.nil?
@@ -81,4 +81,4 @@ later stage tools. Checks for paths that may be ambiguous.
   dump_result(output_name, YAML.dump(doc), 3)
 end
 
-exit(main) if (defined? $unit_test).nil?
+exit(main) if defined?($unit_test).nil?

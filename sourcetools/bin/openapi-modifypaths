@@ -120,4 +120,4 @@ STR and PREFIX are expected to be parts of a path surrounded by /.
   dump_result(output_name, doc, 3)
 end
 
-main if defined?($unit_test).nil?
+exit(main) if defined?($unit_test).nil?

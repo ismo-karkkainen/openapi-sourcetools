@@ -33,15 +33,17 @@ def reference(obj, schemas, schema_path, ignored_keys = Set.new(%w[summary descr
 end
 
 class Components
-  attr_reader :path, :prefix
+  attr_reader :path, :prefix, :anchor2ref, :schema_names
   attr_accessor :items, :ignored_keys
 
-  def initialize(path, prefix, ignored_keys = %w[summary description examples example])
-    @items = {}
+  def initialize(path, prefix, ignored_keys = %w[summary description examples example $anchor])
     path = "#/#{path.join('/')}/" if path.is_a?(Array)
     path = "#{path}/" unless path.end_with?('/')
     @path = path
     @prefix = prefix
+    @anchor2ref = {}
+    @schema_names = Set.new
+    @items = {}
     @ignored_keys = Set.new(ignored_keys)
   end
 
@@ -58,7 +60,12 @@ class Components
     %(All fields are used in object equality comparisons except:\n#{@ignored_keys.to_a.sort!.join("\n")})
   end
 
+  def add_schema_name(name)
+    @schema_names.add(name)
+  end
+
   def ref_string(name)
+    return nil if name.nil?
     "#{@path}#{name}"
   end
 
@@ -73,42 +80,39 @@ class Components
       cand = "#{@prefix}#{n}x"
       next if @items.key?(cand)
       @items[cand] = obj.merge
+      @schema_names.add(cand)
       return ref_string(cand)
     end
   end
+
+  def store_anchor(obj, ref = nil)
+    anchor_name = obj['$anchor']
+    return if anchor_name.nil?
+    ref = obj['$ref'] if ref.nil?
+    raise Exception, 'ref is nil and no $ref or it is nil' if ref.nil?
+    @anchor2ref[anchor_name] = ref
+  end
+
+  def alter_anchors
+    replacements = {}
+    @anchor2ref.each do |a, r|
+      next if @schema_names.member?(a)
+      replacements[a] = ref_string(a)
+      @schema_names.add(a)
+    end
+    replacements.each do |a, r|
+      @anchor2ref[a] = r
+    end
+  end
+
+  def anchor_ref_replacement(ref)
+    @anchor2ref[ref[1...ref.size]] || ref
+  end
 end
-
-
-class PathOperation
-  attr_accessor :path, :operation, :info, :parameters
-  attr_accessor :servers, :security, :tags
-  attr_accessor :summary, :description
-end
-
-# One could have a convenience
-# method that determines how many bytes the value needs, and if it needs to be
-# signed.
-
-# When creating types for schemas or otherwise, the type name can be added
-# into the item and that way be used as an indicator that the type has been
-# declared or needs a declaration.
-
-def make_path_operations(apidoc)
-  # Check openapi
-  # Store info as is for reference
-  # Store servers as is for default value for PathOperation
-  # Process components. Lazy manner, only when referenced.
-  # Store security as is for default value for PathOperation.
-  # Store tags as mapping from name to object for use with PathOperation.
-  # Process paths:
-  # Store parameters as is for default value for PathOperation.
-  # All other fields, check if it looks like OperationObject and create a
-  # PathOperation using it. For others, store as is for default value.
-
-end
-
 
 class ServerPath
+  # Probably moves to a separate file once processpaths and frequencies receive
+  # some attention.
   include Comparable
 
   attr_accessor :parts
@@ -160,6 +164,8 @@ class ServerPath
     (parts.size < pp.size) ? -1 : 0
   end
 end
+
+# The rest probably ends up in a gem that orders schemas and does nothing else.
 
 # Adds all refs found in the array to refs with given required state.
 def gather_array_refs(refs, items, required)
@@ -298,36 +304,3 @@ class SchemaOrderer
     chosen
   end
 end
-
-class HeaderOrderer
-end
-
-class ResponseOrderer
-end
-
-class PathOrderer
-end
-
-class Tasker
-  attr_reader :doc
-  def initialize(doc)
-    @doc = doc
-  end
-end
-
-class SchemaTasker < Tasker
-# initialize with doc
-# Orderer set somehow.
-# Method ot create one task per schema.
-# Method to create one task for all schemas.
-end
-
-class HeaderTasker < Tasker
-# initialize with doc
-# Orderer set somehow.
-# Method ot create one task per schema.
-# Method to create one task for all schemas.
-end
-
-
-

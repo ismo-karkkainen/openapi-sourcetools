@@ -26,6 +26,21 @@ ok: Components.reference: No new name added either
 ok: Components.reference: No new name added with prefix
 ok: Components.reference: New reference added with prefix
 ok: Components.reference: Reference starts with prefix
+ok: Components.add_schema_name: Schema name in set
+ok: Components.add_schema_name: Schema name not in set
+ok: Components.store_anchor: Not anchor, not added
+ok: Components.store_anchor: name mapped to given ref
+ok: Components.store_anchor: Exception raised
+ok: Components.store_anchor: name2 mapped to obj ref
+ok: Components.alter_anchors: size 2
+ok: Components.alter_anchors: name to ref
+ok: Components.alter_anchors: existing to ref2
+ok: Components.alter_anchors: size unchanged
+ok: Components.alter_anchors: name to ref string
+ok: Components.alter_anchors: existing unchanged
+ok: Components.anchor_ref_replacement: absent not changed
+ok: Components.anchor_ref_replacement: name found
+ok: Components.anchor_ref_replacement: existing found
 ok: gather_array_refs: ref1 present on not required
 ok: gather_array_refs: ref2 present on not required
 ok: gather_array_refs: ref3 present on not required

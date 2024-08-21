@@ -17,7 +17,7 @@ def remove_subitem(obj, path)
   parent.delete(path.last) || {}
 end
 
-def replace_inlines(obj, components, top_level = false)
+def replace_inlines(obj, components, top_level_name = nil)
   if obj.is_a?(Array)
     obj.each do |o|
       return false unless replace_inlines(o, components)
@@ -25,8 +25,11 @@ def replace_inlines(obj, components, top_level = false)
     return true
   end
   return true unless obj.is_a?(Hash)
-  return true if obj.key?('$ref')
-  # Prior return would be the place to get rid of other keys if so desired.
+  if obj.key?('$ref')
+    components.store_anchor(obj)
+    # Here would be the place to get rid of other keys if so desired.
+    return true
+  end
   # Is inlined, process parts recursively.
   items = obj['allOf']
   items = obj['anyOf'] if items.nil?
@@ -49,8 +52,26 @@ def replace_inlines(obj, components, top_level = false)
       return false unless replace_inlines(props[name], components)
     end
   end
-  obj.replace({ '$ref' => components.reference(obj) }) unless top_level
+  r = components.ref_string(top_level_name) || components.reference(obj)
+  components.store_anchor(obj, r)
+  obj.replace({ '$ref' => r }) if top_level_name.nil?
   true
+end
+
+def replace_anchor_refs(obj, components)
+  if obj.is_a?(Array)
+    obj.each do |o|
+      replace_anchor_refs(o, components)
+    end
+    return
+  end
+  return unless obj.is_a?(Hash)
+  r = obj['$ref']
+  obj['$ref'] = components.anchor_ref_replacement(r) unless r.nil?
+  obj.values.each do |value|
+    # Loops over $ref value but that is a string so nothing done to it.
+    replace_anchor_refs(value, components)
+  end
 end
 
 def main
@@ -59,7 +80,6 @@ def main
   path = %w[components schemas]
   components = Components.new(path, 'Schema')
 
-  ENV['POSIXLY_CORRECT'] = '1'
   parser = OptionParser.new do |opts|
     opts.summary_indent = '  '
     opts.summary_width = 26
@@ -69,7 +89,7 @@ def main
     opts.on('-i', '--input FILE', 'Read API spec from FILE, not stdin.') do |f|
       input_name = f
     end
-    opts.on('-o', '--output FILE', 'Output to FILE, not stdout .') do |f|
+    opts.on('-o', '--output FILE', 'Output to FILE, not stdout.') do |f|
       output_name = f
     end
     components.add_options(opts)
@@ -83,7 +103,7 @@ Loads API document in OpenAPI format and adds a schema for each inline type.
       exit 0
     end
   end
-  parser.parse!
+  parser.order!
 
   doc = load_source(input_name)
   return 2 if doc.nil?
@@ -93,12 +113,15 @@ Loads API document in OpenAPI format and adds a schema for each inline type.
   components.items = remove_subitem(doc, path)
   # Get rid of inlined types within existing schemas first.
   components.items.keys.sort!.each do |k|
-    return 4 unless replace_inlines(components.items[k], components, true)
+    components.add_schema_name(k)
+    return 4 unless replace_inlines(components.items[k], components, k)
   end
   return 4 unless replace_inlines(doc, components)
+  components.alter_anchors
   bury(doc, path, components.items) unless components.items.empty?
+  replace_anchor_refs(doc, components)
 
   dump_result(output_name, doc, 3)
 end
 
-exit(main) if (defined? $unit_test).nil?
+exit(main) if defined?($unit_test).nil?

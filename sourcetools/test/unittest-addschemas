@@ -231,4 +231,41 @@ end
 assert(s[s.keys.first]['type'], 'string', 'Type key in schema')
 assert(s[s.keys.first]['other'], 'value', 'Other key in schema')
 
+$context = 'replace_anchor_refs'
+class TestCompo
+  def anchor_ref_replacement(ref)
+    return ref if ref.start_with?('#/')
+    "x#{ref}"
+  end
+end
+obj = YAML.safe_load(%(
+allOf:
+- type: object
+  properties:
+    name:
+      type: string
+    reffed:
+      $ref: '#anchored'
+- type: object
+  properties:
+    field:
+      type: string
+    reffed:
+      $ref: '#/components/schemas/Something'
+- type: object
+  required:
+  - other
+  - reffed
+  properties:
+    other:
+      type: string
+    reffed:
+      $ref: '#anch'
+))
+replace_anchor_refs(obj, TestCompo.new)
+p = %w[properties reffed $ref]
+assert(obj['allOf'][0].dig(*p), 'x#anchored', 'First changed')
+assert(obj['allOf'][1].dig(*p), '#/components/schemas/Something', 'Second unchanged')
+assert(obj['allOf'][2].dig(*p), 'x#anch', 'Third changed')
+
 exit $unit_test

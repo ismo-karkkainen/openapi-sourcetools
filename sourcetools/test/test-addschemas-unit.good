@@ -63,4 +63,7 @@ ok: replace_inlines: Correct reference for type #[k]
 ok: replace_inlines: Type 2 referes to string type
 ok: replace_inlines: Type key in schema
 ok: replace_inlines: Other key in schema
+ok: replace_anchor_refs: First changed
+ok: replace_anchor_refs: Second unchanged
+ok: replace_anchor_refs: Third changed
 ####ERR

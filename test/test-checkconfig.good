@@ -1,0 +1,106 @@
+####COMMAND No config
+####CODE 1
+####OUT
+####ERR
+Config must be given.
+####COMMAND Config
+####CODE 0
+####OUT
+filewdir: (root), filewdir.yaml
+filewdir: root0, filewdir/root0.yaml
+filewdir: root0+key0, filewdir/root0+key0.yaml
+filewdir: root2/rk20, filewdir/root2/rk20.yaml
+filewdir+root0+key1+key10: (root), filewdir+root0+key1+key10.yaml
+filewdir1: (root), filewdir1.yaml
+filewdir2: (root), filewdir2.yaml
+####ERR
+####COMMAND Config, empty separator
+####CODE 0
+####OUT
+filewdir: (root), filewdir.yaml
+filewdir: root0, filewdir/root0.yaml
+filewdir: root0+key0, filewdir/root0+key0.yaml
+filewdir: root2/rk20, filewdir/root2/rk20.yaml
+filewdir+root0+key1+key10: (root), filewdir+root0+key1+key10.yaml
+filewdir1: (root), filewdir1.yaml
+filewdir2: (root), filewdir2.yaml
+####ERR
+####COMMAND Config, separator
+####CODE 0
+####OUT
+filewdir: (root), filewdir.yaml
+filewdir: root0, filewdir/root0.yaml
+filewdir: root0/key0, filewdir/root0+key0.yaml
+filewdir: root2/rk20, filewdir/root2/rk20.yaml
+filewdir: root0/key1/key10, filewdir+root0+key1+key10.yaml
+filewdir1: (root), filewdir1.yaml
+filewdir2: (root), filewdir2.yaml
+####ERR
+####COMMAND Config, separator, read info
+####CODE 0
+####OUT
+filewdir: (root), filewdir.yaml
+  File is read.
+filewdir: root0, filewdir/root0.yaml
+  File is read.
+filewdir: root0/key0, filewdir/root0+key0.yaml
+  File is read.
+filewdir: root2/rk20, filewdir/root2/rk20.yaml
+  File is read.
+filewdir: root0/key1/key10, filewdir+root0+key1+key10.yaml
+  File is read.
+filewdir1: (root), filewdir1.yaml
+  File is read.
+filewdir2: (root), filewdir2.yaml
+  File is read.
+####ERR
+####COMMAND Config, separator, empty keys
+####CODE 0
+####OUT
+filewdir: (root), filewdir.yaml
+filewdir: root0, filewdir/root0.yaml
+filewdir: root0/key0, filewdir/root0__key0.yaml
+filewdir: root2/rk20, filewdir/root2/rk20.yaml
+filewdir: root0/key1/key10, filewdir__root0__key1__key10.yaml
+filewdir1: (root), filewdir1.yaml
+filewdir2: (root), filewdir2.yaml
+####ERR
+####COMMAND Config, separator, only separator keys
+####CODE 0
+####OUT
+filewdir: (root), filewdir.yaml
+filewdir: root0, filewdir/root0.yaml
+filewdir: root0/key0, filewdir/root0__key0.yaml
+filewdir: root2/rk20, filewdir/root2/rk20.yaml
+filewdir: root0/key1/key10, filewdir__root0__key1__key10.yaml
+filewdir1: (root), filewdir1.yaml
+filewdir2: (root), filewdir2.yaml
+####ERR
+####COMMAND Config, separator, keys
+####CODE 0
+####OUT
+filewdir: (root), filewdir.yaml
+  value10
+filewdir: root0/key1/key10, filewdir__root0__key1__key10.yaml
+  value10over
+####ERR
+####COMMAND Config, separator, keys, read info
+####CODE 0
+####OUT
+filewdir: (root), filewdir.yaml
+  value10
+  File is read.
+filewdir: root0, filewdir/root0.yaml
+  File is read.
+filewdir: root0/key0, filewdir/root0__key0.yaml
+  File is read.
+filewdir: root2/rk20, filewdir/root2/rk20.yaml
+  File is read.
+filewdir: root0/key1/key10, filewdir__root0__key1__key10.yaml
+  value10over
+  File is read.
+filewdir1: (root), filewdir1.yaml
+  File is read.
+filewdir2: (root), filewdir2.yaml
+  File is not read.
+####ERR

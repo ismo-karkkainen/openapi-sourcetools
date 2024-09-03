@@ -1,0 +1,40 @@
+####COMMAND Unit tests
+####CODE 0
+####OUT
+ok: name_string: Nothing
+ok: name_string: Single
+ok: name_string: Deep
+ok: merge: Merge to empty
+ok: merge: Merge
+ok: merge: All properties
+ok: merge: Added b to required
+ok: merge: Still Number type
+ok: merge: c is Number type
+ok: merge: Type conflict
+ok: all_of: Merged type
+ok: all_of: New property
+ok: all_of: Added b to required
+ok: all_of: Still Number type
+ok: all_of: c is Number type
+ok: all_of: Type conflict
+ok: all_of: Missing schema not detected
+ok: all_of: Not an object
+ok: distinguishable: Different required fields
+ok: distinguishable: Identical
+ok: distinguishable: Difference in optional field
+ok: distinguishable: Difference in type
+ok: distinguishable: Difference in fields
+####ERR
+Notsamereferenceforpropertyb:
+#/components/schemas/Number
+#/components/schemas/String
+Notsamereferenceforpropertyb:
+#/components/schemas/Number
+#/components/schemas/String
+TypeNumberforNotObjectinAisnot'object'
+Differenceinoptionalpropertyb:
+{"type"=>"object","properties"=>{"a"=>{"$ref"=>"#/components/schemas/String"},"b"=>{"$ref"=>"#/components/schemas/Number"}},"required"=>["a"]}
+{"type"=>"object","properties"=>{"a"=>{"$ref"=>"#/components/schemas/String"},"c"=>{"$ref"=>"#/components/schemas/String"}},"required"=>["a"]}
+Differenceinoptionalpropertyc:
+{"type"=>"object","properties"=>{"a"=>{"$ref"=>"#/components/schemas/String"},"b"=>{"$ref"=>"#/components/schemas/Number"}},"required"=>["a"]}
+{"type"=>"object","properties"=>{"a"=>{"$ref"=>"#/components/schemas/String"},"c"=>{"$ref"=>"#/components/schemas/String"}},"required"=>["a"]}

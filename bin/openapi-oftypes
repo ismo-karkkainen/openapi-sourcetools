@@ -1,0 +1,224 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright © 2024-2025 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../lib/openapi/sourcetools/apiobjects'
+require_relative '../lib/openapi/sourcetools/common'
+require 'optparse'
+require 'set'
+include OpenAPISourceTools
+
+
+def name_string(ref)
+  ref.rpartition('/').last
+end
+
+def merge(combo, item)
+  if combo.empty?
+    combo.merge!(item)
+    return true
+  end
+  cr = combo['required']
+  ir = item['required']
+  cps = combo.fetch('properties', {})
+  ips = item.fetch('properties', {})
+  Set.new(cps.keys + ips.keys).to_a.sort!.each do |name|
+    cp = cps[name]
+    ip = ips[name]
+    if cp.nil?
+      # Here check if ip is of problematic type.
+      cps[name] = ip # Add new property. ip is valid since cp was not.
+    elsif !ip.nil?
+      # Should check if either is problematic type.
+      if (cp['$ref'] || 'a') != (ip['$ref'] || 'b') # Different reference.
+        Common::Out.put([
+          "Not same reference for property #{name}:",
+          cp['$ref'] || 'No reference',
+          ip['$ref'] || 'No reference'
+        ])
+        # Complain about different reference.
+        return false
+        # A more thorough check would see if e.g. strings of different
+        # length limits can be combined to string with limits both allow.
+      end
+    end
+    # cp being problematic type should have been checked in previous merge.
+  end
+  if cr.nil?
+    combo['required'] = ir unless ir.nil?
+  elsif !ir.nil?
+    combo['required'] = Set.new(cr + ir).to_a.sort!
+  end
+  combo['properties'] = cps unless cps.empty?
+  true
+end
+
+def all_of(items, schemas, name)
+  types = []
+  items.each do |item|
+    ref = item['$ref']
+    if ref.nil?
+      Common::Out.put("No reference, has openapi-addschemas been run? Inline type in #{name}:\n#{item}")
+    end
+    n = name_string(ref)
+    t = schemas[n]
+    if t.nil?
+      Common::Out.put("No schema: #{n} from #{ref} in #{name}")
+      return false
+    end
+    unless t['type'] == 'object'
+      Common::Out.put("Type #{t['type']} for #{ref} in #{name} is not 'object'")
+      return false
+    end
+    types.push(t)
+  end
+  m = {}
+  types.each do |t|
+    r = merge(m, t)
+    return false unless r
+  end
+  m
+end
+
+def distinguishable(a, b, schemas)
+  at = a['type']
+  bt = b['type']
+  return true if at != bt
+  if at != 'object'
+    Set.new(a.keys + b.keys).to_a.each do |name|
+      return true if a[name] != b[name]
+    end
+    return false
+  end
+  ar = a.fetch('required', [])
+  br = b.fetch('required', [])
+  arp = a.fetch('properties', {})
+  brp = b.fetch('properties', {})
+  Set.new(arp.keys + brp.keys).to_a.sort!.each do |name|
+    ap = arp[name]
+    bp = brp[name]
+    # Distinguishable by name required in one schema and absent in the other?
+    return true if ap.nil? && br.include?(name)
+    return true if bp.nil? && ar.include?(name)
+    if ap.nil? || bp.nil?
+      Common::Out.put("Difference in optional property #{name}:\n#{a}\n#{b}")
+      next
+    end
+    # If types are sufficiently different, return true.
+    ast = ap['$ref']
+    if ast.nil?
+      Common::Out.put("No reference, has openapi-addschemas been run? Inline property #{name} type:\n#{ap}")
+    end
+    bst = bp['$ref']
+    if bst.nil?
+      Common::Out.put("No reference, has openapi-addschemas been run? Inline property #{name} type:\n#{bp}")
+    end
+    if (ast || 'a') != (bst || 'b')
+      return true if ast.nil? || bst.nil?
+      return true if distinguishable(schemas[name_string(ast)], schemas[name_string(bst)], schemas)
+    end
+  end
+  false
+end
+
+def one_of(items, schemas, name)
+  types = []
+  items.each do |item|
+    ref = item['$ref']
+    if ref.nil?
+      Common::Out.put("No reference, has openapi-addschemas been run? Inline type:\n#{item}")
+    end
+    n = name_string(ref)
+    t = schemas[n]
+    if t.nil?
+      Common::Out.put("No schema: #{n} from #{ref}")
+      return false
+    end
+    unless t['type'] == 'object'
+      Common::Out.put("Type #{t['type']} for #{ref} is not 'object'")
+      return false
+    end
+    types.push(t)
+  end
+  (types.size - 1).times do |idx|
+    t = types[idx]
+    (idx...types.size).each do |k|
+      return false unless distinguishable(t, types[k], schemas)
+    end
+  end
+  true
+end
+
+def main
+  input_name = nil
+  output_name = nil
+  warning = false
+  schema_path = '#/components/schemas'
+
+  parser = OptionParser.new do |opts|
+    opts.summary_indent = '  '
+    opts.summary_width = 26
+    opts.banner = 'Usage: openapi-oftypes [options]'
+    opts.separator ''
+    opts.separator 'Options:'
+    opts.on('-i', '--input FILE', 'Read API spec from FILE, not stdin.') do |f|
+      input_name = f
+    end
+    opts.on('-o', '--output FILE', 'Output to FILE, not stdout.') do |f|
+      output_name = f
+    end
+    opts.on('--warn', 'Treat errors as warnings.') do
+      warning = true
+    end
+    opts.on('--error', 'Treat warnings as errors.') do
+      warning = false
+    end
+    opts.on('-h', '--help', 'Print this help and exit.') do
+      $stdout.puts %(#{opts}
+
+Loads API document in OpenAPI format and adds a schema for each allOf type.
+Optionally adds information for each oneOf and anyOf case.
+)
+      exit 0
+    end
+  end
+  parser.order!
+
+  doc = Common.load_source(input_name)
+  return 2 if doc.nil?
+
+  path = schema_path.split('/').reject { |x| x == '#' || x.empty? }
+  schemas = doc.dig(*path)
+  unless schemas.nil?
+    schemas.keys.sort.each do |name|
+      s = schemas[name]
+      items = s['allOf']
+      unless items.nil?
+        t = all_of(items, schemas, name)
+        # Here allOf is accompanied by reference to new type.
+        # I could add '#/components/allOf/' and keep new types there.
+        # If I really want to get rid of 'allOf' then I would assign
+        # schemas[name] = t and lose information about the original allOf
+        # but let's retain the information.
+        # This is supposed to be handy, so let's not complicate things.
+        s['$ref'] = reference(t, schemas, schema_path) unless t == false
+        next
+      end
+      items = s['oneOf']
+      unless items.nil?
+        # Can only check and complain.
+        one_of(items, schemas, name)
+        next
+      end
+      # anyOf is fine as is since multiple matches are ok.
+      # Discriminator might again affect what is selected.
+      # Otherwise there is no need to do anything.
+    end
+  end
+  return 4 unless warning || Common::Out.count.zero?
+  Common.dump_result(output_name, doc, 3)
+end
+
+exit(main) if defined?($unit_test).nil?

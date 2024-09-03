@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright 2024-2025 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../shared/unittest'
+
+$unit_test = 0
+require_relative '../lib/openapi/sourcetools/generate'
+
+$context = 'executable_bits_on'
+def ebo(s)
+  OpenAPISourceTools::executable_bits_on(s.to_i(8)).to_s(8)
+end
+m = ebo('100644')
+assert(m, '100755', 'all exe on')
+m = ebo('100640')
+assert(m, '100750', 'ug exe on')
+m = ebo('100400')
+assert(m, '100500', 'u exe on')
+m = ebo('111111')
+assert(m, '111111', 'unchanged')
+m = ebo('444444')
+assert(m, '444555', 'a exe on')
+m = ebo('400')
+assert(m, '500', 'short u exe on')
+m = ebo('666')
+assert(m, '777', 'all rwx')
+m = ebo('754')
+assert(m, '755', 'o exe on')
+m = ebo('755')
+assert(m, '755', 'unchanged')
+m = ebo('40')
+assert(m, '50', 'too short but exe on')
+
+exit $unit_test

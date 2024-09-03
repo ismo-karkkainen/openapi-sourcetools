@@ -1,0 +1,73 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright © 2024-2025 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../lib/openapi/sourcetools/common'
+require_relative '../lib/openapi/sourcetools/config'
+require_relative '../lib/openapi/sourcetools/gen'
+require 'optparse'
+include OpenAPISourceTools
+
+
+def main
+  prefix = nil
+  keys = nil
+  read = false
+
+  parser = OptionParser.new do |opts|
+    opts.summary_indent = '  '
+    opts.summary_width = 26
+    opts.banner = 'Usage: openapi-generate-checkconfig [options]'
+    opts.separator ''
+    opts.separator 'Options:'
+    opts.on('-c', '--config NAME', 'Use config prefix NAME.') do |c|
+      prefix = c
+    end
+    opts.on('-s', '--separator STRING', 'Use separator STRING.') do |s|
+      Gen.separator = s unless s.empty?
+    end
+    opts.on('-r', '--[no-]read', "Show if file is read by read_contents, default #{Common.yesno(read)}.") do |b|
+      read = b
+    end
+    opts.on('-k', '--keys KEYS', 'Show all values of KEYS.') do |ks|
+      keys = ks.split('/').reject { |k| k.empty? } unless ks.empty?
+      keys = nil if !keys.nil? && keys.empty?
+    end
+    opts.on('-h', '--help', 'Print this help and exit.') do
+      $stdout.puts %(#{opts}
+Displays configurations files that are found using specific prefix and an
+optional separator character or string.
+
+If KEYS, separated by "/", is given, the value of that key path is displayed.
+That and read check require the configuration files to be YAML/JSON.
+)
+      exit 0
+    end
+  end
+  parser.order!
+
+  return Common.aargh('Config must be given.', 1) if prefix.nil?
+  cfgs = ConfigLoader.find_files(name_prefix: prefix)
+  ConfigLoader.read_contents(cfgs) if read || !keys.nil?
+  root_dir, _p = ConfigLoader.prepare_prefix(prefix, Gen.wd)
+  drop = root_dir.size + 1
+  cfgs.each do |cfg|
+    ks = cfg.keys.join('/')
+    info = "#{cfg.root}: #{ks.empty? ? '(root)' : ks}, #{cfg.path[drop..]}"
+    ki = nil
+    unless keys.nil? || cfg.content.nil?
+      v = cfg.content.dig(*keys)
+      ki = "#{v}" unless v.nil?
+    end
+    ri = read ? !cfg.content.nil? : nil
+    next if (read || !keys.nil?) && ki.nil? && ri.nil?
+    puts info
+    puts "  #{ki}" unless ki.nil?
+    puts "  File is #{ri ? '' : 'not ' }read." unless ri.nil?
+  end
+  0
+end
+
+exit(main)

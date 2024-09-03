@@ -1,0 +1,128 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright © 2024-2025 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../lib/openapi/sourcetools/apiobjects'
+require_relative '../lib/openapi/sourcetools/common'
+require 'optparse'
+include OpenAPISourceTools
+
+
+def remove_subitem(obj, path)
+  return obj.delete(path.first) || {} if path.size == 1
+  parent = obj.dig(*path.take(path.size - 1))
+  return {} if parent.nil?
+  parent.delete(path.last) || {}
+end
+
+def replace_inlines(obj, components, top_level_name = nil)
+  if obj.is_a?(Array)
+    obj.each do |o|
+      return false unless replace_inlines(o, components)
+    end
+    return true
+  end
+  return true unless obj.is_a?(Hash)
+  if obj.key?('$ref')
+    components.store_anchor(obj)
+    # Here would be the place to get rid of other keys if so desired.
+    return true
+  end
+  # Is inlined, process parts recursively.
+  items = obj['allOf']
+  items = obj['anyOf'] if items.nil?
+  items = obj['oneOf'] if items.nil?
+  # All above need special treatment in code generation templates.
+  return replace_inlines(items, components) unless items.nil?
+  t = obj['type']
+  if t.nil? # Some kind of intermediate-level object.
+    (obj.keys.sort! { |a, b| a.to_s <=> b.to_s }).each do |key|
+      next if key == 'securitySchemes'
+      return false unless replace_inlines(obj[key], components)
+    end
+    return true
+  end
+  case t
+  when 'array'
+    return false unless replace_inlines(obj['items'], components)
+  when 'object'
+    props = obj.fetch('properties', {})
+    props.keys.sort!.each do |name|
+      return false unless replace_inlines(props[name], components)
+    end
+  end
+  r = components.ref_string(top_level_name) || components.reference(obj)
+  components.store_anchor(obj, r)
+  obj.replace({ '$ref' => r }) if top_level_name.nil?
+  true
+end
+
+def replace_anchor_refs(obj, components)
+  if obj.is_a?(Array)
+    obj.each do |o|
+      replace_anchor_refs(o, components)
+    end
+    return
+  end
+  return unless obj.is_a?(Hash)
+  r = obj['$ref']
+  obj['$ref'] = components.anchor_ref_replacement(r) unless r.nil?
+  obj.each_value do |value|
+    # Loops over $ref value but that is a string so nothing done to it.
+    replace_anchor_refs(value, components)
+  end
+end
+
+def main
+  input_name = nil
+  output_name = nil
+  path = %w[components schemas]
+  components = ApiObjects::Components.new(path, 'Schema')
+
+  parser = OptionParser.new do |opts|
+    opts.summary_indent = '  '
+    opts.summary_width = 26
+    opts.banner = 'Usage: openapi-addschemas [options]'
+    opts.separator ''
+    opts.separator 'Options:'
+    opts.on('-i', '--input FILE', 'Read API spec from FILE, not stdin.') do |f|
+      input_name = f
+    end
+    opts.on('-o', '--output FILE', 'Output to FILE, not stdout.') do |f|
+      output_name = f
+    end
+    components.add_options(opts)
+    opts.on('-h', '--help', 'Print this help and exit.') do
+      $stdout.puts %(#{opts}
+
+Loads API document in OpenAPI format and adds a schema for each inline type.
+
+#{components.help}
+)
+      exit 0
+    end
+  end
+  parser.order!
+
+  doc = Common.load_source(input_name)
+  return 2 if doc.nil?
+
+  # Find schema object and remove it temporarily to prevent being
+  # processed again.
+  components.items = remove_subitem(doc, path)
+  # Get rid of inlined types within existing schemas first.
+  components.items.keys.sort!.each do |k|
+    components.add_schema_name(k)
+    return 4 unless replace_inlines(components.items[k], components, k)
+  end
+  return 4 unless replace_inlines(doc, components)
+  components.alter_anchors
+  Common.bury(doc, path, components.items) unless components.items.empty?
+  replace_anchor_refs(doc, components)
+
+  Common.dump_result(output_name, doc, 3)
+end
+
+exit(main) if defined?($unit_test).nil?

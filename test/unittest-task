@@ -1,0 +1,132 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright 2024-2025 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../shared/unittest'
+require 'yaml'
+
+
+module Gen
+  attr_accessor :t
+  module_function :t
+  module_function :t=
+  attr_accessor :x
+  module_function :x
+  module_function :x=
+
+  def self.context_binding
+    binding
+  end
+end
+
+$unit_test = 0
+require_relative '../lib/openapi/sourcetools/task'
+include OpenAPISourceTools
+
+$context = 'initialize'
+def get_content(name)
+  `cat #{name}`
+end
+begin
+  t = Task.new(nil, nil, nil)
+rescue Exception => e
+  assert(e.is_a?(ArgumentError), true, 'No template info raises ArgumentError')
+end
+tn = '../test-generate/unittest-task-ok.erb'
+t = Task.new('src', nil, tn)
+assert(t.src, 'src', 'Source set')
+assert(t.template_name, tn, 'Template name set')
+c = get_content(tn)
+assert(t.template, c, 'Template loaded')
+assert(t.name.nil?, true, 'No name')
+assert(t.executable, false, 'Not executable')
+assert(t.discard, false, 'Not discarded')
+assert(t.x.nil?, true, 'x not set')
+t = Task.new('src', c, tn)
+assert(t.src, 'src', 'Source set')
+assert(t.template_name, tn, 'Template name set')
+assert(t.template, c, 'Template stored')
+
+$context = 'internal_generate'
+Gen.t = t
+t.x = { 'out' => 'ok' }
+r = t.internal_generate(Gen.context_binding)
+assert(r.strip!, t.x['out'], 'Returns expected value')
+tn = '../test-generate/unittest-task-error.erb'
+t = Task.new('src', nil, tn)
+Gen.t = t
+begin
+  r = t.internal_generate(Gen.context_binding)
+  assert(true, false, 'Exception not raised')
+rescue Exception
+  assert(true, true, 'Exception raised')
+end
+
+$context = 'generate'
+tn = '../test-generate/unittest-task-ok.erb'
+t = Task.new('src', nil, tn)
+Gen.t = t
+t.x = { 'out' => 'ok' }
+r = t.generate(Gen.context_binding)
+assert(r.strip!, t.x['out'], 'Returns expected value')
+tn = '../test-generate/unittest-task-error.erb'
+t = Task.new('src', nil, tn)
+Gen.t = t
+r = t.generate(Gen.context_binding)
+assert(r.is_a?(Integer), true, 'Internal exception handled')
+
+$context = 'output_name'
+tn = '../test-generate/unittest-task-ok.erb'
+c = get_content(tn)
+t = Task.new('src', nil, tn)
+Gen.t = t
+t.x = { 'out' => 'ok' }
+r = t.generate(Gen.context_binding)
+assert(t.name, t.x['out'], 'Output name present')
+assert(t.output_name, t.name, 'Output name returned')
+t = Task.new('src', nil, tn)
+Gen.t = t
+r = t.generate(Gen.context_binding)
+assert(t.name.nil?, true, 'Output name not set')
+assert(t.output_name, File.basename(tn), 'Template name used')
+t = Task.new('src', c, nil)
+Gen.t = t
+r = t.generate(Gen.context_binding)
+assert(t.name.nil?, true, 'Output name not set')
+assert(t.output_name.nil?, true, 'No template name to use')
+
+$context = 'WriteTask'
+begin
+  t = WriteTask.new(nil, nil)
+rescue Exception => e
+  assert(e.is_a?(ArgumentError), true, 'nil arguments raise ArgumentError')
+end
+begin
+  t = WriteTask.new(nil, 'contents')
+rescue Exception => e
+  assert(e.is_a?(ArgumentError), true, 'nil name raises ArgumentError')
+end
+begin
+  t = WriteTask.new('name', nil)
+rescue Exception => e
+  assert(e.is_a?(ArgumentError), true, 'nil contents raise ArgumentError')
+end
+t = WriteTask.new('name', 'contents')
+assert(t.name, 'name', 'Name set')
+assert(t.output_name, t.name, 'output_name ok')
+assert(t.generate(nil), 'contents', 'Contents returned')
+assert(t.executable, false, 'Not executable')
+assert(t.system, false, 'Not system task')
+
+$context = 'RestoreProcessorStorage'
+t = RestoreProcessorStorage.new()
+assert(t.system, true, 'System task')
+assert(t.discard, true, 'Discards output')
+Gen.x = []
+t.generate(nil)
+assert(Gen.x.is_a?(Hash), true, 'Gen.x is a Hash after generate')
+assert(Gen.x.empty?, true, 'Gen.x empty after generate')
+
+exit $unit_test

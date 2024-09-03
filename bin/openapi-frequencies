@@ -1,0 +1,79 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright © 2021-2025 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../lib/openapi/sourcetools/apiobjects'
+require_relative '../lib/openapi/sourcetools/common'
+require 'optparse'
+include OpenAPISourceTools
+
+def main
+  input_name = nil
+  output_name = nil
+  paths_name = nil
+
+  parser = OptionParser.new do |opts|
+    opts.summary_indent = '  '
+    opts.summary_width = 24
+    opts.banner = 'Usage: openapi-frequencies [options]'
+    opts.separator ''
+    opts.separator 'Options:'
+    opts.on('-i', '--input FILE', 'Read source from FILE, not stdin.') do |f|
+      input_name = f
+    end
+    opts.on('-o', '--output FILE', 'Output result to FILE, not stdout.') do |f|
+      output_name = f
+    end
+    opts.on('-p', '--paths FILE', 'Path log file name.') do |f|
+      paths_name = f
+    end
+    opts.on('-h', '--help', 'Print this help and exit.') do
+      $stdout.puts %(#{opts}
+
+Matches given OpenAPI document file paths with paths from file and adds
+into each path object matching count as "freq".
+)
+      exit 0
+    end
+  end
+  parser.order!
+
+  return Common.aargh('Path log file name must be given.', 1) if paths_name.nil?
+
+  doc = Common.load_source(input_name)
+  return 2 if doc.nil?
+
+  begin
+    # Expect one path per line with nothing else. Query is allowed and ignored.
+    f = File.new(paths_name, 'rt')
+    f.each_line do |line|
+      p = ApiObjects::ServerPath.new(Common.split_path(line))
+      doc['paths'].each_value do |info|
+        next unless (p <=> info['parts']).zero?
+        info['freq'] = info.fetch('freq', 0) + 1
+        # Lookalikes are the others that can be matched, since path has no
+        # variables so any change in fixed parts (not a lookalike) will be a
+        # mismatch with path.
+        info['lookalike'].each do |path|
+          cand = doc['paths'][path]
+          next unless (p <=> cand['parts']).zero?
+          cand['freq'] = cand.fetch('freq', 0) + 1
+        end
+        break
+      end
+    end
+    f.close
+  rescue Errno::ENOENT
+    return Common.aargh("Could not read path log file: #{paths_name}", 4)
+  rescue NoMethodError
+    return Common.aargh('Is input file an output of openapi-processpaths?', 5)
+  rescue StandardError => e
+    return Common.aargh(e.to_s, 6)
+  end
+
+  Common.dump_result(output_name, doc, 3)
+end
+
+exit(main) if defined?($unit_test).nil?

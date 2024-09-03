@@ -1,0 +1,81 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright 2024-2025 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../shared/unittest'
+require 'yaml'
+
+$unit_test = 0
+require_relative '../lib/openapi/sourcetools/output'
+
+$context = 'OutputConfiguration'
+c = OpenAPISourceTools::OutputConfiguration.new
+assert(c.indent_character, ' ', 'default indent character')
+assert(c.indent_step, 4, 'default indent step')
+assert(c.tab, "\t", 'default tab')
+assert(c.tab_replaces_count, 0, 'default tab replace count')
+opts = {
+  'indent_character' => 'x',
+  'indent_step' => 3,
+  'tab' => 'Y',
+  'tab_replaces_count' => 2,
+  'silently_ignored' => 'unused value',
+  also_silently_ignored: 7
+}
+c = OpenAPISourceTools::OutputConfiguration.new(opts)
+assert(c.indent_character, opts['indent_character'], 'indent character copied')
+assert(c.indent_step, opts['indent_step'], 'indent step copied')
+assert(c.tab, opts['tab'], 'tab copied')
+assert(c.tab_replaces_count, opts['tab_replaces_count'], 'tab replace count copied')
+
+$context = 'join'
+o = OpenAPISourceTools::Output.new
+assert(o.last_indent, 0, 'last indent starts from 0')
+src = [ 1, 'a', 2, 'b', 'c', -1, 'd', nil, 'e', true, 'f', false, "g\nh", true, true, "i\nj" ]
+s = o.join(src)
+lines = s.lines(chomp: true)
+assert(lines.size, 10, 'correct number of lines')
+assert(lines[0], ' a', 'indented 1')
+assert(lines[1], '   b', 'indented 3')
+assert(lines[2], '   c', 'indented 3 again')
+assert(lines[3], '  d', 'indented 1 less')
+assert(lines[4], 'e', 'not indented')
+assert(lines[5], '    f', 'indented by step')
+assert(lines[6], 'g', 'indented step less')
+assert(lines[7], 'h', 'indented same as previous')
+assert(lines[8], '        i', 'indented two steps more')
+assert(lines[9], '        j', 'indented same')
+assert(o.last_indent, 8, 'last indent set')
+
+opts = {
+  'indent_character' => 'xx',
+  'indent_step' => 3,
+  'tab' => 'Y',
+  'tab_replaces_count' => 2
+}
+c = OpenAPISourceTools::OutputConfiguration.new(opts)
+o = OpenAPISourceTools::Output.new
+o.config = c
+src = [ 'a', 1, 'b', true, 'c', -2, {}, 3, 'd', nil ]
+s = o.join(src)
+lines = s.lines(chomp: true)
+assert(lines.size, 5, '5 lines')
+assert(lines[0], 'a', 'not indented')
+assert(lines[1], 'xxb', 'indented 1')
+assert(lines[2], 'YYc', 'indented 4 and replaced')
+assert(lines[3], 'Y{}', 'indented 2 and replaced')
+assert(lines[4], 'YYxxd', 'indented 5, replaced 2')
+assert(o.last_indent, 0, 'last indent 0 after nil')
+
+$context = 'config='
+begin
+  o.config = []
+  assert(true, false, 'no exception')
+rescue ArgumentError => e
+  assert(true, true, 'wrong config type')
+end
+assert(o.config, c, 'config not changed')
+
+exit $unit_test

@@ -1,0 +1,191 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright 2024-2025 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../shared/unittest'
+
+$unit_test = 0
+require_relative '../lib/openapi/sourcetools/config'
+include OpenAPISourceTools
+
+$context = 'ConfigFileInfo.initialize'
+pieces = [ 'foo', :dir, 'bar', :extension, 'anything' ]
+path = 'foo_bar'
+c = ConfigLoader::ConfigFileInfo.new(pieces, path)
+assert(c.path, path, 'path copied as is')
+assert(c.root, pieces.first, 'first string is root')
+assert(c.keys.size, 1, 'one key, no extension')
+assert(c.keys.first, pieces[2], "key is #{pieces[2]}")
+assert(c.content.nil?, true, 'no content')
+pieces = [ 'p0', :dir, :dir, 'p1', :dir, :separator, :separator, 'p2', :separator, :dir, 'p3', :dir, :dir, 'p4' ]
+path = 'p0//p1/++p2+/p3//p4'
+c = ConfigLoader::ConfigFileInfo.new(pieces, path)
+assert(c.root, pieces.first, 'first piece is root')
+assert(c.keys, [ 'p1', 'p2', 'p3', 'p4' ], 'strings remain')
+
+$context = 'ConfigFileInfo.bury_content'
+pieces = [ 'foo', :dir, 'bar', :extension, 'anything' ]
+path = 'foo_bar'
+c = ConfigLoader::ConfigFileInfo.new(pieces, path)
+cn = { 'key' => 'value' }
+c.bury_content(cn)
+assert(c.content.key?('bar'), true, 'key added to hash')
+assert(c.content['bar'], cn, 'content present')
+pieces = [ 'foo', :dir, 'lvl0', :dir, 'lvl1', :separator, 'lvl2' ]
+path = 'foo/lvl0/lvl1+lvl2'
+c = ConfigLoader::ConfigFileInfo.new(pieces, path)
+cn = { 'key' => 'value', 'key2' => { 'lvl1' => 'bar'} }
+c.bury_content(cn)
+ct = c.content
+c.keys.each do |k|
+  assert(ct.key?(k), true, "has key #{k}")
+  ct = ct[k]
+end
+assert(ct, cn, 'content present as is')
+
+$context = 'prepare_prefix'
+module Gen
+  attr_accessor(:wd)
+  module_function(:wd)
+  module_function((:wd.to_s + '=').to_sym)
+  attr_accessor(:config)
+  module_function(:config)
+  module_function((:config.to_s + '=').to_sym)
+  attr_reader(:separator)
+  module_function(:separator)
+  module_function((:separator.to_s + '=').to_sym)
+end
+Gen.config = 'testcfg'
+Gen.separator = '+'
+r, n = ConfigLoader.prepare_prefix('nodir', '/tmp')
+assert(r, '/tmp', "no directory, result ok")
+assert(n, 'nodir', "no directory, name ok")
+r, n = ConfigLoader.prepare_prefix(File.join(File.basename(Dir.pwd), 'testcfg'), File.realpath('..', Dir.pwd))
+assert(r, Dir.pwd, "prefix directory and name, directory ok")
+assert(n, 'testcfg', "prefix directory and name, name ok")
+r, n = ConfigLoader.prepare_prefix('.', Dir.pwd)
+assert(r, File.dirname(Dir.pwd), 'prefix ".", directory ok')
+assert(n, File.basename(Dir.pwd), 'prefix ".", name ok')
+
+$context = 'find_filenames'
+root, name_prefix = ConfigLoader.prepare_prefix('filewdir', File.join(Dir.pwd, '../test-generate/cfg+'))
+fps = ConfigLoader.find_filenames(root, name_prefix)
+assert(fps.size, 7, '7 files found')
+fps.sort!
+[ '/filewdir1.yaml', '/filewdir2.yaml', '/filewdir+root0+key1+key10.yaml', '/filewdir.yaml', '/filewdir/root0.yaml', '/filewdir/root0+key0.yaml', '/filewdir/root2/rk20.yaml' ].each do |suffix|
+  assert((fps.index { |fp| fp.end_with?(suffix) }).nil?, false, "Found #{suffix}")
+end
+
+$context = 'path_splitter'
+s = ConfigLoader.path_splitter(nil)
+pcs = 'foo/bar+baz'.split(s)
+assert(pcs, ['foo', '/', 'bar+baz'], 'split using path separator')
+s = ConfigLoader.path_splitter('+')
+pcs = 'foo/bar+baz'.split(s)
+assert(pcs, ['foo', '/', 'bar', '+', 'baz'], 'split using "+"')
+s = ConfigLoader.path_splitter('==')
+pcs = 'foo/bar==baz'.split(s)
+assert(pcs, ['foo', '/', 'bar', '==', 'baz'], 'split using "=="')
+
+$context = 'remove_extension'
+n = 'name'
+f, e = ConfigLoader.remove_extension(n, [ '.yaml', '.*' ])
+assert(f, n, 'file name returned')
+assert(e.nil?, true, 'nil extension')
+f, e = ConfigLoader.remove_extension('name.yaml', [ '.yaml', '.*' ])
+assert(f, 'name', 'name without extension')
+assert(e, '.yaml', 'extension')
+f, e = ConfigLoader.remove_extension('name.something', [ '.yaml', '.*' ])
+assert(f, 'name', 'base name returned')
+assert(e, '.something', 'extension')
+f, e = ConfigLoader.remove_extension('dir.ext/name.ext', [ '.yaml', '.*' ])
+assert(f, 'dir.ext/name', 'name returned')
+assert(e, '.ext', 'extension')
+f, e = ConfigLoader.remove_extension('dir.ext/name', [ '.yaml', '.*' ])
+assert(f, 'dir.ext/name', 'name returned as is')
+assert(e.nil?, true, 'no extension')
+
+$context = 'convert_path_end'
+r = '/root/'
+s = ConfigLoader.path_splitter('+')
+c = ConfigLoader.convert_path_end(r + 'foo/bar+baz', s, r.size, [])
+assert(c.root, 'foo', 'correct root')
+assert(c.keys, [ 'bar', 'baz' ], 'correct pieces')
+c = ConfigLoader.convert_path_end(r + 'foo//bar++baz', s, r.size, [])
+assert(c.root, 'foo', 'correct root')
+assert(c.keys, [ 'bar', 'baz' ], 'empty parts ignored')
+c = ConfigLoader.convert_path_end(r + 'foo/bar+baz.yaml', s, r.size, [ '.yaml' ])
+assert(c.root, 'foo', 'correct root')
+assert(c.keys, [ 'bar', 'baz' ], 'extension not in keys')
+
+$context = 'ConfigFileInfo.<=>'
+s = ConfigLoader.path_splitter('+')
+a = ConfigLoader.convert_path_end('foo', s, 0, [])
+b = ConfigLoader.convert_path_end('bar', s, 0, [])
+assert((a <=> b).positive?, true, 'root decides')
+b = ConfigLoader.convert_path_end('foo4', s, 0, [])
+assert((a <=> b).negative?, true, 'shorter root')
+a = ConfigLoader.convert_path_end('foo/baz', s, 0, [])
+b = ConfigLoader.convert_path_end('foo/bar/baz', s, 0, [])
+assert((a <=> b).negative?, true, 'fewer keys first')
+a = ConfigLoader.convert_path_end('foo/bar', s, 0, [])
+b = ConfigLoader.convert_path_end('foo/baz', s, 0, [])
+assert((a <=> b).negative?, true, 'same root, keys in string order')
+a = ConfigLoader.convert_path_end('foo+/bar', s, 0, [])
+b = ConfigLoader.convert_path_end('foo/baz', s, 0, [])
+assert((a <=> b).negative?, true, 'path decides')
+
+$context = 'find_files'
+Gen.wd = Dir.pwd
+cfis = ConfigLoader.find_files(name_prefix: '../test-generate/cfg+/filewdir')
+assert(cfis.size, 7, '7 files found')
+assert(cfis[0].path.end_with?('/filewdir.yaml'), true, 'main file')
+assert(cfis[1].path.end_with?('/filewdir/root0.yaml'), true, 'level down')
+assert(cfis[2].path.end_with?('/filewdir/root0+key0.yaml'), true, 'real and mock')
+assert(cfis[3].path.end_with?('/filewdir/root2/rk20.yaml'), true, 'two real')
+assert(cfis[4].path.end_with?('/filewdir+root0+key1+key10.yaml'), true, 'mocks')
+assert(cfis[5].path.end_with?('/filewdir1.yaml'), true, 'override file')
+assert(cfis[6].path.end_with?('/filewdir2.yaml'), true, 'override file 2')
+Gen.separator = '__'
+cfis = ConfigLoader.find_files(name_prefix: '../test-generate/cfg__/filewdir')
+assert(cfis.size, 7, '7 files found')
+assert(cfis[0].path.end_with?('/filewdir.yaml'), true, 'main file')
+assert(cfis[1].path.end_with?('/filewdir/root0.yaml'), true, 'level down')
+assert(cfis[2].path.end_with?('/filewdir/root0__key0.yaml'), true, 'real and mock')
+assert(cfis[3].path.end_with?('/filewdir/root2/rk20.yaml'), true, 'two real')
+assert(cfis[4].path.end_with?('/filewdir__root0__key1__key10.yaml'), true, 'mocks')
+assert(cfis[5].path.end_with?('/filewdir1.yaml'), true, 'override file')
+assert(cfis[6].path.end_with?('/filewdir2.yaml'), true, 'override file 2')
+Gen.separator = '+'
+cfis = ConfigLoader.find_files(name_prefix: '../test-generate/cfgname/cfgname')
+assert(cfis.size, 8, '8 files found')
+assert(cfis[0].path.end_with?('/cfgname.yaml'), true, 'main file')
+assert(cfis[1].path.end_with?('/cfgname/name.yaml'), true, 'level down')
+assert(cfis[2].path.end_with?('/cfgname+subdir+name.yaml'), true, 'two mocks')
+assert(cfis[3].path.end_with?('/cfgname+subdir/name.yaml'), true, 'mock and real')
+assert(cfis[4].path.end_with?('/cfgname/subdir+name.yaml'), true, 'real and mock')
+assert(cfis[5].path.end_with?('/cfgname/subdir/name.yaml'), true, 'two levels down')
+assert(cfis[6].path.end_with?('/cfgnamelocal/name.yaml'), true, 'local override')
+assert(cfis[7].path.end_with?('/cfgnamespecial.yaml'), true, 'special override')
+
+$context = 'read_contents'
+cfis = ConfigLoader.find_files(name_prefix: '../test-generate/cfg+/filewdir')
+ConfigLoader.read_contents(cfis)
+assert(cfis[0].content, {"root0"=>{"key0"=>"value0", "key1"=>{"key10"=>"value10", "key11"=>["value11a", "value11b"]}}, "root1"=>{}}, 'main content')
+assert(cfis[1].content.dig(*cfis[1].keys), {"key2"=>"value2"}, 'mapping')
+assert(cfis[2].content.dig(*cfis[2].keys), [1, 2], 'array')
+assert(cfis[3].content.dig(*cfis[3].keys), 'rkvalue0', 'string')
+assert(cfis[4].content.dig(*cfis[4].keys), 'value10over', 'string too')
+assert(cfis[5].content, {"root1"=>{"rk0"=>"rv1", "rk1"=>"rv2"}}, 'replacements')
+assert(cfis[6].content, {"root1"=>{"rk1"=>"rv3"}}, 'replacement')
+
+$context = 'contents_array'
+cs = ConfigLoader.contents_array(cfis)
+assert(cs.size, cfis.size, 'same length')
+cfis.size.times do |k|
+  assert(cs[k], cfis[k].content, "same content #{k}")
+end
+
+exit $unit_test

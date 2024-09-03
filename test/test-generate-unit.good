@@ -1,0 +1,362 @@
+####COMMAND Unit tests
+####CODE 0
+####OUT
+ok: same: Number is not string
+ok: same: Hash is not string
+ok: same: Number is not Hash
+ok: same: Equal numbers
+ok: same: Different types
+ok: same: Different lengths
+ok: same: Different keys
+ok: same: Same contents
+ok: same: Same contents ignoring summary
+ok: same: Same contents ignoring description
+ok: same: Same contents ignoring description and summary
+ok: reference: New name added
+ok: reference: Same object yields same reference
+ok: reference: No new name added
+ok: reference: No new name added either
+ok: reference: No new name added with prefix
+ok: reference: New reference added with prefix
+ok: reference: Reference starts with prefix
+ok: Components.reference: New name added
+ok: Components.reference: Same object yields same reference
+ok: Components.reference: No new name added
+ok: Components.reference: No new name added either
+ok: Components.reference: No new name added with prefix
+ok: Components.reference: New reference added with prefix
+ok: Components.reference: Reference starts with prefix
+ok: Components.add_schema_name: Schema name in set
+ok: Components.add_schema_name: Schema name not in set
+ok: Components.store_anchor: Not anchor, not added
+ok: Components.store_anchor: name mapped to given ref
+ok: Components.store_anchor: Exception raised
+ok: Components.store_anchor: name2 mapped to obj ref
+ok: Components.alter_anchors: size 2
+ok: Components.alter_anchors: name to ref
+ok: Components.alter_anchors: existing to ref2
+ok: Components.alter_anchors: size unchanged
+ok: Components.alter_anchors: name to ref string
+ok: Components.alter_anchors: existing unchanged
+ok: Components.anchor_ref_replacement: absent not changed
+ok: Components.anchor_ref_replacement: name found
+ok: Components.anchor_ref_replacement: existing found
+####ERR
+####COMMAND Docs unit tests
+####CODE 0
+####OUT
+ok: add: Added name
+ok: add: Stored ok
+ok: add: Not added
+ok: add: Stored still ok
+ok: add: Unset name
+####ERR
+####COMMAND Output unit tests
+####CODE 0
+####OUT
+ok: OutputConfiguration: default indent character
+ok: OutputConfiguration: default indent step
+ok: OutputConfiguration: default tab
+ok: OutputConfiguration: default tab replace count
+ok: OutputConfiguration: indent character copied
+ok: OutputConfiguration: indent step copied
+ok: OutputConfiguration: tab copied
+ok: OutputConfiguration: tab replace count copied
+ok: join: last indent starts from 0
+ok: join: correct number of lines
+ok: join: indented 1
+ok: join: indented 3
+ok: join: indented 3 again
+ok: join: indented 1 less
+ok: join: not indented
+ok: join: indented by step
+ok: join: indented step less
+ok: join: indented same as previous
+ok: join: indented two steps more
+ok: join: indented same
+ok: join: last indent set
+ok: join: 5 lines
+ok: join: not indented
+ok: join: indented 1
+ok: join: indented 4 and replaced
+ok: join: indented 2 and replaced
+ok: join: indented 5, replaced 2
+ok: join: last indent 0 after nil
+ok: config=: wrong config type
+ok: config=: config not changed
+####ERR
+####COMMAND Helper unit tests
+####CODE 0
+####OUT
+ok: store_parents/parent: Top level no parent
+ok: store_parents/parent: single parent is top
+ok: store_parents/parent: Offspring third parent is top
+ok: store_parents/parent: Offspring fourth parent is top
+ok: store_parents/parent: Child first parent is single
+ok: store_parents/parent: Child second parent is single
+ok: store_parents/parent: Child first2 parent is first
+ok: store_parents/parent: Other object has no parent
+ok: store_parents/parent: Keys have no parent
+ok: store_parents/parent: String value has no parent
+ok: category_and_name: Not string
+ok: category_and_name: ref not string
+ok: category_and_name: Not reference string
+ok: category_and_name: ref not reference string
+ok: category_and_name: Not reference string
+ok: category_and_name: category found
+ok: category_and_name: name found
+ok: category_and_name: category found again
+ok: category_and_name: name found again
+ok: dereference: invalid
+ok: dereference: no category
+ok: dereference: no name
+ok: dereference: valid
+ok: basename: invalid
+ok: basename: missing part
+ok: basename: name returned
+ok: parameters: no parameters
+ok: parameters: one parameter
+ok: parameters: name matches
+ok: parameters: one parameter
+ok: parameters: name matches
+ok: parameters: two parameters
+ok: parameters: name matches
+ok: parameters: name matches
+ok: parameters: no local parameters
+ok: parameters: no local parameters
+####ERR
+####COMMAND Loaders unit tests
+####CODE 0
+####OUT
+ok: loaders: Has loaders
+ok: loaders: Loader is a method
+ok: loaders: Loader is a method
+ok: loaders: Loader is a method
+ok: loaders: Loader is a method
+ok: loaders: Loader is a method
+ok: loaders: Loader is a method
+ok: loaders: Loader is a method
+ok: req_loader: Standard error raised
+ok: req_loader: Rejects plain name
+ok: req_loader: Gem loaded
+ok: req_loader: Tasks data restore
+ok: rereq_loader: Standard error raised
+ok: rereq_loader: Rejects plain name
+ok: rereq_loader: Code accepted
+ok: rereq_loader: Code was run
+ok: rereq_loader: Tasks data restore
+ok: ruby_loader: Standard error raised on error in file
+ok: ruby_loader: Standard error raised on missing file
+ok: ruby_loader: Rejects other name
+ok: ruby_loader: Changed to loaded file directory
+ok: ruby_loader: File loaded
+ok: ruby_loader: Added task
+ok: ruby_loader: Tasks data restore
+ok: ruby_loader: Has same value as Gen.x
+ok: yaml_loader: No filename
+ok: yaml_loader: No name
+ok: yaml_loader: No name, no prefix
+ok: yaml_loader: Standard error raised
+ok: yaml_loader: Rejects plain name
+ok: yaml_loader: File loaded
+ok: yaml_loader: name defined
+ok: yaml_loader: File loaded with extension
+ok: yaml_loader: ext defined
+ok: bin_loader: No filename
+ok: bin_loader: No name
+ok: bin_loader: Standard error raised
+ok: bin_loader: Rejects plain name
+ok: bin_loader: File loaded
+ok: bin_loader: test defined
+ok: config_loader: No name
+ok: config_loader: Rejects plain name
+ok: config_loader: Name set
+ok: config_loader: config set
+ok: config_loader: config has value test
+ok: config_loader: Name set while previous exists
+ok: separator_loader: Not separator
+ok: separator_loader: Empty separator
+ok: separator_loader: separator set to nil
+ok: separator_loader: separator set
+ok: separator_loader: separator has value bar
+####ERR
+####COMMAND Task unit tests
+####CODE 0
+####OUT
+ok: initialize: No template info raises ArgumentError
+ok: initialize: Source set
+ok: initialize: Template name set
+ok: initialize: Template loaded
+ok: initialize: No name
+ok: initialize: Not executable
+ok: initialize: Not discarded
+ok: initialize: x not set
+ok: initialize: Source set
+ok: initialize: Template name set
+ok: initialize: Template stored
+ok: internal_generate: Gen defined
+ok: internal_generate: Returns expected value
+ok: internal_generate: Exception raised
+ok: generate: Gen defined
+ok: generate: Returns expected value
+ok: generate: Internal exception handled
+ok: output_name: Gen defined
+ok: output_name: Output name present
+ok: output_name: Output name returned
+ok: output_name: Gen defined
+ok: output_name: Output name not set
+ok: output_name: Template name used
+ok: output_name: Gen defined
+ok: output_name: Output name not set
+ok: output_name: No template name to use
+ok: WriteTask: nil arguments raise ArgumentError
+ok: WriteTask: nil name raises ArgumentError
+ok: WriteTask: nil contents raise ArgumentError
+ok: WriteTask: Name set
+ok: WriteTask: output_name ok
+ok: WriteTask: Contents returned
+ok: WriteTask: Not executable
+ok: WriteTask: Not system task
+ok: RestoreProcessorStorage: System task
+ok: RestoreProcessorStorage: Discards output
+ok: RestoreProcessorStorage: Gen.x is a Hash after generate
+ok: RestoreProcessorStorage: Gen.x empty after generate
+####ERR
+####COMMAND Gen unit tests
+####CODE 0
+####OUT
+ok: mod_attr_reader: Has read-only attribute.
+ok: mod_attr_accessor: Has readable attribute.
+ok: mod_attr_accessor: Has writable attribute.
+ok: defaults: doc nil
+ok: defaults: outdir nil
+ok: defaults: docs set
+ok: defaults: in_name nil
+ok: defaults: in_basename nil
+ok: defaults: tasks set
+ok: defaults: tasks is empty
+ok: defaults: g set
+ok: defaults: g is empty
+ok: defaults: x set
+ok: defaults: x is empty
+ok: defaults: h nil
+ok: defaults: t nil
+ok: defaults: task_index nil
+ok: defaults: loaders set
+ok: defaults: loaders is empty
+ok: setup: doc set
+ok: setup: outdir set
+ok: setup: in_name set
+ok: setup: in_basename set
+ok: setup: tasks set
+ok: setup: tasks has default helper task
+####ERR
+####COMMAND Config unit tests
+####CODE 0
+####OUT
+ok: ConfigFileInfo.initialize: path copied as is
+ok: ConfigFileInfo.initialize: first string is root
+ok: ConfigFileInfo.initialize: one key, no extension
+ok: ConfigFileInfo.initialize: key is bar
+ok: ConfigFileInfo.initialize: no content
+ok: ConfigFileInfo.initialize: first piece is root
+ok: ConfigFileInfo.initialize: strings remain
+ok: ConfigFileInfo.bury_content: key added to hash
+ok: ConfigFileInfo.bury_content: content present
+ok: ConfigFileInfo.bury_content: has key lvl0
+ok: ConfigFileInfo.bury_content: has key lvl1
+ok: ConfigFileInfo.bury_content: has key lvl2
+ok: ConfigFileInfo.bury_content: content present as is
+ok: prepare_prefix: no directory, result ok
+ok: prepare_prefix: no directory, name ok
+ok: prepare_prefix: prefix directory and name, directory ok
+ok: prepare_prefix: prefix directory and name, name ok
+ok: prepare_prefix: prefix ".", directory ok
+ok: prepare_prefix: prefix ".", name ok
+ok: find_filenames: 7 files found
+ok: find_filenames: Found /filewdir1.yaml
+ok: find_filenames: Found /filewdir2.yaml
+ok: find_filenames: Found /filewdir+root0+key1+key10.yaml
+ok: find_filenames: Found /filewdir.yaml
+ok: find_filenames: Found /filewdir/root0.yaml
+ok: find_filenames: Found /filewdir/root0+key0.yaml
+ok: find_filenames: Found /filewdir/root2/rk20.yaml
+ok: path_splitter: split using path separator
+ok: path_splitter: split using "+"
+ok: path_splitter: split using "=="
+ok: remove_extension: file name returned
+ok: remove_extension: nil extension
+ok: remove_extension: name without extension
+ok: remove_extension: extension
+ok: remove_extension: base name returned
+ok: remove_extension: extension
+ok: remove_extension: name returned
+ok: remove_extension: extension
+ok: remove_extension: name returned as is
+ok: remove_extension: no extension
+ok: convert_path_end: correct root
+ok: convert_path_end: correct pieces
+ok: convert_path_end: correct root
+ok: convert_path_end: empty parts ignored
+ok: convert_path_end: correct root
+ok: convert_path_end: extension not in keys
+ok: ConfigFileInfo.<=>: root decides
+ok: ConfigFileInfo.<=>: shorter root
+ok: ConfigFileInfo.<=>: fewer keys first
+ok: ConfigFileInfo.<=>: same root, keys in string order
+ok: ConfigFileInfo.<=>: path decides
+ok: find_files: 7 files found
+ok: find_files: main file
+ok: find_files: level down
+ok: find_files: real and mock
+ok: find_files: two real
+ok: find_files: mocks
+ok: find_files: override file
+ok: find_files: override file 2
+ok: find_files: 7 files found
+ok: find_files: main file
+ok: find_files: level down
+ok: find_files: real and mock
+ok: find_files: two real
+ok: find_files: mocks
+ok: find_files: override file
+ok: find_files: override file 2
+ok: find_files: 8 files found
+ok: find_files: main file
+ok: find_files: level down
+ok: find_files: two mocks
+ok: find_files: mock and real
+ok: find_files: real and mock
+ok: find_files: two levels down
+ok: find_files: local override
+ok: find_files: special override
+ok: read_contents: main content
+ok: read_contents: mapping
+ok: read_contents: array
+ok: read_contents: string
+ok: read_contents: string too
+ok: read_contents: replacements
+ok: read_contents: replacement
+ok: contents_array: same length
+ok: contents_array: same content 0
+ok: contents_array: same content 1
+ok: contents_array: same content 2
+ok: contents_array: same content 3
+ok: contents_array: same content 4
+ok: contents_array: same content 5
+ok: contents_array: same content 6
+####ERR
+####COMMAND Generate unit tests
+####CODE 0
+####OUT
+ok: executable_bits_on: all exe on
+ok: executable_bits_on: ug exe on
+ok: executable_bits_on: u exe on
+ok: executable_bits_on: unchanged
+ok: executable_bits_on: a exe on
+ok: executable_bits_on: short u exe on
+ok: executable_bits_on: all rwx
+ok: executable_bits_on: o exe on
+ok: executable_bits_on: unchanged
+ok: executable_bits_on: too short but exe on
+####ERR

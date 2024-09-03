@@ -1,0 +1,9 @@
+---
+root0:
+  key0: value0
+  key1:
+    key10: value10
+    key11:
+    - value11a
+    - value11b
+root1: {}

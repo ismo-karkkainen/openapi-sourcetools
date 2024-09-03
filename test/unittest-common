@@ -1,0 +1,41 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright 2024-2025 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../shared/unittest'
+
+$unit_test = 0
+require_relative '../lib/openapi/sourcetools/common'
+include OpenAPISourceTools
+
+$context = 'aargh'
+assert(Common::aargh('message').nil?, true, 'Default return value')
+assert(Common::aargh('message2', 1), 1, 'Return value')
+
+$context = 'yesno'
+assert(Common::yesno(true), 'yes', 'True returns yes')
+assert(Common::yesno(false), 'no', 'False returns no')
+
+$context = 'bury'
+obj = { a: { c: 'c' } }
+path = [ :a, :b ]
+Common::bury(obj, path, 'b')
+assert(obj.dig(*path), 'b', 'New key inserted')
+obj = { a: { c: {} } }
+path = [ :a, :c, :d ]
+Common::bury(obj, path, 'd')
+assert(obj.dig(*path), 'd', 'New item found')
+obj = {}
+Common::bury(obj, path, 'd')
+assert(obj.dig(*path), 'd', 'New items along path found')
+
+$context = 'Out'
+Common::Out.put('visible')
+assert(Common::Out.count, 1, 'First message')
+Common::Out.quiet = true
+Common::Out.put('not visible')
+assert(Common::Out.count, 2, 'Second message')
+
+exit $unit_test

@@ -1,0 +1,125 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright 2024-2025 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../shared/unittest'
+require 'yaml'
+
+$unit_test = 0
+load '../bin/openapi-oftypes'
+
+$context = 'name_string'
+assert(name_string(''), '', 'Nothing')
+assert(name_string('a'), 'a', 'Single')
+assert(name_string('a/b/c'), 'c', 'Deep')
+
+$context = 'merge'
+def schemas
+  YAML.safe_load(%(---
+String:
+  type: string
+String2:
+  type: string
+  pattern: '^[0-9]+$'
+Number:
+  type: number
+NotObject:
+  type: Number
+AB:
+  type: object
+  properties:
+    a:
+      $ref: "#/components/schemas/String"
+    b:
+      $ref: "#/components/schemas/Number"
+  required:
+    - a
+AC:
+  type: object
+  properties:
+    a:
+      $ref: "#/components/schemas/String"
+    c:
+      $ref: "#/components/schemas/String"
+  required:
+    - a
+BC:
+  type: object
+  properties:
+    b:
+      $ref: "#/components/schemas/Number"
+    c:
+      $ref: "#/components/schemas/Number"
+  required:
+    - b
+BC2:
+  type: object
+  properties:
+    b:
+      $ref: "#/components/schemas/String"
+    c:
+      $ref: "#/components/schemas/Number"
+  required:
+    - b
+BC3:
+  type: object
+  properties:
+    b:
+      $ref: "#/components/schemas/String"
+    c:
+      $ref: "#/components/schemas/Unknown"
+  required:
+    - b
+D:
+  type: object
+  properties:
+    d:
+      $ref: "#/components/schemas/NotObject"
+))
+end
+s = schemas
+combo = {}
+item0 = s['AB']
+assert(merge(combo, item0), true, 'Merge to empty')
+item = s['BC']
+assert(merge(combo, item), true, 'Merge')
+assert(combo['properties'].size, 3, 'All properties')
+assert(combo['required'], ['a', 'b'], 'Added b to required')
+assert(combo.dig('properties', 'b', '$ref'), '#/components/schemas/Number', 'Still Number type')
+assert(combo.dig('properties', 'c', '$ref'), '#/components/schemas/Number', 'c is Number type')
+combo = {}
+merge(combo, s['AB'])
+assert(merge(combo, s['BC2']), false, 'Type conflict')
+
+$context = 'all_of'
+def ref(name)
+  { '$ref' => name }
+end
+s = schemas
+m = all_of([ ref('AB'), ref('BC') ], s, 'A')
+assert(m.is_a?(Hash), true, 'Merged type')
+assert(m.size, 3, 'New property')
+assert(m['required'], ['a', 'b'], 'Added b to required')
+assert(m.dig('properties', 'b', '$ref'), '#/components/schemas/Number', 'Still Number type')
+assert(m.dig('properties', 'c', '$ref'), '#/components/schemas/Number', 'c is Number type')
+m = all_of([ ref('AB'), ref('BC'), ref('BC2') ], s, 'A')
+assert(m, false, 'Type conflict')
+m = all_of([ ref('BC3') ], s, 'A')
+assert(m.is_a?(Hash), true, 'Missing schema not detected')
+m = all_of([ ref('NotObject') ], s, 'A')
+assert(m, false, 'Not an object')
+
+$context = 'distinguishable'
+s = schemas
+assert(distinguishable(s['AB'], s['BC'], s), true, 'Different required fields')
+assert(distinguishable(s['AB'], s['AB'], s), false, 'Identical')
+assert(distinguishable(s['AB'], s['AC'], s), false, 'Difference in optional field')
+assert(distinguishable(s['String'], s['Number'], s), true, 'Difference in type')
+assert(distinguishable(s['String'], s['String2'], s), true, 'Difference in fields')
+
+$context = 'one_of'
+
+
+exit $unit_test

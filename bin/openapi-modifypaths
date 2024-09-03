@@ -1,0 +1,124 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright © 2024-2025 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../lib/openapi/sourcetools/common'
+require 'optparse'
+include OpenAPISourceTools
+
+
+def path2pieces(s)
+  s.split('/').reject &:empty?
+end
+
+def pieces2path(p)
+  "/#{p.join('/')}"
+end
+
+def add(s, path)
+  s.empty? ? path : (s + path)
+end
+
+def remove_complete_prefix(prefix, path)
+  return nil if prefix.empty? || path.size < prefix.size
+  prefix.size.times do |idx|
+    return nil unless prefix[idx] == path[idx]
+  end
+  path[prefix.size...path.size]
+end
+
+def remove(s, path)
+  remove_complete_prefix(s, path) || path
+end
+
+def replace(o, s, path)
+  p = remove_complete_prefix(o, path)
+  p.nil? ? path : (s + p)
+end
+
+def add_op(s)
+  s = path2pieces(s)
+  proc { |path| add(s, path) }
+end
+
+def remove_op(s)
+  s = path2pieces(s)
+  proc { |path| remove(s, path) }
+end
+
+def replace_op(orig, s)
+  o = path2pieces(orig)
+  s = path2pieces(s)
+  proc { |path| replace(o, s, path) }
+end
+
+def perform_operations(paths, operations)
+  out = {}
+  paths.each do |path, value|
+    operations.each do |op|
+      path = pieces2path(op.call(path2pieces(path)))
+    end
+    out[path] = value
+  end
+  out
+end
+
+def main
+  input_name = nil
+  output_name = nil
+  operations = []
+  orig = nil
+
+  parser = OptionParser.new do |opts|
+    opts.summary_indent = '  '
+    opts.summary_width = 26
+    opts.banner = 'Usage: openapi-modifypaths [options]'
+    opts.separator ''
+    opts.separator 'Options:'
+    opts.on('-i', '--input FILE', 'Read API spec from FILE, not stdin.') do |f|
+      exit(Common.aargh('Expected string to replace PREFIX.', 1)) unless orig.nil?
+      input_name = f
+    end
+    opts.on('-o', '--output FILE', 'Output to FILE, not stdout.') do |f|
+      exit(Common.aargh('Expected string to replace PREFIX.', 1)) unless orig.nil?
+      output_name = f
+    end
+    opts.on('-a', '--add STR', 'Add prefix STR to all paths.') do |s|
+      exit(Common.aargh('Expected string to replace PREFIX.', 1)) unless orig.nil?
+      operations.push(add_op(s))
+    end
+    opts.on('-d', '--delete PREFIX', 'Delete PREFIX when present.') do |s|
+      exit(Common.aargh('Expected string to replace PREFIX.', 1)) unless orig.nil?
+      operations.push(remove_op(s))
+    end
+    opts.on('-r', '--replace PREFIX STR', 'Replace PREFIX with STR when present.') do |s|
+      exit(Common.aargh('Empty string to replace.', 1)) if s.empty?
+      orig = s
+    end
+    opts.on('-h', '--help', 'Print this help and exit.') do
+      $stdout.puts %(#{opts}
+
+Loads API document in OpenAPI format and changes paths according to options.
+STR and PREFIX are expected to be parts of a path surrounded by /.
+)
+      exit 0
+    end
+  end
+  parser.order! do |s|
+    exit(Common.aargh("String without option: #{s}", 1)) if orig.nil?
+    operations.push(replace_op(orig, s))
+    orig = nil
+  end
+
+  doc = Common.load_source(input_name)
+  return 2 if doc.nil?
+
+  p = perform_operations(doc.fetch('paths', {}), operations)
+  doc['paths'] = p unless p.empty?
+
+  Common.dump_result(output_name, doc, 3)
+end
+
+exit(main) if defined?($unit_test).nil?

@@ -1,0 +1,259 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright 2024-2025 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../shared/unittest'
+require 'yaml'
+
+$unit_test = 0
+load '../bin/openapi-addschemas'
+include OpenAPISourceTools
+
+def ref(path, name)
+  "#{path}/#{name}"
+end
+
+$context = 'remove_subitem'
+obj = { a: { b: 'c', b2: 'd' }}
+path = [ :a, :b ]
+assert(remove_subitem(obj, path), 'c', 'Remove value')
+assert(obj[path.first].key?(path.last), false, 'No last key')
+assert(obj[path.first].fetch(:b2), 'd', 'Other key remains')
+obj = { a: 'sub', b: 'remain' }
+path = [ :a ]
+assert(remove_subitem(obj, path), 'sub', 'Remove value at root')
+assert(obj.key?(path.last), false, 'No single key')
+assert(obj.fetch(:b), 'remain', 'Other key and value remains')
+
+$context = 'replace_inlines'
+path = '#/components/schemas'
+comp = ApiObjects::Components.new(path, 'Schema')
+assert(replace_inlines('not_hash_nor_array', comp), true, 'Not hash or array')
+obj = YAML.safe_load(%(
+---
+- $ref: "#{ref(path, 'Foo')}"
+- type: string
+))
+comp = ApiObjects::Components.new(path, 'Schema')
+assert(replace_inlines(obj, comp), true, 'Array')
+s = comp.items
+assert(s.size, 1, 'Added one type')
+assert(obj.last.is_a?(Hash), true, 'Replaced is hash')
+assert(obj.last.key?('$ref'), true, 'Is reference')
+assert(s[s.keys.first].is_a?(Hash), true, 'Added schema is hash')
+assert(s[s.keys.first]['type'], 'string', 'Added schema is type: string')
+
+obj = YAML.safe_load(%(
+---
+type: something
+))
+comp = ApiObjects::Components.new(path, 'Schema')
+assert(replace_inlines(obj, comp), true, 'Hash')
+s = comp.items
+assert(s.size, 1, 'Added one type')
+assert(obj.is_a?(Hash), true, 'Still is hash')
+assert(obj.size, 1, 'Has only reference')
+assert(obj['$ref'], ref(path, s.keys.first), 'Correct reference')
+
+obj = YAML.safe_load(%(
+---
+type: array
+items:
+  type: string
+))
+comp = ApiObjects::Components.new(path, 'Schema')
+assert(replace_inlines(obj, comp), true, 'Array type')
+s = comp.items
+assert(s.size, 2, 'Added 2 types')
+assert(obj.is_a?(Hash), true, 'Still is hash')
+assert(obj['$ref'], ref(path, s.keys.last), 'Has only reference')
+assert(s[s.keys.last]['items']['$ref'], ref(path, s.keys.first), 'Correct reference')
+
+obj = YAML.safe_load(%(
+---
+type: array
+items:
+  $ref: "#{ref(path, 'Foo')}"
+))
+comp = ApiObjects::Components.new(path, 'Schema')
+assert(replace_inlines(obj, comp), true, 'Array type with reference')
+s = comp.items
+assert(s.size, 1, 'Added self')
+assert(obj['$ref'], ref(path, s.keys.first), 'Refers to array type')
+
+obj = YAML.safe_load(%(
+---
+type: object
+properties:
+  name:
+    $ref: "#{ref(path, 'Foo')}"
+))
+comp = ApiObjects::Components.new(path, 'Schema')
+assert(replace_inlines(obj, comp), true, 'Object type ref')
+s = comp.items
+assert(s.size, 1, 'Added self again')
+assert(obj['$ref'], ref(path, s.keys.first), 'Refers to object type')
+
+obj = YAML.safe_load(%(
+---
+type: object
+properties:
+  name:
+    type: string
+))
+comp = ApiObjects::Components.new(path, 'Schema')
+assert(replace_inlines(obj, comp), true, 'Object type string')
+s = comp.items
+assert(s.size, 2, 'Added one type for string, one for base')
+assert(s.dig(s.keys.last, 'properties', 'name', '$ref'), ref(path, s.keys.first), 'Correct reference')
+
+obj = YAML.safe_load(%(
+---
+something:
+  type: object
+  required:
+  - name
+  properties:
+    name:
+      type: string
+      other: value
+    reffed:
+      $ref: "#{ref(path, 'Foo')}"
+))
+comp = ApiObjects::Components.new(path, 'Schema')
+assert(replace_inlines(obj, comp), true, 'something')
+s = comp.items
+assert(s.size, 2, 'Added one type from something, one for string')
+assert(obj.dig('something', '$ref'), ref(path, s.keys.last), 'Reference for something')
+assert(s.dig(s.keys.last, 'properties', 'name', '$ref'), ref(path, s.keys.first), 'Correct reference')
+assert(s[s.keys.first]['type'], 'string', 'String in schema')
+assert(s[s.keys.first]['other'], 'value', 'Other key in schema')
+
+obj = YAML.safe_load(%(
+---
+oneOf:
+- type: object
+  required:
+  - name
+  properties:
+    name:
+      type: string
+      other: value
+    reffed:
+      $ref: "#{ref(path, 'Foo')}"
+))
+comp = ApiObjects::Components.new(path, 'Schema')
+assert(replace_inlines(obj, comp), true, 'oneOf with 1')
+s = comp.items
+assert(s.size, 2, 'Added 2 types from oneOf')
+assert(obj['oneOf'].first['$ref'], ref(path, s.keys.last), 'Correct reference for top-level type')
+assert(s[s.keys.last].dig('properties', 'name', '$ref'), ref(path, s.keys.first), 'Correct reference to string type')
+assert(s[s.keys.first]['other'], 'value', 'Other key in schema')
+
+obj = YAML.safe_load(%(
+anyOf:
+- type: object
+  required:
+  - name
+  properties:
+    name:
+      type: string
+      other: value
+    reffed:
+      $ref: "#{ref(path, 'Foo')}"
+- type: string
+  other: value
+))
+comp = ApiObjects::Components.new(path, 'Schema')
+assert(replace_inlines(obj, comp), true, 'anyOf with 2')
+s = comp.items
+assert(s.size, 2, 'Added 2 types from anyOf')
+assert(obj['anyOf'].first['$ref'], ref(path, s.keys.last), 'Correct reference for object type')
+r = s[s.keys.last].dig('properties', 'name', '$ref')
+assert(r, ref(path, s.keys.first), 'Correct reference to string type')
+assert(obj['anyOf'].last['$ref'], r, 'Correct second reference for string type')
+assert(s[s.keys.first]['other'], 'value', 'Other key in schema')
+
+obj = YAML.safe_load(%(
+allOf:
+- type: object
+  required:
+  - name
+  properties:
+    name:
+      type: string
+      other: value
+    reffed:
+      $ref: "#{ref(path, 'Foo')}"
+- type: object
+  required:
+  - field
+  properties:
+    field:
+      type: string
+      other: value
+    reffed:
+      $ref: "#{ref(path, 'Foo')}"
+- type: object
+  required:
+  - other
+  properties:
+    other:
+      type: string
+      other: value
+    reffed:
+      $ref: "#{ref(path, 'Foo')}"
+))
+comp = ApiObjects::Components.new(path, 'Schema')
+assert(replace_inlines(obj, comp), true, 'allOf with 3')
+s = comp.items
+assert(s.size, 4, 'Added 4 types from allOf')
+n = %w[name field other]
+r = ref(path, s.keys.first)
+(0..2).each do |k|
+  assert(obj['allOf'][k]['$ref'], ref(path, s.keys[k + 1]), "Correct reference for type #[k]")
+  assert(s.dig(s.keys[k + 1], 'properties', n[k], '$ref'), r, "Type #{k} referes to string type")
+end
+assert(s[s.keys.first]['type'], 'string', 'Type key in schema')
+assert(s[s.keys.first]['other'], 'value', 'Other key in schema')
+
+$context = 'replace_anchor_refs'
+class TestCompo
+  def anchor_ref_replacement(ref)
+    return ref if ref.start_with?('#/')
+    "x#{ref}"
+  end
+end
+obj = YAML.safe_load(%(
+allOf:
+- type: object
+  properties:
+    name:
+      type: string
+    reffed:
+      $ref: '#anchored'
+- type: object
+  properties:
+    field:
+      type: string
+    reffed:
+      $ref: '#/components/schemas/Something'
+- type: object
+  required:
+  - other
+  - reffed
+  properties:
+    other:
+      type: string
+    reffed:
+      $ref: '#anch'
+))
+replace_anchor_refs(obj, TestCompo.new)
+p = %w[properties reffed $ref]
+assert(obj['allOf'][0].dig(*p), 'x#anchored', 'First changed')
+assert(obj['allOf'][1].dig(*p), '#/components/schemas/Something', 'Second unchanged')
+assert(obj['allOf'][2].dig(*p), 'x#anch', 'Third changed')
+
+exit $unit_test

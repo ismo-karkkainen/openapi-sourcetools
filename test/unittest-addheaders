@@ -1,0 +1,86 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright 2024-2025 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../shared/unittest'
+require_relative '../lib/openapi/sourcetools/apiobjects'
+require 'yaml'
+include OpenAPISourceTools
+
+$unit_test = 0
+load '../bin/openapi-addheaders'
+
+$context = 'replace_headers'
+path = '#/components/headers'
+def get_doc
+  YAML.safe_load(%(
+---
+paths:
+  something:
+    get:
+      other: 123
+      responses:
+        200:
+          key: value
+          headers:
+            test:
+              type: string
+            test2:
+              type: number
+        201:
+          $ref: '#/components/responses/Resp'
+      anything:
+        key: 87
+        key2: val
+    method:
+      no: responses
+    put:
+      responses:
+        204:
+          somekey: someval
+          summary: ignored
+          headers:
+            test2:
+              type: number
+        500:
+          key: value
+  otherthing:
+    method:
+      responses:
+        500:
+          key: value
+          headers:
+            test:
+              $ref: "#/components/headers/Predefined"
+        313: not_a_hash
+components:
+  headers:
+    Predefined:
+      description: ignored
+      type: string
+))
+end
+obj = get_doc.dig('paths', 'something')
+c = ApiObjects::Components.new(path, 'Header')
+c.items = get_doc.dig('components', 'headers')
+replace_headers(obj, c)
+r = c.items
+assert(obj.dig('get', 'responses', 200, 'headers', 'test').key?('$ref'), true,
+  'Ref1 made')
+assert(obj.dig('get', 'responses', 200, 'headers', 'test2').key?('$ref'), true,
+  'Ref2 made')
+v = obj.dig('get', 'responses', 200, 'headers', 'test2', '$ref')
+assert(obj.dig('put', 'responses', 204, 'headers', 'test2').key?('$ref'), true,
+  'Ref2 made')
+assert(obj.dig('put', 'responses', 204, 'headers', 'test2', '$ref'), v,
+  'Same ref')
+obj = get_doc.dig('paths', 'otherthing')
+replace_headers(obj, c)
+assert(obj.dig('method', 'responses', 500, 'headers', '$ref'),
+  get_doc.dig('paths', 'otherthing', 'method', 'responses', 500, 'headers', '$ref'),
+  'Ref remains')
+assert(r.size, 2, '1 header added')
+
+exit $unit_test

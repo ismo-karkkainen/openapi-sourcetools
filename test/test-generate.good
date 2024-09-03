@@ -1,0 +1,27 @@
+####COMMAND Invalid input file
+####CODE 2
+####OUT
+####ERR
+Could not load ./in/valid
+####COMMAND Syntax error in processor
+####CODE 2
+####OUT
+####ERR
+Problem with syntaxerror.rb
+test-generate/syntaxerror.rb:1:
+
+####COMMAND Run error in processor
+####CODE 2
+####OUT
+####ERR
+Problem with error.rb
+####COMMAND Unsupported processor
+####CODE 2
+####OUT
+####ERR
+No loader could handle sidfgoi:soefifhyaosf
+####COMMAND Invalid output directory
+####CODE 3
+####OUT
+####ERR
+Not a directory: ./in/valid

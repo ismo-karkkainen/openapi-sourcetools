@@ -1,0 +1,6 @@
+*.gem
+test-*.res
+Gemfile.lock
+x
+o
+e

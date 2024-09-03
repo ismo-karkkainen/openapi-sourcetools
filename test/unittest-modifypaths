@@ -1,0 +1,98 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright 2024-2025 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../shared/unittest'
+
+$unit_test = 0
+load '../bin/openapi-modifypaths'
+
+$context = 'path2pieces'
+p = path2pieces('foo')
+assert(p.size, 1, 'One piece')
+assert(p.first, 'foo', 'Original string')
+p = path2pieces('//foo/bar/baz///')
+assert(p.size, 3, 'Three pieces')
+assert(p[0], 'foo', 'First part')
+assert(p[1], 'bar', 'Second part')
+assert(p[2], 'baz', 'Third part')
+p = path2pieces('/')
+assert(p.empty?, true, 'Nothing from /')
+p = path2pieces('')
+assert(p.empty?, true, 'Nothing from empty string')
+
+$context = 'pieces2path'
+assert(pieces2path([]), '/', 'Only /')
+assert(pieces2path([ 'foo' ]), '/foo', 'One part')
+assert(pieces2path([ 'foo', 'bar' ]), '/foo/bar', 'Two parts')
+
+$context = 'add'
+assert(add(['foo'], ['path']), ['foo', 'path'], 'Normal case')
+assert(add([], ['path']), ['path'], 'Nothing to add')
+
+$context = 'remove_complete_prefix'
+a = [ 'one', 'two', 'three' ]
+p2 = [ 'one', 'two' ]
+p1 = [ 'one' ]
+s2 = [ 'two', 'three' ]
+s1 = [ 'three' ]
+assert(remove_complete_prefix([], a).nil?, true, 'Nothing to remove')
+assert(remove_complete_prefix(a, a), [], 'Everything removed')
+assert(remove_complete_prefix(p1, a), s2, 'One removed')
+assert(remove_complete_prefix(p2, a), s1, 'Two removed')
+assert(remove_complete_prefix(p1 + s1, a).nil?, true, 'Mismatch')
+assert(remove_complete_prefix(p1 + a, a).nil?, true, 'Too long')
+
+$context = 'remove'
+assert(remove([], a), a, 'Nothing to remove')
+assert(remove(a, a), [], 'Everything removed')
+assert(remove(p1, a), s2, 'One removed')
+assert(remove(p2, a), s1, 'Two removed')
+assert(remove(p1 + s1, a), a, 'Mismatch')
+assert(remove(p1 + a, a), a, 'Too long')
+
+$context = 'replace'
+r = [ 'four' ]
+assert(replace([], r, a), a, 'Nothing to replace')
+assert(replace(a, r, a), r, 'Everything replaced')
+assert(replace(p1, r, a), r + s2, 'One replaced')
+assert(replace(p2, r, a), r + s1, 'Two replaced')
+assert(replace(p1 + s1, r, a), a, 'Mismatch')
+assert(replace(p1 + a, r, a), a, 'Too long')
+
+$context = 'add_op'
+op = add_op('foo')
+assert(op.is_a?(Proc), true, 'add_op proc')
+assert(op.call(['bar']), ['foo', 'bar'], 'Adds original argument')
+
+$context = 'remove_op'
+op = remove_op('foo')
+assert(op.is_a?(Proc), true, 'remove_op proc')
+assert(op.call(['foo', 'bar']), ['bar'], 'Removes original argument')
+assert(op.call(['baz', 'bar']), ['baz', 'bar'], 'No match')
+
+$context = 'replace_op'
+op = replace_op('foo', 'bar')
+assert(op.is_a?(Proc), true, 'replace_op proc')
+assert(op.call(['foo', 'bar']), ['bar', 'bar'], 'Replaces original argument')
+assert(op.call(['baz', 'bar']), ['baz', 'bar'], 'No match')
+
+$context = 'perform_operations'
+orig = {
+  '/base' => 1,
+  '/remove' => 2,
+  '/replace/base' => 3
+}
+ops = [ replace_op('replace', 'new'), remove_op('remove'), add_op('add') ]
+p = perform_operations(orig, ops)
+assert(p.size, orig.size, 'Size did not change')
+assert(p.key?('/add/base'), true, '/add/base is present')
+assert(p.key?('/add'), true, '/add is present')
+assert(p.key?('/add/new/base'), true, '/add/new/base is present')
+assert(p['/add/base'], orig['/base'], '/add/base has original value')
+assert(p['/add'], orig['/remove'], '/add has original value')
+assert(p['/add/new/base'], orig['/replace/base'], '/add/new/base has original value')
+
+exit $unit_test

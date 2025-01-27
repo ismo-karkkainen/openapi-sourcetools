@@ -3,9 +3,6 @@
 # Copyright © 2024-2025 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
-require 'set'
-
-
 module OpenAPISourceTools
   # Various classes for handling objects in the API specification.
   # Used in various programs.
@@ -131,50 +128,64 @@ module OpenAPISourceTools
         @parts = parts
       end
 
-      # Variables are after fixed strings.
+      # Parameters are after fixed strings.
       def <=>(other)
-        pp = other.is_a?(Array) ? other : p.parts
-        parts.each_index do |k|
+        pp = other.is_a?(Array) ? other : other.parts
+        @parts.size.times do |k|
           return 1 if pp.size <= k # Longer comes after shorter.
-          pk = parts[k]
+          pk = @parts[k]
           ppk = pp[k]
-          if pk.is_a? String
-            if ppk.is_a? String
-              c = pk <=> ppk
+          if pk.key?('fixed')
+            if ppk.key?('fixed')
+              c = pk['fixed'] <=> ppk['fixed']
             else
               return -1
             end
           else
-            if ppk.is_a? String
+            if ppk.key?('fixed')
               return 1
             else
-              c = pk.fetch('var', '') <=> ppk.fetch('var', '')
+              c = pk.fetch('parameter', '') <=> ppk.fetch('parameter', '')
             end
           end
           return c unless c.zero?
         end
-        (parts.size < pp.size) ? -1 : 0
+        (@parts.size < pp.size) ? -1 : 0
       end
 
       # Not fit for sorting. Variable equals anything.
-      def compare(p, range = nil)
-        pp = p.is_a?(Array) ? p : p.parts
+      def compare(other, range = nil)
+        pp = other.is_a?(Array) ? other : other.parts
         if range.nil?
-          range = 0...parts.size
+          range = 0...@parts.size
         elsif range.is_a? Number
           range = range...(range + 1)
         end
         range.each do |k|
           return 1 if pp.size <= k # Longer comes after shorter.
           ppk = pp[k]
-          next unless ppk.is_a? String
+          next unless ppk.key?('fixed')
           pk = parts[k]
-          next unless pk.is_a? String
-          c = pk <=> ppk
+          next unless pk.key?('fixed')
+          c = pk['fixed'] <=> ppk['fixed']
           return c unless c.zero?
         end
-        (parts.size < pp.size) ? -1 : 0
+        (@parts.size < pp.size) ? -1 : 0
       end
+    end
+
+    def self.operation_objects(path_item)
+      keys = %w[operationId requestBody responses callbacks]
+      out = {}
+      path_item.each do |method, op|
+        next unless op.is_a?(Hash)
+        keys.each do |key|
+          next unless op.key?(key)
+          out[method] = op
+          break
+        end
+      end
+      out
     end
   end
 end

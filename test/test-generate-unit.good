@@ -41,6 +41,15 @@ ok: Components.alter_anchors: existing unchanged
 ok: Components.anchor_ref_replacement: absent not changed
 ok: Components.anchor_ref_replacement: name found
 ok: Components.anchor_ref_replacement: existing found
+ok: operation_objects: 3 objects
+ok: operation_objects: has get
+ok: operation_objects: has put
+ok: operation_objects: has something
+ok: operation_objects: 4 objects
+ok: operation_objects: has op1
+ok: operation_objects: has op2
+ok: operation_objects: has op3
+ok: operation_objects: has op4
 ####ERR
 ####COMMAND Docs unit tests
 ####CODE 0
@@ -250,6 +259,8 @@ ok: setup: in_name set
 ok: setup: in_basename set
 ok: setup: tasks set
 ok: setup: tasks has default helper task
+ok: setup: configuration set
+ok: setup: configuration loaded
 ####ERR
 ####COMMAND Config unit tests
 ####CODE 0

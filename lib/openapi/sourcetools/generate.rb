@@ -10,7 +10,6 @@ require_relative 'gen'
 
 
 module OpenAPISourceTools
-
   def self.executable_bits_on(mode)
     mode = mode.to_s(8).chars
     mode.size.times do |k|
@@ -29,8 +28,8 @@ module OpenAPISourceTools
   # Runs all tasks that generate the results.
   # Used internally by openapi-generate.
   class Generator
-    def initialize(document_content, input_name, output_directory)
-      Gen.setup(document_content, input_name, output_directory)
+    def initialize(document_content, input_name, output_directory, config_prefix)
+      Gen.setup(document_content, input_name, output_directory, config_prefix)
       Gen.loaders = Loaders.loaders
     end
 
@@ -82,9 +81,8 @@ module OpenAPISourceTools
         Gen.task = Gen.t
         out = generate(Gen.t)
         Gen.task_index += 1
-        next if Gen.t.discard # Check first to ignore result if no output.
         return out if out.is_a?(Integer)
-        next if out.empty? # Allows no output but return value still checked.
+        next if Gen.t.discard || out.empty?
         name = output_name(Gen.t, Gen.task_index - 1)
         begin
           save(name, out, Gen.t.executable)

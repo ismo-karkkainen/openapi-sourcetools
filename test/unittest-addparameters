@@ -94,4 +94,115 @@ obj = get_doc.dig('paths', 'otherthing')
 replace_parameters(obj, c)
 assert(obj.dig('method', 'parameters').first.key?('$ref'), true, 'Ref added')
 
+$context = 'ref_name'
+assert(ref_name('#/components/parameters/Name'), 'Name', 'Name found')
+assert(ref_name('#/components/Name'), 'Name', 'Name still found')
+assert(ref_name('#/Name'), 'Name', 'Prefix does not matter')
+assert(ref_name('Name'), 'Name', 'No slash anywhere')
+
+$context = 'nameloc2ref'
+refd = {
+  'Query' => { 'in' => 'query', 'name' => 'aaa' },
+  'Header' => { 'in' => 'header', 'name' => 'bbb' },
+  'Path' => { 'in' => 'path', 'name' => 'ccc' },
+  'Cookie' => { 'in' => 'cookie', 'name' => 'ddd' }
+}
+nl2r = nameloc2ref([], refd)
+assert(nl2r.empty?, true, 'no params')
+p = { '$ref' => '#/components/parameters/Header' }
+nl2r = nameloc2ref([ p ], refd)
+assert(nl2r.key?('bbb header'), true, 'name and location')
+assert(nl2r['bbb header'], p, 'original reference')
+p2 = { '$ref' => '#/something/Path' }
+p3 = { '$ref' => '#/Query' }
+p4 = { '$ref' => 'Cookie' }
+nl2r = nameloc2ref([ p, p2, p3, p4 ], refd)
+[ 'aaa query', 'bbb header', 'ccc path', 'ddd cookie' ].each do |key|
+  assert(nl2r.key?(key), true, "Key #{key} found")
+  r = nl2r[key]
+  assert(r.key?('$ref'), true, "Key #{key} has a ref")
+end
+
+$context = 'add_operations_parameters'
+def get_doc2
+  YAML.safe_load(%(
+---
+paths:
+  something:
+    parameters:
+    - "$ref": "#/components/parameters/TopName"
+    get:
+      other: 123
+      parameters:
+      - "$ref": "#/components/parameters/Something1"
+      - "$ref": "#/components/parameters/Something2"
+      - "$ref": "#/components/parameters/Something3"
+      operationId: getSomething
+    method:
+      no: parameters
+    put:
+      operationId: putSomething
+      parameters:
+      - "$ref": "#/components/parameters/Something1"
+  otherthing:
+    method:
+      operationId: methodOtherthing
+      parameters:
+      - "$ref": "#/components/parameters/Something1"
+components:
+  schemas:
+    TopName:
+      description: ignored
+      type: string
+    Name:
+      type: string
+  parameters:
+    TopName:
+      name: toplevel
+      in: path
+      schema:
+        "$ref": "#/components/schemas/TopName"
+    Something1:
+      name: foo
+      in: path
+      schema:
+        "$ref": "#/components/schemas/Name"
+    Something2:
+      name: toplevel
+      in: path
+      schema:
+        "$ref": "#/components/schemas/TopName"
+    Something3:
+      name: toplevel
+      in: query
+      schema:
+        "$ref": "#/components/schemas/TopName"
+))
+end
+doc = get_doc2
+add_operations_parameters(doc['paths'], doc.dig('components', 'parameters'))
+oo = doc.dig('paths', 'something', 'get')
+assert(oo.key?('parameters'), true, 'has parameters')
+assert(oo['parameters'].size, 3, 'has three parameters')
+%w[Something1 Something2 Something3].each do |name|
+  assert(oo['parameters'].index { |p| p['$ref'] == "#/components/parameters/#{name}" }.nil?, false, "#{name} is present")
+end
+oo = doc.dig('paths', 'something', 'put')
+assert(oo.key?('parameters'), true, 'has parameters')
+assert(oo['parameters'].size, 2, 'has two parameters')
+%w[TopName Something1].each do |name|
+  assert(oo['parameters'].index { |p| p['$ref'] == "#/components/parameters/#{name}" }.nil?, false, "#{name} is present")
+end
+oo = doc.dig('paths', 'something', 'method')
+assert(oo.key?('parameters'), false, 'no parameters')
+oo = doc.dig('paths', 'otherthing', 'method')
+assert(oo.key?('parameters'), true, 'has parameters')
+assert(oo['parameters'].size, 1, 'has one parameter')
+orig = get_doc2
+assert(oo['parameters'].first, orig.dig('paths', 'otherthing', 'method', 'parameters').first, 'has same parameter')
+ps = doc.dig('paths', 'something', 'parameters')
+assert(ps.is_a?(Array), true, 'parameters is still an array')
+assert(ps.size, 1, 'parameters size is 1')
+assert(ps.first, orig.dig('paths', 'something', 'parameters').first, 'same item')
+
 exit $unit_test

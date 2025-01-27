@@ -28,5 +28,6 @@ Does not validate the document against OpenAPI format specification.'
   s.homepage = "https://#{SimpleIDN.to_ascii('ismo-kärkkäinen.fi')}/#{OpenAPISourceTools::NAME}/index.html"
   s.license = 'UPL-1.0'
   s.required_ruby_version = '>= 3.2.5'
+  s.add_dependency 'deep_merge', '~> 1.2', '>= 1.2.2'
   s.metadata = { 'rubygems_mfa_required' => 'true' }
 end

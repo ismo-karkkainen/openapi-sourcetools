@@ -14,6 +14,7 @@ require 'optparse'
 def main
   input_name = nil
   output_dir = nil
+  config_prefix = 'openapi-generate'
 
   parser = OptionParser.new do |opts|
     opts.summary_indent = '  '
@@ -26,6 +27,9 @@ def main
     end
     opts.on('-o', '--outdir DIR', 'Output directory.') do |d|
       output_dir = d
+    end
+    opts.on('-c', '--config', "Internal configuration prefix, default: #{config_prefix}") do |c|
+      config_prefix = c
     end
     opts.on('-h', '--help', 'Print this help and exit.') do
       $stdout.puts %(#{opts}
@@ -48,10 +52,10 @@ After all generators have loaded succesfully, tasks are run.
   a = OpenAPISourceTools::Common.load_source(input_name)
   return 2 if a.nil?
   return OpenAPISourceTools::Common.aargh("Not a directory: #{output_dir}", 3) unless File.directory?(output_dir)
-  gen = OpenAPISourceTools::Generator.new(a, input_name, output_dir)
+  gen = OpenAPISourceTools::Generator.new(a, input_name, output_dir, config_prefix)
   ec = gen.load(ARGV)
   return ec unless ec.zero?
   gen.run
 end
 
-exit(main) if defined?($unit_test).nil?
+exit(main) unless defined?($unit_test)

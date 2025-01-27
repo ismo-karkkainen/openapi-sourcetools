@@ -2,11 +2,7 @@
 paths:
   "/test":
     parts:
-    - test
-    orig: {}
-    lookalike: []
+    - fixed: test
   "/present":
     parts:
-    - present
-    orig: {}
-    lookalike: []
+    - fixed: present

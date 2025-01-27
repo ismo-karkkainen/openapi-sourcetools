@@ -83,11 +83,7 @@ module OpenAPISourceTools
     include OpenAPISourceTools::TaskInterface
 
     def generate(_context_binding)
-      Gen.h = Helper.new(Gen.doc)
-    end
-
-    def output_name
-      nil
+      Gen.h = Helper.new(Gen.doc) if Gen.h.nil?
     end
 
     def discard

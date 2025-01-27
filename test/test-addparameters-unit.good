@@ -13,4 +13,35 @@ ok: replace_parameters: Same ref
 ok: replace_parameters: Ref3 same as ref1
 ok: replace_parameters: Ref remains
 ok: replace_parameters: Ref added
+ok: ref_name: Name found
+ok: ref_name: Name still found
+ok: ref_name: Prefix does not matter
+ok: ref_name: No slash anywhere
+ok: nameloc2ref: no params
+ok: nameloc2ref: name and location
+ok: nameloc2ref: original reference
+ok: nameloc2ref: Key aaa query found
+ok: nameloc2ref: Key aaa query has a ref
+ok: nameloc2ref: Key bbb header found
+ok: nameloc2ref: Key bbb header has a ref
+ok: nameloc2ref: Key ccc path found
+ok: nameloc2ref: Key ccc path has a ref
+ok: nameloc2ref: Key ddd cookie found
+ok: nameloc2ref: Key ddd cookie has a ref
+ok: add_operations_parameters: has parameters
+ok: add_operations_parameters: has three parameters
+ok: add_operations_parameters: Something1 is present
+ok: add_operations_parameters: Something2 is present
+ok: add_operations_parameters: Something3 is present
+ok: add_operations_parameters: has parameters
+ok: add_operations_parameters: has two parameters
+ok: add_operations_parameters: TopName is present
+ok: add_operations_parameters: Something1 is present
+ok: add_operations_parameters: no parameters
+ok: add_operations_parameters: has parameters
+ok: add_operations_parameters: has one parameter
+ok: add_operations_parameters: has same parameter
+ok: add_operations_parameters: parameters is still an array
+ok: add_operations_parameters: parameters size is 1
+ok: add_operations_parameters: same item
 ####ERR

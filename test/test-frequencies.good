@@ -15,10 +15,15 @@ Could not read path log file: /in/valid
 No such file or directory @ rb_sysopen - /in/valid
 Failed to write output: /in/valid
 ####COMMAND Unprocessed input file
-####CODE 5
+####CODE 0
 ####OUT
+---
+paths:
+  "/test":
+    x-openapi-sourcetools-freq: 1
+  "/present":
+    x-openapi-sourcetools-freq: 0
 ####ERR
-Is input file an output of openapi-processpaths?
 ####COMMAND Output
 ####CODE 0
 ####OUT
@@ -26,13 +31,10 @@ Is input file an output of openapi-processpaths?
 paths:
   "/test":
     parts:
-    - test
-    orig: {}
-    lookalike: []
-    freq: 1
+    - fixed: test
+    x-openapi-sourcetools-freq: 1
   "/present":
     parts:
-    - present
-    orig: {}
-    lookalike: []
+    - fixed: present
+    x-openapi-sourcetools-freq: 0
 ####ERR

@@ -26,9 +26,40 @@ def replace_parameters(obj, components)
   end
 end
 
+def ref_name(ref)
+  idx = ref.rindex('/') || -1
+  ref[(idx + 1)..]
+end
+
+def nameloc2ref(params, referenced)
+  nl2r = {}
+  params.each do |ref|
+    rn = ref_name(ref['$ref'])
+    refd = referenced[rn]
+    nl2r["#{refd['name']} #{refd['in']}"] = ref
+  end
+  nl2r
+end
+
+def add_operations_parameters(paths, referenced)
+  # Top level is path item objects.
+  # Below that are operations objects.
+  paths.each_value do |item|
+    top_nameloc2ref = nameloc2ref(item['parameters'] || [], referenced)
+    oos = ApiObjects.operation_objects(item)
+    oos.each_value do |operation|
+      nl2r = nameloc2ref(operation['parameters'] || [], referenced)
+      params = top_nameloc2ref.merge(nl2r)
+      # Map also avoids alias creation at YAML saving.
+      operation['parameters'] = params.keys.sort!.map { |k| { '$ref' => params[k]['$ref'] } }
+    end
+  end
+end
+
 def main
   input_name = nil
   output_name = nil
+  add2operations = false
   path = %w[components parameters]
   components = ApiObjects::Components.new(path, 'Parameter')
 
@@ -44,12 +75,19 @@ def main
     opts.on('-o', '--output FILE', 'Output to FILE, not stdout.') do |f|
       output_name = f
     end
+    opts.on('-a', '--add', 'Add parameters to operations objects.') do
+      add2operations = true
+    end
     components.add_options(opts)
     opts.on('-h', '--help', 'Print this help and exit.') do
       $stdout.puts %(#{opts}
 
 Loads API document in OpenAPI format and moves parameters under components and
 replaces the original with reference.
+
+Optionally adds parameters to all operations objects by copying parameters
+from path item and replacing ones referred to in operations object. The
+path item parameters are left in place. Even empty arrays are added.
 
 #{components.help}
 )
@@ -64,8 +102,11 @@ replaces the original with reference.
   components.items = doc.dig(*path) || {}
   replace_parameters(doc.fetch('paths', {}), components)
   Common.bury(doc, path, components.items) unless components.items.empty?
+  # If nothing has parameters, this adds empty arrays.
+  # Consistency might be desired for code generation templates.
+  add_operations_parameters(doc.fetch('paths', {}), components.items) if add2operations
 
   Common.dump_result(output_name, doc, 3)
 end
 
-exit(main) if defined?($unit_test).nil?
+exit(main) unless defined?($unit_test)

@@ -73,7 +73,7 @@ $context = 'config='
 begin
   o.config = []
   assert(true, false, 'no exception')
-rescue ArgumentError => e
+rescue ArgumentError
   assert(true, true, 'wrong config type')
 end
 assert(o.config, c, 'config not changed')

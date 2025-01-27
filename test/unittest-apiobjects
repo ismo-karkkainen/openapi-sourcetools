@@ -12,45 +12,45 @@ require_relative '../lib/openapi/sourcetools/apiobjects'
 include OpenAPISourceTools
 
 $context = 'same'
-assert(ApiObjects::same(1, 'b'), false, 'Number is not string')
-assert(ApiObjects::same({ 'b' => 1 }, 'b'), false, 'Hash is not string')
-assert(ApiObjects::same(1, { 'b' => 1 }), false, 'Number is not Hash')
-assert(ApiObjects::same(1, 1), true, 'Equal numbers')
+assert(ApiObjects.same(1, 'b'), false, 'Number is not string')
+assert(ApiObjects.same({ 'b' => 1 }, 'b'), false, 'Hash is not string')
+assert(ApiObjects.same(1, { 'b' => 1 }), false, 'Number is not Hash')
+assert(ApiObjects.same(1, 1), true, 'Equal numbers')
 a = { a: 5, b: [ 1, 2 ] }
 b = { a: 5, b: 'b' }
-assert(ApiObjects::same(a, b), false, 'Different types')
+assert(ApiObjects.same(a, b), false, 'Different types')
 b = { a: 5, b: [ 1 ] }
-assert(ApiObjects::same(a, b), false, 'Different lengths')
+assert(ApiObjects.same(a, b), false, 'Different lengths')
 b = { a: 5, b: [ 1, 2 ], c: 'c' }
-assert(ApiObjects::same(a, b), false, 'Different keys')
+assert(ApiObjects.same(a, b), false, 'Different keys')
 b = { a: 5, b: [ 1, 2 ] }
-assert(ApiObjects::same(a, b), true, 'Same contents')
+assert(ApiObjects.same(a, b), true, 'Same contents')
 b = { a: 5, b: [ 1, 2 ], 'summary' =>'foo' }
-assert(ApiObjects::same(a, b), true, 'Same contents ignoring summary')
+assert(ApiObjects.same(a, b), true, 'Same contents ignoring summary')
 b = { a: 5, b: [ 1, 2 ], 'description' => 'foo' }
-assert(ApiObjects::same(a, b), true, 'Same contents ignoring description')
+assert(ApiObjects.same(a, b), true, 'Same contents ignoring description')
 b = { a: 5, b: [ 1, 2 ], 'summary' => 'foo', 'description' => 'bar' }
-assert(ApiObjects::same(a, b), true, 'Same contents ignoring description and summary')
+assert(ApiObjects.same(a, b), true, 'Same contents ignoring description and summary')
 
 $context = 'reference'
 a = { a: 5, b: [ 1, 2 ] }
 b = { a: 5, b: 'b' }
 s = { 'bref' => b }
 path = 'testing'
-r = ApiObjects::reference(a, s, path)
+r = ApiObjects.reference(a, s, path)
 assert(s.size, 2, 'New name added')
-r = ApiObjects::reference(a.merge({ 'summary' => 'foo' }), s, path)
-r2 = ApiObjects::reference(a, s, path)
+r = ApiObjects.reference(a.merge({ 'summary' => 'foo' }), s, path)
+r2 = ApiObjects.reference(a, s, path)
 assert(r, r2, 'Same object yields same reference')
 assert(s.size, 2, 'No new name added')
-r = ApiObjects::reference(b, s, path)
+r = ApiObjects.reference(b, s, path)
 assert(s.size, 2, 'No new name added either')
 s = { 'bref' => b }
 prefix = 'Prefix'
 path = 'testing'
-r = ApiObjects::reference(b, s, 'testing', Set.new(%w[summary description]), prefix)
+r = ApiObjects.reference(b, s, 'testing', Set.new(%w[summary description]), prefix)
 assert(s.size, 1, 'No new name added with prefix')
-r = ApiObjects::reference(a, s, 'testing', Set.new(%w[summary description]), prefix)
+r = ApiObjects.reference(a, s, 'testing', Set.new(%w[summary description]), prefix)
 assert(s.size, 2, 'New reference added with prefix')
 assert(r.start_with?("#{path}/#{prefix}"), true, 'Reference starts with prefix')
 
@@ -125,5 +125,100 @@ $context = 'Components.anchor_ref_replacement'
 assert(cmp.anchor_ref_replacement('#other'), '#other', 'absent not changed')
 assert(cmp.anchor_ref_replacement('#name'), cmp.ref_string('name'), 'name found')
 assert(cmp.anchor_ref_replacement('#existing'), 'ref2', 'existing found')
+
+$context = 'operation_objects'
+doc = YAML.safe_load(%(---
+test1:
+  parameters:
+  - "$ref": "#/components/parameters/Parameter0x"
+  get:
+    tags:
+    - something
+    summary: Hapefjda asdoifjh a pasjd
+    description: |
+      Hpsafjapsfj oasdifjaosdkfj psdofjpsdajf psdojöasJ
+      LAKSNDFKJbade asdvjkasdölm psdjölsdk
+    operationId: getSomething
+    responses:
+      '200':
+        "$ref": "#/components/responses/Something"
+      '403':
+        "$ref": "#/components/responses/Error"
+      '404':
+        "$ref": "#/components/responses/Error"
+      '500':
+        "$ref": "#/components/responses/Error"
+  put:
+    operationId: putSomething
+    requestBody:
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Something"
+      required: true
+    responses:
+      '200':
+        "$ref": "#/components/responses/Something"
+      '403':
+        "$ref": "#/components/responses/Error"
+      '404':
+        "$ref": "#/components/responses/Error"
+      '409':
+        "$ref": "#/components/responses/Error"
+      '500':
+        "$ref": "#/components/responses/Error"
+  something:
+    summary: Blahljadskjfhadlvkj
+    responses:
+      '204':
+        "$ref": "#/components/responses/Empty"
+      '403':
+        "$ref": "#/components/responses/Error"
+      '404':
+        "$ref": "#/components/responses/Error"
+      '409':
+        "$ref": "#/components/responses/Error"
+      '500':
+        "$ref": "#/components/responses/Error"
+test2:
+  parameters:
+  - "$ref": "#/components/parameters/Parameter0x"
+  - "$ref": "#/components/parameters/Parameter1x"
+  summary: Text
+  description: More text
+  op1:
+    operationId: getAccess
+  op2:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Put"
+      required: true
+  op3:
+    responses:
+      '204':
+        "$ref": "#/components/responses/Empty"
+      '403':
+        "$ref": "#/components/responses/Error"
+      '404':
+        "$ref": "#/components/responses/Error"
+      '500':
+        "$ref": "#/components/responses/Error"
+  op4:
+    callbacks:
+      name: {}
+))
+oos = ApiObjects.operation_objects(doc['test1'])
+assert(oos.size, 3, '3 objects')
+assert(oos.key?('get'), true, 'has get')
+assert(oos.key?('put'), true, 'has put')
+assert(oos.key?('something'), true, 'has something')
+oos = ApiObjects.operation_objects(doc['test2'])
+assert(oos.size, 4, '4 objects')
+assert(oos.key?('op1'), true, 'has op1')
+assert(oos.key?('op2'), true, 'has op2')
+assert(oos.key?('op3'), true, 'has op3')
+assert(oos.key?('op4'), true, 'has op4')
 
 exit $unit_test

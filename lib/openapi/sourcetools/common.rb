@@ -9,7 +9,6 @@ require 'yaml'
 module OpenAPISourceTools
   # Common methods used in programs and elsewhere gathered into one place.
   module Common
-
     def self.aargh(message, return_value = nil)
       message = message.map(&:to_s).join("\n") if message.is_a? Array
       $stderr.puts message
@@ -51,7 +50,7 @@ module OpenAPISourceTools
       end
       p.split('/').each do |s|
         next if s.empty?
-        s = { var: s } if spec && s.include?('{')
+        s = { (spec && s.include?('{') ? 'parameter' : 'fixed') => s }
         parts.push(s)
       end
       parts

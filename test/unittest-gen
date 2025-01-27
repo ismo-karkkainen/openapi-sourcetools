@@ -59,12 +59,14 @@ assert(Gen.loaders.is_a?(Array), true, 'loaders set')
 assert(Gen.loaders.empty?, true, 'loaders is empty')
 
 $context = 'setup'
-Gen.setup('doc', 'dir/name.ext', 'outdir')
+Gen.setup('doc', 'dir/name.ext', 'outdir', '../test-generate/gen-config')
 assert(Gen.doc, 'doc', 'doc set')
 assert(Gen.outdir, 'outdir', 'outdir set')
 assert(Gen.in_name, 'name.ext', 'in_name set')
 assert(Gen.in_basename, 'name', 'in_basename set')
 assert(Gen.tasks.is_a?(Array), true, 'tasks set')
 assert(Gen.tasks.size, 1, 'tasks has default helper task')
+assert(Gen.configuration.is_a?(Hash), true, 'configuration set')
+assert(Gen.configuration['root'] || '', 'value', 'configuration loaded')
 
 exit $unit_test

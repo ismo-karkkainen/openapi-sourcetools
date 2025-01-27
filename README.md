@@ -8,7 +8,7 @@ The end result is intended to make processing an OpenAPI documents easier for pu
 
 The purpose of openapi-merge is to avoid duplication of parts between documents. Only one in this category but proved useful.
 
-The various openapi-addsomething programs are intended to ensure there is only one copy of each practically identical schema, header, parameter, and response. Besides avoiding duplicated definitions, they also ensure that code generation does not need to check if same type has already been declared.
+The various openapi-addsomething programs are intended to ensure there is only one copy of each practically identical schema, header, parameter, and response. Besides avoiding duplicated definitions, they also ensure that code generation does not need to check if same type has already been declared, when you process the #/components/schemas section.
 
 The practically identical is from a programming point of view. Summary, description, and examples are ignored by default. That also means that generating documentation for schemas that happen to look the same but are intended to be different loses one of the schemas. The case may occur during gradual move from old types to new ones. Hence generating documentation and code during the same run may be impractical.
 
@@ -17,6 +17,24 @@ If you want to check for duplicate definitions, run the program and compare outp
 The openapi-processpaths and openapi-frequencies were intended to obtain data about how much various paths are used. Arguably simple to implement even though need for these may be low.
 
 None of these programs verify that the documents fed to them comply with any OpenAPI version. If the document is close enough, processing will succeed.
+
+## Quick Start
+
+To process an API document to obtain a document that has all stages applied, run:
+
+```sh
+cat input_document.yaml |
+openapi-addschemas |
+openapi-addheaders |
+openapi-addparameters --add |
+openapi-addresponses |
+openapi-processpaths |
+cat > processed_document.yaml
+```
+
+The main effect of the above programs is to add items under components and have other parts refer to those. Since existing items are not touched, there may be duplicates after the processing. For schemas run `openapi-checkschemas` to obtain information about the document.
+
+If the intent is to clean-up the document, omitting `--add` and `openapi-processpaths` is probably desired. Running programs one by one, applying changes and continuing until desired outcome has been reached is probably what you want to do.
 
 ## openapi-addschemas
 
@@ -31,7 +49,6 @@ For simple types such as a string with no size or content limitations, output ma
 Checks schemas and reports if they appear to be equivalent. Expects that openapi-addschemas has been run. Does not modify the source document.
 Two schemas with same number or properties with same types but different property names can be equivalent. That alone does not mean that one should be dropped as different contexts may have similar types. Mainly intended to be used for checking if there is something to clean up.
 
-
 ## openapi-addheaders
 
 Checks for presence of header definitions under "components/responses" and "paths". For any definition found, adds a definition under "components/headers" and replaces the original with a reference.
@@ -45,6 +62,8 @@ You should run openapi-addschemas beforehand to reduce unnecessary variation.
 Checks for presence of parameter definitions under paths. For any definition found, adds a definition under "components/parameters" and replaces the original with a reference.
 
 You should run openapi-addschemas beforehand to reduce unnecessary variation.
+
+If you want all operation objects to have parameters array that includes the parameters listed in path item, use `--add` parameter. While it results in duplication of the parameters array contents, it also avoids chekcing of path item  parameters during code generation.
 
 ## openapi-addresponses
 
@@ -187,7 +206,7 @@ You may want to add for example a version string element into the start of the p
 
 ## openapi-processpaths
 
-Splits paths into parts that are fixed or have a variable. Paths that do not have differences in fixed parts only are reported as errors by default. Otherwise "look-alike" paths are found and stored.
+Splits paths into parts that are fixed or have a parameter. Paths that do not have differences in fixed parts in same place are reported as errors by default. Path is split and stored in path item under key "x-openapi-sourcetools-parts" as an array of hashes with either "fixed" or "parameter" key.
 
 ## openapi-frequencies
 
@@ -241,7 +260,7 @@ module GemNamespace
 end
 
 # Automatically adds setup tasks the first time the gem is required.
-GemNamespace.setup_tasks unless defined?(Gen).nil?
+GemNamespace.setup_tasks if defined?(Gen)
 ```
 
 The order of execution is that setup_tasks is run when openapi-generate processes all arguments. The ProcessingInitTask is run once processing proceeds to that task. Hence the setup_tasks method adds tasks after the ProcessingInitTask. Since you can access the tasks array via Gen.tasks, and you have the Gen.task_index indicate the current task (as well as Gen.t), you can add new tasks during processing. That may be useful if you do not actually know what is needed. For expected normal straightforward processing, add tasks during load time.

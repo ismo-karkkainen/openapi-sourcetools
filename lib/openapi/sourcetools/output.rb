@@ -30,11 +30,11 @@ module OpenAPISourceTools
       @last_indent = 0
     end
 
-    def config=(cfg, keep_counters = false)
+    def config=(cfg)
       cfg = OutputConfiguration.new(cfg) if cfg.is_a?(Hash)
       raise ArgumentError, "Expected OutputConfiguration or Hash, got #{cfg.class}" unless cfg.is_a?(OutputConfiguration)
       @config = cfg
-      @last_indent = 0 unless keep_counters
+      @last_indent = 0
     end
 
     # Takes an array of code blocks/lines or integers/booleans and produces

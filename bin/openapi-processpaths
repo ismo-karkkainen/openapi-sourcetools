@@ -33,8 +33,8 @@ def main
     opts.on('-h', '--help', 'Print this help and exit.') do
       $stdout.puts %(#{opts}
 
-Processes API specification document path objects into form that is expected by
-later stage tools. Checks for paths that may be ambiguous.
+Adds split path parts into API document path items under x-openapi-sourcetools
+key. Checks for paths that may be ambiguous.
 )
       exit 0
     end
@@ -45,14 +45,10 @@ later stage tools. Checks for paths that may be ambiguous.
   return 2 if doc.nil?
 
   processed = {}
-  doc.fetch('paths', {}).each_pair do |path, value|
+  doc.fetch('paths', {}).each do |path, item|
     parts = Common.split_path(path, true)
-    processed[path] = {
-      'parts' => parts,
-      'orig' => value,
-      'lookalike' => [],
-      path: ApiObjects::ServerPath.new(parts)
-    }
+    item['x-openapi-sourcetools-parts'] = parts # Added to original path item.
+    processed[path] = ApiObjects::ServerPath.new(parts)
   end
 
   # Find lookalike sets.
@@ -64,22 +60,14 @@ later stage tools. Checks for paths that may be ambiguous.
     k.times do |n|
       pn = paths[n]
       b = processed[pn]
-      next unless a[:path].compare(b[:path]).zero?
-      a['lookalike'].push pn
-      b['lookalike'].push pk
+      next unless a.compare(b).zero?
       $stderr.puts("Similar: #{pn} #{pk}")
       lookalikes = true
     end
   end
   return Common.aargh('Similar paths found.', 4) if lookalikes && error
 
-  # Remove temporary fields.
-  processed.each_value do |v|
-    v.delete_if { |k, _v| k.is_a? Symbol }
-  end
-  doc['paths'] = processed
-
   Common.dump_result(output_name, doc, 3)
 end
 
-exit(main) if defined?($unit_test).nil?
+exit(main) unless defined?($unit_test)

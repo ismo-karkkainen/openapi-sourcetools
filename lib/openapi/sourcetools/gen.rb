@@ -7,6 +7,8 @@ require_relative 'task'
 require_relative 'helper'
 require_relative 'docs'
 require_relative 'output'
+require_relative 'config'
+require 'deep_merge'
 
 
 # The generation module that contains things visible to tasks.
@@ -63,6 +65,7 @@ module Gen
   mod_attr_reader :outdir, 'Output directory name.'
   mod_attr_reader :d, 'Other documents object.', OpenAPISourceTools::Docs.new
   mod_attr_reader :wd, 'Original working directory', Dir.pwd
+  mod_attr_reader :configuration, 'Generator internal configuration'
   mod_attr_accessor :config, 'Configuration file name for next gem or Ruby file.'
   mod_attr_accessor :separator, 'Key separator in config file names.', nil
   mod_attr_accessor :in_name, 'OpenAPI document name, nil if stdin.'
@@ -76,13 +79,23 @@ module Gen
   mod_attr_accessor :loaders, 'Array of processor loader methods.', []
   mod_attr_accessor :output, 'Output-formatting helper.', OpenAPISourceTools::Output.new
 
-  def self.setup(document_content, input_name, output_directory)
+  def self.load_config(config_prefix)
+    cfg = {}
+    cfgs = OpenAPISourceTools::ConfigLoader.find_files(name_prefix: config_prefix)
+    cfgs = OpenAPISourceTools::ConfigLoader.read_contents(cfgs)
+    cfgs.each { |c| cfg.deep_merge!(c) }
+    cfg
+  end
+  private_class_method :load_config
+
+  def self.setup(document_content, input_name, output_directory, config_prefix)
     @doc = document_content
     @outdir = output_directory
     unless input_name.nil?
       @in_name = File.basename(input_name)
       @in_basename = File.basename(input_name, '.*')
     end
+    @configuration = load_config(config_prefix)
     add_task(task: OpenAPISourceTools::HelperTask.new)
   end
 

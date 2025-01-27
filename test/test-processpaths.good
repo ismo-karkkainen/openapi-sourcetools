@@ -15,15 +15,11 @@ Could not load /in/valid
 ---
 paths:
   "/test":
-    parts:
-    - test
-    orig: {}
-    lookalike: []
+    x-openapi-sourcetools-parts:
+    - fixed: test
   "/present":
-    parts:
-    - present
-    orig: {}
-    lookalike: []
+    x-openapi-sourcetools-parts:
+    - fixed: present
 ####ERR
 ####COMMAND Simple output
 ####CODE 0
@@ -31,15 +27,11 @@ paths:
 ---
 paths:
   "/test":
-    parts:
-    - test
-    orig: {}
-    lookalike: []
+    x-openapi-sourcetools-parts:
+    - fixed: test
   "/present":
-    parts:
-    - present
-    orig: {}
-    lookalike: []
+    x-openapi-sourcetools-parts:
+    - fixed: present
 ####ERR
 ####COMMAND Conflicting paths
 ####CODE 4
@@ -53,20 +45,14 @@ Similar paths found.
 ---
 paths:
   "/test/{var}/fixed":
-    parts:
-    - test
-    - :var: "{var}"
-    - fixed
-    orig: {}
-    lookalike:
-    - "/test/fixed/{var}"
+    x-openapi-sourcetools-parts:
+    - fixed: test
+    - parameter: "{var}"
+    - fixed: fixed
   "/test/fixed/{var}":
-    parts:
-    - test
-    - fixed
-    - :var: "{var}"
-    orig: {}
-    lookalike:
-    - "/test/{var}/fixed"
+    x-openapi-sourcetools-parts:
+    - fixed: test
+    - fixed: fixed
+    - parameter: "{var}"
 ####ERR
 Similar: /test/fixed/{var} /test/{var}/fixed

@@ -4,6 +4,7 @@
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
 require_relative 'task'
+require_relative 'gen'
 
 
 # Original loader functions. These are accessible via Gen.loaders. New loaders
@@ -33,19 +34,17 @@ module OpenAPISourceTools
       true
     end
 
-    REREQ_PREFIX = 'rereq:'
+    EVAL_PREFIX = 'eval:'
 
-    def self.rereq_loader(name)
-      return false unless name.downcase.start_with?(REREQ_PREFIX)
+    def self.eval_loader(name)
+      return false unless name.downcase.start_with?(EVAL_PREFIX)
       begin
         t = OpenAPISourceTools::RestoreProcessorStorage.new({})
         Gen.tasks.push(t)
-        code = name.slice(REREQ_PREFIX.size...name.size)
+        code = name.slice(EVAL_PREFIX.size...name.size)
         eval(code)
         Gen.config = nil
         t.x = Gen.x # In case setup code replaced the object.
-      rescue LoadError => e
-        raise StandardError, "Failed to require again #{name}\n#{e}"
       rescue Exception => e
         raise StandardError, "Problem with #{name}\n#{e}\n#{e.backtrace.join("\n")}"
       end
@@ -64,11 +63,11 @@ module OpenAPISourceTools
         Gen.tasks.push(t)
         base = File.basename(name)
         Gen.config = base[0..-4] if Gen.config.nil?
-        require(File.join(Dir.pwd, base))
+        load(File.join(Dir.pwd, base))
         Gen.config = nil
         t.x = Gen.x # In case setup code replaced the object.
       rescue LoadError => e
-        raise StandardError, "Failed to require #{name}\n#{e}"
+        raise StandardError, "Failed to load #{name}\n#{e}"
       rescue Exception => e
         raise StandardError, "Problem with #{name}\n#{e}\n#{e.backtrace.join("\n")}"
       end
@@ -139,7 +138,7 @@ module OpenAPISourceTools
     def self.loaders
       [
         method(:req_loader),
-        method(:rereq_loader),
+        method(:eval_loader),
         method(:ruby_loader),
         method(:yaml_loader),
         method(:bin_loader),
@@ -151,7 +150,7 @@ module OpenAPISourceTools
     def self.document
       <<EOB
 - #{Loaders::REQ_PREFIX}req_name : requires the gem.
-- #{Loaders::REREQ_PREFIX}code : runs code to add gem tasks again.
+- #{Loaders::EVAL_PREFIX}code : runs code to add gem tasks again.
 - ruby_file#{Loaders::RUBY_EXT} : changes to Ruby file directory and requires the file.
 - #{Loaders::YAML_PREFIX}name:filename : Loads YAML file into Gen.d.name.
 - name:filename.{#{(Loaders::YAML_EXTS.map { |s| s[1...s.size] }).join('|')}} : Loads YAML file into Gen.d.name.

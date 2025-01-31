@@ -46,17 +46,6 @@ end
 assert(ct, cn, 'content present as is')
 
 $context = 'prepare_prefix'
-module Gen
-  attr_accessor(:wd)
-  module_function(:wd)
-  module_function((:wd.to_s + '=').to_sym)
-  attr_accessor(:config)
-  module_function(:config)
-  module_function((:config.to_s + '=').to_sym)
-  attr_reader(:separator)
-  module_function(:separator)
-  module_function((:separator.to_s + '=').to_sym)
-end
 Gen.config = 'testcfg'
 Gen.separator = '+'
 r, n = ConfigLoader.prepare_prefix('nodir', '/tmp')
@@ -138,7 +127,6 @@ b = ConfigLoader.convert_path_end('foo/baz', s, 0, [])
 assert((a <=> b).negative?, true, 'path decides')
 
 $context = 'find_files'
-Gen.wd = Dir.pwd
 cfis = ConfigLoader.find_files(name_prefix: '../test-generate/cfg+/filewdir')
 assert(cfis.size, 7, '7 files found')
 assert(cfis[0].path.end_with?('/filewdir.yaml'), true, 'main file')

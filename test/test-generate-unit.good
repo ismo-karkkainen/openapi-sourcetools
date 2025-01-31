@@ -149,11 +149,11 @@ ok: req_loader: Standard error raised
 ok: req_loader: Rejects plain name
 ok: req_loader: Gem loaded
 ok: req_loader: Tasks data restore
-ok: rereq_loader: Standard error raised
-ok: rereq_loader: Rejects plain name
-ok: rereq_loader: Code accepted
-ok: rereq_loader: Code was run
-ok: rereq_loader: Tasks data restore
+ok: eval_loader: Standard error raised
+ok: eval_loader: Rejects plain name
+ok: eval_loader: Code accepted
+ok: eval_loader: Code was run
+ok: eval_loader: Tasks data restore
 ok: ruby_loader: Standard error raised on error in file
 ok: ruby_loader: Standard error raised on missing file
 ok: ruby_loader: Rejects other name
@@ -234,12 +234,11 @@ ok: RestoreProcessorStorage: Gen.x empty after generate
 ####COMMAND Gen unit tests
 ####CODE 0
 ####OUT
-ok: mod_attr_reader: Has read-only attribute.
-ok: mod_attr_accessor: Has readable attribute.
-ok: mod_attr_accessor: Has writable attribute.
 ok: defaults: doc nil
 ok: defaults: outdir nil
 ok: defaults: docs set
+ok: defaults: wd set
+ok: defaults: configuration nil
 ok: defaults: in_name nil
 ok: defaults: in_basename nil
 ok: defaults: tasks set

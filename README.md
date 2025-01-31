@@ -20,7 +20,7 @@ None of these programs verify that the documents fed to them comply with any Ope
 
 ## Quick Start
 
-To process an API document to obtain a document that has all stages applied, run:
+To process an API document to obtain a document that has various things moved under components and originals replaced with references, run:
 
 ```sh
 cat input_document.yaml |
@@ -28,8 +28,16 @@ openapi-addschemas |
 openapi-addheaders |
 openapi-addparameters --add |
 openapi-addresponses |
-openapi-processpaths |
 cat > processed_document.yaml
+```
+
+To add split paths and to copy security requirement object arrays to operation objects, run:
+
+```sh
+cat processed_document.yaml |
+openapi-processpaths |
+openapi-addsecurityschemes |
+cat > generation_source_document.yaml
 ```
 
 The main effect of the above programs is to add items under components and have other parts refer to those. Since existing items are not touched, there may be duplicates after the processing. For schemas run `openapi-checkschemas` to obtain information about the document.
@@ -63,7 +71,7 @@ Checks for presence of parameter definitions under paths. For any definition fou
 
 You should run openapi-addschemas beforehand to reduce unnecessary variation.
 
-If you want all operation objects to have parameters array that includes the parameters listed in path item, use `--add` parameter. While it results in duplication of the parameters array contents, it also avoids chekcing of path item  parameters during code generation.
+If you want all operation objects to have parameters array that includes the parameters listed in path item, use `--add` parameter. While it results in duplication of the parameters array contents, it also avoids chekcing of path item parameters during code generation.
 
 ## openapi-addresponses
 
@@ -72,6 +80,10 @@ Checks for presence of response definitions under paths. For any definition foun
 This does not change existing response definitions even if they are practically identical to each other.
 
 You should run openapi-addschemas beforehand to reduce unnecessary variation.
+
+## openapi-addsecurityschemes
+
+Takes the top-level security array and sets up security arrays in operation objects. The presence of security schemes under components are checked for and missing ones are reported. Intended to simplify later code generation.
 
 ## openapi-generate
 
@@ -276,7 +288,7 @@ Gen.config = 'mygem-reloaded' # Can avoid config-argument this way.
 GemNamespace.setup_tasks
 ```
 
-If that is all you need to do, considering the gem has been required already, you can use an argument `rereq:GemNamespace.setup_tasks` which eliminates the need to add the file. Using a "reload-mygem.rb" file and passing its name to openapi-generate as processor name allows you to do other things like setting the config name to avoid using config-argument.
+If that is all you need to do, considering the gem has been required already, you can use an argument `eval:GemNamespace.setup_tasks` which eliminates the need to add the file. Using a "reload-mygem.rb" file and passing its name to openapi-generate as processor name allows you to do other things like setting the config name to avoid using config-argument.
 
 ## Work in Progress
 

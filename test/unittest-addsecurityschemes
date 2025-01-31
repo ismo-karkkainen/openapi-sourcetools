@@ -1,0 +1,154 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright 2024-2025 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../shared/unittest'
+require_relative '../lib/openapi/sourcetools/apiobjects'
+require 'yaml'
+
+path = '#/components/parameters'
+
+$unit_test = 0
+load '../bin/openapi-addsecurityschemes'
+include OpenAPISourceTools
+
+$context = 'add_combinations'
+combos = Set.new
+sec = { 'one' => 'value' }
+add_combinations(combos, [ sec ])
+assert(combos.size, 1, 'One combination added')
+assert(combos.to_a.first, [ 'one' ], 'array of one')
+sec = { 'two' => 'two', 'three' => 1 }
+add_combinations(combos, [ sec ])
+assert(combos.include?([ 'three', 'two' ]), true, 'has sorted key array')
+assert(combos.size, 2, 'has two members')
+add_combinations(combos, [ {} ])
+assert(combos.size, 2, 'no empty array added')
+
+$context = 'gather_security'
+def get_doc
+  YAML.safe_load(%(
+---
+security:
+- token: []
+- some: []
+  other: [ implicit ]
+- missing: []
+paths:
+  something:
+    parameters:
+    - "$ref": "#/components/parameters/TopName"
+    get:
+      operationId: getSomething
+      other: 123
+      parameters:
+      - name: foo
+        in: path
+        schema:
+          "$ref": "#/components/schemas/Name"
+      - name: toplevel
+        in: path
+        schema:
+          "$ref": "#/components/schemas/TopName"
+      security:
+      - {}
+    method:
+      no: parameters
+    post:
+      operationId: postSomething
+      parameters:
+      - name: foo
+        in: path
+        schema:
+          "$ref": "#/components/schemas/Name"
+      security: []
+    put:
+      operationId: putSomething
+      parameters:
+      - name: foo
+        in: path
+        schema:
+          "$ref": "#/components/schemas/Name"
+  otherthing:
+    method:
+      operationId: methodOtherthing
+      parameters:
+      - name: foo
+        in: path
+        schema:
+          "$ref": "#/components/schemas/Name"
+      security:
+      - different: []
+components:
+  securitySchemes:
+    token:
+      type: http
+      scheme: bearer
+    some:
+      type: apikey
+      in: header
+    other:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: https://example.com/api/oauth/dialog
+          scopes: {}
+    different:
+      type: mutualTLS
+))
+end
+doc = get_doc
+s, oos, combos = gather_security(doc)
+assert(s, doc['security'], 'security present')
+assert(oos.size, 4, 'all operation objects')
+%w[getSomething postSomething putSomething methodOtherthing].each do |oid|
+  assert(oos.index { |oo| oo['operationId'] == oid }.nil?, false, "operation ID #{oid}")
+end
+assert(combos.size, 4, 'all combinations')
+[ %w[token], %w[other some], %w[different], %w[missing] ].each do |key|
+  assert(combos.include?(key), true, "#{key} present")
+end
+
+$context = 'check_security'
+assert(check_security(doc, combos), false, 'missing found')
+doc = get_doc
+doc['security'].pop
+top_level_security, oos, combos = gather_security(doc)
+assert(check_security(doc, combos), true, 'nothing missing')
+
+$context = 'namelist2security'
+assert(namelist2security({}), '', 'empty hash, empty string')
+assert(namelist2security({ 'only' => [ 0 ] }), 'only', 'one key')
+assert(namelist2security({ 'last' => [], 'first' => [ 0 ] }), 'first last', 'sorted names')
+
+$context = 'security2hash'
+assert(security2hash([]), {}, 'empty array, empty hash')
+only = { 'only' => [ 0 ] }
+assert(security2hash([ only ]), { 'only' => only }, 'one key to hash')
+first_last = { 'last' => [], 'first' => [ 0 ] }
+assert(security2hash([ first_last ]), { 'first last' => first_last }, 'combined name')
+one = { 'one' => [] }
+two = { 'two' => [] }
+assert(security2hash([ one, two ]), { 'one' => one, 'two' => two }, 'two items')
+
+$context = 'add_security_to_operations'
+add_security_to_operations(oos, top_level_security)
+expectations = {
+  'getSomething' => [ [] ],
+  'postSomething' => [],
+  'putSomething' => [ %w[other some], %w[token] ],
+  'methodOtherthing' => [ %w[different] ]
+}
+oos.each do |oo|
+  sec = oo['security']
+  assert(sec.nil?, false, 'has security')
+  expected = expectations[oo['operationId']]
+  assert(sec.size, expected.size, 'expected number of items')
+  expected.size.times do |idx|
+    assert(sec[idx].keys.sort!, expected[idx], 'same keys')
+  end
+end
+
+exit $unit_test

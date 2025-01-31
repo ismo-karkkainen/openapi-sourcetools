@@ -9,97 +9,77 @@ require_relative 'docs'
 require_relative 'output'
 require_relative 'config'
 require 'deep_merge'
-
+require 'singleton'
 
 # The generation module that contains things visible to tasks.
-module Gen
+class Gen
+  include Singleton
+
+  @docsrc = []
   def self.add_doc(symbol, docstr)
-    return if docstr.nil?
-    @docsrc = [] unless instance_variable_defined?('@docsrc')
     @docsrc.push("- #{symbol} : #{docstr}")
   end
   private_class_method :add_doc
 
-  def self.read_attr(symbol, default)
-    return if symbol.nil?
+  def self.attrib_reader(symbol, docstr, initial_value = nil)
+    add_doc(symbol, docstr)
     attr_reader(symbol)
-    module_function(symbol)
-    instance_variable_set("@#{symbol}", default)
+    instance_eval("def #{symbol}; Gen.instance.#{symbol}; end")
+    Gen.instance.instance_variable_set("@#{symbol}", initial_value) unless initial_value.nil?
   end
-  private_class_method :read_attr
+  private_class_method :attrib_reader
 
-  def self.mod_attr2_reader(symbol, symbol2, docstr = nil, default = nil)
-    read_attr(symbol, default)
-    read_attr(symbol2, default)
+  def self.attrib_accessor(symbol, docstr, initial_value = nil)
     add_doc(symbol, docstr)
-  end
-  private_class_method :mod_attr2_reader
-
-  def self.mod_attr_reader(symbol, docstr = nil, default = nil)
-    mod_attr2_reader(symbol, nil, docstr, default)
-  end
-  private_class_method :mod_attr_reader
-
-  def self.rw_attr(symbol, default)
     attr_accessor(symbol)
-    module_function(symbol)
-    s = symbol.to_s
-    module_function((s + '=').to_sym)
-    instance_variable_set("@#{s}", default)
+    instance_eval("def #{symbol}; Gen.instance.#{symbol}; end")
+    instance_eval("def #{symbol}=(v); Gen.instance.#{symbol} = v; end")
+    Gen.instance.instance_variable_set("@#{symbol}", initial_value) unless initial_value.nil?
   end
-  private_class_method :rw_attr
+  private_class_method :attrib_accessor
 
-  def self.mod_attr2_accessor(symbol, symbol2, docstr = nil, default = nil)
-    rw_attr(symbol, default)
-    rw_attr(symbol2, default) unless symbol2.nil?
-    add_doc(symbol, docstr)
-  end
-  private_class_method :mod_attr2_accessor
+  attrib_reader :doc, 'OpenAPI document.'
+  attrib_reader :outdir, 'Output directory name.'
+  attrib_reader :d, 'Other documents object.', OpenAPISourceTools::Docs.new
+  attrib_reader :wd, 'Original working directory', Dir.pwd
+  attrib_reader :configuration, 'Generator internal configuration'
+  attrib_accessor :config, 'Configuration file name for next gem or Ruby file.'
+  attrib_accessor :separator, 'Key separator in config file names.'
+  attrib_accessor :in_name, 'OpenAPI document name, nil if stdin.'
+  attrib_accessor :in_basename, 'OpenAPI document basename, nil if stdin.'
+  attrib_reader :g, 'Hash for storing values visible to all tasks.', {}
+  attrib_accessor :x, 'Hash for storing values visible to tasks from processor.', {}
+  attrib_accessor :h, 'Instance of class with helper methods.'
+  attrib_accessor :tasks, 'Tasks array.', []
+  attrib_accessor :t, 'Current task instance.'
+  attrib_accessor :task_index, 'Current task index.'
+  attrib_accessor :loaders, 'Array of processor loader methods.', []
+  attrib_accessor :output, 'Output-formatting helper.', OpenAPISourceTools::Output.new
 
-  def self.mod_attr_accessor(symbol, docstr = nil, default = nil)
-    mod_attr2_accessor(symbol, nil, docstr, default)
-  end
-  private_class_method :mod_attr_accessor
-
-  mod_attr_reader :doc, 'OpenAPI document.'
-  mod_attr_reader :outdir, 'Output directory name.'
-  mod_attr_reader :d, 'Other documents object.', OpenAPISourceTools::Docs.new
-  mod_attr_reader :wd, 'Original working directory', Dir.pwd
-  mod_attr_reader :configuration, 'Generator internal configuration'
-  mod_attr_accessor :config, 'Configuration file name for next gem or Ruby file.'
-  mod_attr_accessor :separator, 'Key separator in config file names.', nil
-  mod_attr_accessor :in_name, 'OpenAPI document name, nil if stdin.'
-  mod_attr_accessor :in_basename, 'OpenAPI document basename, nil if stdin.'
-  mod_attr_reader :g, 'Hash for storing values visible to all tasks.', {}
-  mod_attr_accessor :x, 'Hash for storing values visible to tasks from processor.', {}
-  mod_attr_accessor :h, 'Instance of class with helper methods.'
-  mod_attr_accessor :tasks, 'Tasks array.', []
-  mod_attr2_accessor :task, :t, 'Current task instance.'
-  mod_attr_accessor :task_index, 'Current task index.'
-  mod_attr_accessor :loaders, 'Array of processor loader methods.', []
-  mod_attr_accessor :output, 'Output-formatting helper.', OpenAPISourceTools::Output.new
-
-  def self.load_config(config_prefix)
+  def self.load_config(name_prefix, extensions = [ '.*' ])
     cfg = {}
-    cfgs = OpenAPISourceTools::ConfigLoader.find_files(name_prefix: config_prefix)
+    cfgs = OpenAPISourceTools::ConfigLoader.find_files(name_prefix:, extensions:)
     cfgs = OpenAPISourceTools::ConfigLoader.read_contents(cfgs)
     cfgs.each { |c| cfg.deep_merge!(c) }
     cfg
   end
-  private_class_method :load_config
 
-  def self.setup(document_content, input_name, output_directory, config_prefix)
+  def setup(document_content, input_name, output_directory, config_prefix)
     @doc = document_content
     @outdir = output_directory
     unless input_name.nil?
       @in_name = File.basename(input_name)
       @in_basename = File.basename(input_name, '.*')
     end
-    @configuration = load_config(config_prefix)
+    @configuration = Gen.load_config(config_prefix)
     add_task(task: OpenAPISourceTools::HelperTask.new)
   end
 
-  def self.add_task(task:, name: nil, executable: false, x: nil)
+  def self.setup(document_content, input_name, output_directory, config_prefix)
+    Gen.instance.setup(document_content, input_name, output_directory, config_prefix)
+  end
+
+  def add_task(task:, name: nil, executable: false, x: nil)
     @tasks.push(task)
     # Since this method allows the user to pass their own task type instance,
     # assign optional values with defaults only when clearly given.
@@ -108,13 +88,25 @@ module Gen
     @tasks.last.x = x unless x.nil?
   end
 
-  def self.add_write_content(name:, content:, executable: false)
+  def self.add_task(task:, name: nil, executable: false, x: nil)
+    Gen.instance.add_task(task:, name:, executable:, x:)
+  end
+
+  def add_write_content(name:, content:, executable: false)
     add_task(task: OpenAPISourceTools::WriteTask.new(name, content, executable))
   end
 
-  def self.add(source:, template: nil, template_name: nil, name: nil, executable: false, x: nil)
+  def self.add_write_content(name:, content:, executable: false)
+    Gen.instance.add_write_content(name:, content:, executable:)
+  end
+
+  def add(source:, template: nil, template_name: nil, name: nil, executable: false, x: nil)
     add_task(task: OpenAPISourceTools::Task.new(source, template, template_name),
       name:, executable:, x:)
+  end
+
+  def self.add(source:, template: nil, template_name: nil, name: nil, executable: false, x: nil)
+    Gen.instance.add(source:, template:, template_name:, name:, executable:, x:)
   end
 
   def self.document

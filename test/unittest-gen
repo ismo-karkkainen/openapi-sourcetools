@@ -10,40 +10,13 @@ require 'yaml'
 $unit_test = 0
 require_relative '../lib/openapi/sourcetools/gen'
 
-module Gen
-  public_class_method :add_doc
-  public_class_method :read_attr
-  public_class_method :mod_attr2_reader
-  public_class_method :mod_attr_reader
-  public_class_method :rw_attr
-  public_class_method :mod_attr2_accessor
-  public_class_method :mod_attr_accessor
-end
-
-$context = 'mod_attr_reader'
-Gen.mod_attr_reader(:readonly, 'ro-document', 5)
-begin
-  x = Gen.readonly
-  assert(x, 5, 'Has read-only attribute.')
-rescue Exception
-  assert(true, false, 'Attribute access failed')
-end
-
-$context = 'mod_attr_accessor'
-Gen.mod_attr_accessor(:readwrite, nil, 6)
-begin
-  x = Gen.readwrite
-  assert(x, 6, 'Has readable attribute.')
-  Gen.readwrite = 7
-  assert(Gen.readwrite, 7, 'Has writable attribute.')
-rescue Exception
-  assert(true, false, 'Attribute access failed')
-end
 
 $context = 'defaults'
 assert(Gen.doc.nil?, true, 'doc nil')
 assert(Gen.outdir.nil?, true, 'outdir nil')
 assert(Gen.d.is_a?(OpenAPISourceTools::Docs), true, 'docs set')
+assert(Gen.wd.is_a?(String), true, 'wd set')
+assert(Gen.configuration.nil?, true, 'configuration nil')
 assert(Gen.in_name.nil?, true, 'in_name nil')
 assert(Gen.in_basename.nil?, true, 'in_basename nil')
 assert(Gen.tasks.is_a?(Array), true, 'tasks set')

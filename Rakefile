@@ -28,7 +28,7 @@ task :uninstall do
 end
 
 desc 'Test.'
-task test: %i[testgeneratecheckconfig testmodifypaths testmerge testprocesspaths testfrequencies testaddschemas testaddresponses testaddheaders testaddparameters testcheckschemas testgenerate testoftypes testcommon]
+task test: %i[testaddsecurityschemes testgeneratecheckconfig testmodifypaths testmerge testprocesspaths testfrequencies testaddschemas testaddresponses testaddheaders testaddparameters testcheckschemas testgenerate testoftypes testcommon]
 
 desc 'Test modifypaths.'
 task :testmodifypaths do
@@ -93,6 +93,11 @@ end
 desc 'Test oftypes.'
 task :testoftypes do
   sh './test.sh oftypes'
+end
+
+desc 'Test addsecurityschemes.'
+task :testaddsecurityschemes do
+  sh './test.sh addsecurityschemes'
 end
 
 desc 'Lint using Rubocop'

@@ -1,0 +1,110 @@
+####COMMAND Invalid output file
+####CODE 3
+####OUT
+####ERR
+No such file or directory @ rb_sysopen - ./in/valid
+Failed to write output: ./in/valid
+####COMMAND Invalid input file
+####CODE 2
+####OUT
+####ERR
+Could not load ./in/valid
+####COMMAND Output file
+####CODE 0
+####OUT
+---
+openapi: 3.1.0
+####ERR
+####COMMAND No input file
+####CODE 2
+####OUT
+####ERR
+####COMMAND Input with missing security schema
+####CODE 4
+####OUT
+####ERR
+Security scheme unavailable: missing
+####COMMAND Input and output
+####CODE 0
+####OUT
+---
+openapi: 3.1.0
+info:
+  title: SomeAPI
+  version: 1.0.0
+  description: Test stuff
+  license:
+    name: UPL 1.0
+    url: https://opensource.org/license/UPL
+security:
+- token: []
+- some: []
+  other:
+  - implicit
+paths:
+  something:
+    parameters:
+    - "$ref": "#/components/parameters/TopName"
+    get:
+      operationId: getSomething
+      other: 123
+      parameters:
+      - name: foo
+        in: path
+        schema:
+          "$ref": "#/components/schemas/Name"
+      - name: toplevel
+        in: path
+        schema:
+          "$ref": "#/components/schemas/TopName"
+      security:
+      - {}
+    method:
+      false: parameters
+    post:
+      operationId: postSomething
+      parameters:
+      - name: foo
+        in: path
+        schema:
+          "$ref": "#/components/schemas/Name"
+      security: []
+    put:
+      operationId: putSomething
+      parameters:
+      - name: foo
+        in: path
+        schema:
+          "$ref": "#/components/schemas/Name"
+      security:
+      - some: []
+        other:
+        - implicit
+      - token: []
+  otherthing:
+    method:
+      operationId: methodOtherthing
+      parameters:
+      - name: foo
+        in: path
+        schema:
+          "$ref": "#/components/schemas/Name"
+      security:
+      - different: []
+components:
+  securitySchemes:
+    token:
+      type: http
+      scheme: bearer
+    some:
+      type: apikey
+      in: header
+    other:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: https://example.com/api/oauth/dialog
+          scopes: {}
+    different:
+      type: mutualTLS
+####ERR

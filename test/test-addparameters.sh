@@ -84,14 +84,6 @@ echo "####OUT"
 cat o
 echo "####ERR"
 cat e
-
-#echo "####COMMAND Processed output"
-#$M -i test.yaml >o 2>e
-#echo "####CODE $?"
-#echo "####OUT"
-#cat o
-#echo "####ERR"
-#cat e
 ) > $(basename $0 .sh).res
 
 rm -f x o e

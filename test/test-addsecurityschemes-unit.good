@@ -1,0 +1,42 @@
+####COMMAND Unit tests
+####CODE 0
+####OUT
+ok: add_combinations: One combination added
+ok: add_combinations: array of one
+ok: add_combinations: has sorted key array
+ok: add_combinations: has two members
+ok: add_combinations: no empty array added
+ok: gather_security: security present
+ok: gather_security: all operation objects
+ok: gather_security: operation ID getSomething
+ok: gather_security: operation ID postSomething
+ok: gather_security: operation ID putSomething
+ok: gather_security: operation ID methodOtherthing
+ok: gather_security: all combinations
+ok: gather_security: ["token"] present
+ok: gather_security: ["other", "some"] present
+ok: gather_security: ["different"] present
+ok: gather_security: ["missing"] present
+ok: check_security: missing found
+ok: check_security: nothing missing
+ok: namelist2security: empty hash, empty string
+ok: namelist2security: one key
+ok: namelist2security: sorted names
+ok: security2hash: empty array, empty hash
+ok: security2hash: one key to hash
+ok: security2hash: combined name
+ok: security2hash: two items
+ok: add_security_to_operations: has security
+ok: add_security_to_operations: expected number of items
+ok: add_security_to_operations: same keys
+ok: add_security_to_operations: has security
+ok: add_security_to_operations: expected number of items
+ok: add_security_to_operations: has security
+ok: add_security_to_operations: expected number of items
+ok: add_security_to_operations: same keys
+ok: add_security_to_operations: same keys
+ok: add_security_to_operations: has security
+ok: add_security_to_operations: expected number of items
+ok: add_security_to_operations: same keys
+####ERR
+Security scheme unavailable: missing

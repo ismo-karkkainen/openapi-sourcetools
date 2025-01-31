@@ -78,7 +78,6 @@ module OpenAPISourceTools
       Gen.task_index = 0
       while Gen.task_index < Gen.tasks.size
         Gen.t = Gen.tasks[Gen.task_index]
-        Gen.task = Gen.t
         out = generate(Gen.t)
         Gen.task_index += 1
         return out if out.is_a?(Integer)

@@ -18,7 +18,7 @@ def main
 
   parser = OptionParser.new do |opts|
     opts.summary_indent = '  '
-    opts.summary_width = 26
+    opts.summary_width = 20
     opts.banner = 'Usage: openapi-generate [options] generator-names...'
     opts.separator ''
     opts.separator 'Options:'
@@ -37,7 +37,7 @@ Loads API document in OpenAPI format and generator names. Built-in generator
 or additional document loaders accept the following:
 #{OpenAPISourceTools::Loaders.document.strip}
 
-During load each generator can add and modify tasks via Gen module:
+During load each generator can add and modify tasks via Gen singleton:
 #{Gen.document.strip}
 
 After all generators have loaded succesfully, tasks are run.
@@ -48,10 +48,10 @@ After all generators have loaded succesfully, tasks are run.
   parser.order!
 
   return OpenAPISourceTools::Common.aargh('Generator names must be given.', 1) if ARGV.empty?
+  return OpenAPISourceTools::Common.aargh("Not a directory: #{output_dir}", 3) unless File.directory?(output_dir)
 
   a = OpenAPISourceTools::Common.load_source(input_name)
   return 2 if a.nil?
-  return OpenAPISourceTools::Common.aargh("Not a directory: #{output_dir}", 3) unless File.directory?(output_dir)
   gen = OpenAPISourceTools::Generator.new(a, input_name, output_dir, config_prefix)
   ec = gen.load(ARGV)
   return ec unless ec.zero?

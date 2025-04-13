@@ -138,4 +138,39 @@ assert(p.empty?, true, 'no local parameters')
 p = h.parameters(d.dig('paths', '/no/parameter', 'put'), true)
 assert(p.empty?, true, 'no local parameters')
 
+$context = 'response_codes'
+def doc4
+  YAML.safe_load(%(
+---
+responses:
+  '400':
+    description: Bad Request
+  '500':
+    description: Internal Server Error
+  default:
+    description: Default response
+  '2xx':
+    description: Success
+  '3XX':
+    description: Redirect
+  '200':
+    description: 'Specific success'
+))
+end
+d = doc4
+h = Helper.new(d)
+r = h.response_codes(d['responses'])
+assert(r, ['200', '400', '500', '2xx', '3XX', 'default'], 'correct order')
+r = h.response_codes({ '200' => 'thing' })
+assert(r, ['200'], 'single response code')
+r = h.response_codes({})
+assert(r, [], 'empty responses object')
+
+$context = 'response_code_condition'
+assert(h.response_code_condition('200'), 'code == 200', 'exact match')
+assert(h.response_code_condition('201', op_eq: 'eq', var: 'v'), 'v eq 201', 'var/eq/exact')
+assert(h.response_code_condition('2xx', var: 'foo'), '(200 <= foo) && (foo <= 299)', 'var/range')
+assert(h.response_code_condition('3XX', op_and: 'and'), '(300 <= code) and (code <= 399)', 'and/range')
+assert(h.response_code_condition('40x', op_lte: '.lte.'), '(400 .lte. code) && (code .lte. 409)', 'lte/range')
+
 exit $unit_test

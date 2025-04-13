@@ -76,6 +76,47 @@ module OpenAPISourceTools
       end
       uniqs.keys.sort!.map { |k| uniqs[k] }
     end
+
+    def response_codes(responses_object)
+      responses_object.keys.sort! do |a, b|
+        ad = a.downcase
+        bd = b.downcase
+        if ad == 'default'
+          1
+        elsif bd == 'default'
+          -1
+        else
+          ax = ad.end_with?('x')
+          bx = bd.end_with?('x')
+          if ax && bx || !ax && !bx
+            a <=> b # Both numbers or patterns.
+          else
+            ax ? 1 : -1
+          end
+        end
+      end
+    end
+
+    def response_code_condition(code, var: 'code', op_and: '&&', op_lte: '<=', op_eq: '==')
+      low = []
+      high = []
+      code.downcase.each_char do |c|
+        if c == 'x'
+          low.push('0')
+          high.push('9')
+        else
+          low.push(c)
+          high.push(c)
+        end
+      end
+      low = low.join
+      high = high.join
+      if low == high
+        "#{var} #{op_eq} #{low}"
+      else
+        "(#{low} #{op_lte} #{var}) #{op_and} (#{var} #{op_lte} #{high})"
+      end
+    end
   end
 
   # Task class to add an Helper instance to Gen.h, for convenience.

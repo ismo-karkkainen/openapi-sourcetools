@@ -1,0 +1,162 @@
+####COMMAND Invalid output file
+####CODE 3
+####OUT
+####ERR
+No such file or directory @ rb_sysopen - ./in/valid
+Failed to write output: ./in/valid
+####COMMAND Invalid input file
+####CODE 2
+####OUT
+####ERR
+Could not load ./in/valid
+####COMMAND Output file
+####CODE 0
+####OUT
+---
+patterns: []
+####ERR
+####COMMAND No input file
+####CODE 2
+####OUT
+####ERR
+####COMMAND Input and output, no existing
+####CODE 0
+####OUT
+---
+patterns:
+- pattern: "^.+$"
+  minLength: 1
+  maxLength: 20
+  pass: []
+  fail:
+  - ''
+  - fffffffffffffffffffff
+- pattern: "^.+$"
+  minLength: 1
+  maxLength: 64
+  pass: []
+  fail:
+  - ''
+  - fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+- pattern: "^.+$"
+  minLength: 10
+  maxLength: 30
+  pass: []
+  fail:
+  - fffffffff
+  - fffffffffffffffffffffffffffffff
+- pattern: "^application/json$"
+  pass: []
+  fail: []
+####ERR
+####COMMAND Input and output, existing
+####CODE 0
+####OUT
+---
+patterns:
+- pattern: "^.+$"
+  minLength: 1
+  maxLength: 20
+  pass:
+  - adskhjfa
+  fail:
+  - ''
+  - fffffffffffffffffffff
+  - pasdhfksdjzbnölasdnfölkadsjhfoasdhjlökfnasd
+- pattern: "^.+$"
+  minLength: 1
+  maxLength: 64
+  pass: []
+  fail:
+  - ''
+  - fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+- pattern: "^.+$"
+  minLength: 10
+  maxLength: 30
+  pass: []
+  fail:
+  - fffffffff
+  - fffffffffffffffffffffffffffffff
+- pattern: "^application/json$"
+  pass: []
+  fail: []
+####ERR
+####COMMAND Input and output, existing, keep
+####CODE 0
+####OUT
+---
+patterns:
+- pattern: "^.+$"
+  minLength: 1
+  maxLength: 20
+  pass:
+  - adskhjfa
+  fail:
+  - ''
+  - fffffffffffffffffffff
+  - pasdhfksdjzbnölasdnfölkadsjhfoasdhjlökfnasd
+- pattern: "^.+$"
+  minLength: 1
+  maxLength: 64
+  pass: []
+  fail:
+  - ''
+  - fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+- pattern: "^.+$"
+  minLength: 10
+  maxLength: 30
+  pass: []
+  fail:
+  - fffffffff
+  - fffffffffffffffffffffffffffffff
+- pattern: "^abc$"
+  minLength: 3
+  maxLength: 3
+  pass:
+  - abc
+  fail:
+  - ab
+  - abcd
+- pattern: "^application/json$"
+  pass: []
+  fail: []
+####ERR
+####COMMAND Input and output, existing under keys
+####CODE 0
+####OUT
+---
+root:
+  middle:
+    patterns:
+    - pattern: "^.+$"
+      minLength: 1
+      maxLength: 20
+      pass:
+      - adskhjfa
+      fail:
+      - ''
+      - fffffffffffffffffffff
+      - pasdhfksdjzbnölasdnfölkadsjhfoasdhjlökfnasd
+    - pattern: "^.+$"
+      minLength: 1
+      maxLength: 64
+      pass: []
+      fail:
+      - ''
+      - fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+    - pattern: "^.+$"
+      minLength: 10
+      maxLength: 30
+      pass: []
+      fail:
+      - fffffffff
+      - fffffffffffffffffffffffffffffff
+    - pattern: "^application/json$"
+      pass: []
+      fail: []
+####ERR
+####COMMAND Input and output, no under
+####CODE 4
+####OUT
+####ERR
+Key chain skedfjh.aeisufg not found in source tests.

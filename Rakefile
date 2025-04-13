@@ -5,7 +5,7 @@
 
 require 'rubocop/rake_task'
 
-task default: [:install]
+task default: [:test]
 
 desc 'Clean.'
 task :clean do
@@ -28,7 +28,7 @@ task :uninstall do
 end
 
 desc 'Test.'
-task test: %i[testaddsecurityschemes testgeneratecheckconfig testmodifypaths testmerge testprocesspaths testfrequencies testaddschemas testaddresponses testaddheaders testaddparameters testcheckschemas testgenerate testoftypes testcommon]
+task test: %i[testpatterntests testaddsecurityschemes testgeneratecheckconfig testmodifypaths testmerge testprocesspaths testfrequencies testaddschemas testaddresponses testaddheaders testaddparameters testcheckschemas testgenerate testoftypes testcommon]
 
 desc 'Test modifypaths.'
 task :testmodifypaths do
@@ -98,6 +98,11 @@ end
 desc 'Test addsecurityschemes.'
 task :testaddsecurityschemes do
   sh './test.sh addsecurityschemes'
+end
+
+desc 'Test patterntests.'
+task :testpatterntests do
+  sh './test.sh patterntests'
 end
 
 desc 'Lint using Rubocop'

@@ -33,7 +33,7 @@ assert(c.tab_replaces_count, opts['tab_replaces_count'], 'tab replace count copi
 $context = 'join'
 o = OpenAPISourceTools::Output.new
 assert(o.last_indent, 0, 'last indent starts from 0')
-src = [ 1, 'a', 2, 'b', 'c', -1, 'd', nil, 'e', true, 'f', false, "g\nh", true, true, "i\nj" ]
+src = [ 1, 'a', 2, 'b', 'c', -1, 'd', -100, 'e', true, 'f', nil, false, "g\nh", true, true, "i\nj" ]
 s = o.join(src)
 lines = s.lines(chomp: true)
 assert(lines.size, 10, 'correct number of lines')
@@ -58,7 +58,7 @@ opts = {
 c = OpenAPISourceTools::OutputConfiguration.new(opts)
 o = OpenAPISourceTools::Output.new
 o.config = c
-src = [ 'a', 1, 'b', true, 'c', -2, {}, 3, 'd', nil ]
+src = [ 'a', 1, 'b', true, 'c', -2, {}, 3, 'd', -100 ]
 s = o.join(src)
 lines = s.lines(chomp: true)
 assert(lines.size, 5, '5 lines')
@@ -67,7 +67,7 @@ assert(lines[1], 'xxb', 'indented 1')
 assert(lines[2], 'YYc', 'indented 4 and replaced')
 assert(lines[3], 'Y{}', 'indented 2 and replaced')
 assert(lines[4], 'YYxxd', 'indented 5, replaced 2')
-assert(o.last_indent, 0, 'last indent 0 after nil')
+assert(o.last_indent, 0, 'last indent 0 after -100')
 
 $context = 'config='
 begin

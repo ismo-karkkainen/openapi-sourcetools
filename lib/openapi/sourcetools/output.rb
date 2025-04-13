@@ -46,13 +46,15 @@ module OpenAPISourceTools
       indent = 0
       blocks.each do |block|
         if block.nil?
-          indent = 0
+          next
         elsif block.is_a?(Integer)
           indent += block
+          indent = 0 if indent.negative?
         elsif block.is_a?(TrueClass)
           indent += @config.indent_step
         elsif block.is_a?(FalseClass)
           indent -= @config.indent_step
+          indent = 0 if indent.negative?
         else
           block = block.to_s unless block.is_a?(String)
           if block.empty?

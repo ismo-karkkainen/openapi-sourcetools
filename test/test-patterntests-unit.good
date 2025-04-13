@@ -1,0 +1,50 @@
+####COMMAND Unit tests
+####CODE 0
+####OUT
+ok: key: both lengths
+ok: key: default min
+ok: key: default max
+ok: find_patterns: no extras
+ok: find_patterns: missing min
+ok: find_patterns: missing max
+ok: find_patterns: no extras from array
+ok: find_patterns: missing min from array
+ok: find_patterns: no extras deeper
+ok: find_patterns: missing min deeper
+ok: pattern_list2hash: same number of elements
+ok: pattern_list2hash: dsfkjh is present
+ok: pattern_list2hash: qewiuh is present
+ok: add_strings: has pass
+ok: add_strings: has fail
+ok: add_strings: too short and too long
+ok: add_strings: empty string fails
+ok: add_strings: too long string fails
+ok: add_strings: passing ones empty
+ok: merge_arrays: concatenates arrays
+ok: merge_arrays: returns second array if first is false
+ok: merge_arrays: returns first array if second is false
+ok: merge_arrays: returns false if both are false
+ok: merge_existing: merges pass arrays
+ok: merge_existing: places fail array
+ok: merge_existing: preserves minLength
+ok: merge_existing: preserves maxLength
+ok: merge_existing: preserves pattern
+ok: merge_existing: stayed unchanged
+ok: add_removed: one key added
+ok: add_removed: key unchanged
+ok: add_removed: other_key unchanged
+ok: add_removed: previous added
+ok: compare: a pattern string is before b
+ok: compare: b pattern string is after a
+ok: compare: b equals b
+ok: compare: a can be shorter than b
+ok: compare: b minimum is greater than a
+ok: compare: b can be longer than a
+ok: compare: b maximum is greater than a
+ok: compare: Same defaults for both
+ok: pattern_hash2list: p0 should be first
+ok: pattern_hash2list: p1 should be second
+ok: pattern_hash2list: p2 should be third
+ok: pattern_hash2list: two first in order
+ok: pattern_hash2list: two last in order
+####ERR

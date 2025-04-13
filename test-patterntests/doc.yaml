@@ -1,0 +1,23 @@
+---
+components:
+  schemas:
+    String20:
+      type: string
+      pattern: "^.+$"
+      minLength: 1
+      maxLength: 20
+    String30:
+      type: string
+      pattern: "^.+$"
+      minLength: 10
+      maxLength: 30
+    String64:
+      type: string
+      pattern: "^.+$"
+      minLength: 1
+      maxLength: 64
+    StringFixed:
+      type: string
+      pattern: "^application/json$"
+    Whatever:
+      type: string

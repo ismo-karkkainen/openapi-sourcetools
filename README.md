@@ -216,6 +216,14 @@ Takes a document and allows, adding, deleting, or replacing path prefixes.
 
 You may want to add for example a version string element into the start of the path. Prior to joining multiple documents using openapi-merge, you may want to give each piece an unique prefix. Original API documents could be used with services behind a load balancer that maps paths in combined document and passes the request to the respective service. And so on. You probably could just use "sed" but this might give you fewer opportunities for error with the loss of flexibility.
 
+## openapi-patterntests
+
+Extracts string patters and length limits from schemas for use in test case generation in code generators. Currently adds empty arrays under fail and pass. User can supply strings that match the pattern in pass-array, and strings that do not match the pattern are in fail-array.
+
+The provided strings should also take into account the length limits so that test cases for too short or too long strings can be added.
+
+Currently does not consider the pattern so test cases must be added manually by the user. Once some patterns are handled automatically, it will likely be necessary for the user to check the test strings.
+
 ## openapi-processpaths
 
 Splits paths into parts that are fixed or have a parameter. Paths that do not have differences in fixed parts in same place are reported as errors by default. Path is split and stored in path item under key "x-openapi-sourcetools-parts" as an array of hashes with either "fixed" or "parameter" key.

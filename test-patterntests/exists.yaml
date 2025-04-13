@@ -1,0 +1,18 @@
+---
+patterns:
+- pattern: '^.+$'
+  minLength: 1
+  maxLength: 20
+  pass:
+  - adskhjfa
+  fail:
+  - ''
+  - pasdhfksdjzbnölasdnfölkadsjhfoasdhjlökfnasd
+- pattern: '^abc$'
+  minLength: 3
+  maxLength: 3
+  pass:
+  - abc
+  fail:
+  - ab
+  - abcd

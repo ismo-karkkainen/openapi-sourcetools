@@ -1,0 +1,127 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright 2025 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../shared/unittest'
+require 'yaml'
+
+$unit_test = 0
+load '../bin/openapi-patterntests'
+
+$context = 'key'
+assert(key({ 'pattern' => '^abc$', 'minLength' => 3, 'maxLength' => 5 }), '^abc$::3::5', 'both lengths')
+assert(key({ 'pattern' => '^abc$', 'maxLength' => 5 }), '^abc$::0::5', 'default min')
+assert(key({ 'pattern' => '^abc$', 'minLength' => 2 }), '^abc$::2::inf', 'default max')
+
+$context = 'find_patterns'
+d = { 'pattern' => 'patstr', 'minLength' => 1, 'maxLength' => 6, 'other' => 'foo' }
+r = {}
+find_patterns(d, r)
+assert(r['patstr::1::6'], { 'pattern' => 'patstr', 'minLength' => 1, 'maxLength' => 6 }, 'no extras')
+d = { 'pattern' => 'patstr', 'maxLength' => 6 }
+r = {}
+find_patterns(d, r)
+assert(r['patstr::0::6'], d, 'missing min')
+d = { 'pattern' => 'patstr', 'minLength' => 1 }
+r = {}
+find_patterns(d, r)
+assert(r['patstr::1::inf'], d, 'missing max')
+p0 = { 'pattern' => 'patstr', 'minLength' => 1, 'maxLength' => 6, 'other' => 'foo' }
+p1 = { 'pattern' => 'patstr', 'maxLength' => 6 }
+d = [ p0, p1 ]
+r = {}
+find_patterns(d, r)
+assert(r['patstr::1::6'], { 'pattern' => 'patstr', 'minLength' => 1, 'maxLength' => 6 }, 'no extras from array')
+assert(r['patstr::0::6'], p1, 'missing min from array')
+d = { 'key' => p0, 'key2' => { 'key2' => p1 } }
+r = {}
+find_patterns(d, r)
+assert(r['patstr::1::6'], { 'pattern' => 'patstr', 'minLength' => 1, 'maxLength' => 6 }, 'no extras deeper')
+assert(r['patstr::0::6'], p1, 'missing min deeper')
+
+$context = 'pattern_list2hash'
+p0 = { 'pattern' => 'dsfkjh', 'minLength' => 1, 'maxLength' => 6 }
+p1 = { 'pattern' => 'qewiuh', 'maxLength' => 6 }
+list = [ p0, p1 ]
+r = pattern_list2hash(list)
+assert(r.size, list.size, 'same number of elements')
+list.each do |item|
+  assert(r[key(item)], item, "#{item['pattern']} is present")
+end
+
+$context = 'add_strings'
+p0 = { 'pattern' => 'dsfkjh', 'minLength' => 1, 'maxLength' => 6 }
+add_strings(p0)
+assert(p0.key?('pass'), true, 'has pass')
+assert(p0.key?('fail'), true, 'has fail')
+assert(p0['fail'].size, 2, 'too short and too long')
+assert(p0['fail'].index('').nil?, false, 'empty string fails')
+assert(p0['fail'].index { |s| s.size > p0['maxLength'] }.nil?, false, 'too long string fails')
+assert(p0['pass'].empty?, true, 'passing ones empty')
+
+$context = 'merge_arrays'
+a = [ 1, 2, 3 ]
+b = [ 4, 5, 6 ]
+r = merge_arrays(a, b)
+assert(r, a.concat(b), 'concatenates arrays')
+r = merge_arrays(false, b)
+assert(r, b, 'returns second array if first is false')
+r = merge_arrays(a, false)
+assert(r, a, 'returns first array if second is false')
+r = merge_arrays(false, false)
+assert(r, false, 'returns false if both are false')
+
+$context = 'merge_existing'
+p0 = { 'pattern' => 'qewiuh', 'maxLength' => 6, 'pass' => [ 'qewiuh' ], 'fail' => false }
+pmms = {
+  'p0' => p0,
+  'p1' => { 'pattern' => 'dsfkjh', 'minLength' => 1, 'maxLength' => 6, 'pass' => [ 'a' ] }
+}
+existing = { 'p1' => { 'pass' => [ 'a', 'b' ], 'fail' => [ 'c', 'd' ] } }
+merge_existing(pmms, existing)
+assert(pmms['p1']['pass'], [ 'a', 'b' ], 'merges pass arrays')
+assert(pmms['p1']['fail'], [ 'c', 'd' ], 'places fail array')
+assert(pmms['p1']['minLength'], 1, 'preserves minLength')
+assert(pmms['p1']['maxLength'], 6, 'preserves maxLength')
+assert(pmms['p1']['pattern'], 'dsfkjh', 'preserves pattern')
+assert(pmms['p0'], p0, 'stayed unchanged')
+
+$context = 'add_removed'
+pmms = { 'key' => 'value', 'other_key' => 'other_value' }
+existing = { 'previous' => 'prev', 'key' => 'previous_value' }
+add_removed(pmms, existing)
+assert(pmms.size, 3, 'one key added')
+assert(pmms['key'], 'value', 'key unchanged')
+assert(pmms['other_key'], 'other_value', 'other_key unchanged')
+assert(pmms['previous'], 'prev', 'previous added')
+
+$context = 'compare'
+a = { 'pattern' => 'asorfhs', 'minLength' => 1, 'maxLength' => 10 }
+b = { 'pattern' => 'beofhrs', 'minLength' => 2, 'maxLength' => 10 }
+assert(compare(a, b), -1, 'a pattern string is before b')
+assert(compare(b, a), 1, 'b pattern string is after a')
+assert(compare(b, b), 0, 'b equals b')
+b = { 'pattern' => 'asorfhs', 'minLength' => 2, 'maxLength' => 10 }
+assert(compare(a, b), -1, 'a can be shorter than b')
+assert(compare(b, a), 1, 'b minimum is greater than a')
+b = { 'pattern' => 'asorfhs', 'minLength' => 1, 'maxLength' => 11 }
+assert(compare(a, b), -1, 'b can be longer than a')
+assert(compare(b, a), 1, 'b maximum is greater than a')
+a = { 'pattern' => 'asorfhs' }
+b = { 'pattern' => 'asorfhs' }
+assert(compare(a, b), 0, 'Same defaults for both')
+
+$context = 'pattern_hash2list'
+p1 = { 'pattern' => 'dsfkjh', 'minLength' => 1, 'maxLength' => 6 }
+p2 = { 'pattern' => 'qewiuh', 'maxLength' => 6 }
+p0 = { 'pattern' => 'aosihd', 'maxLength' => 6 }
+list = pattern_hash2list({ 'key' => p1, 'key2' => p2, 'key3' => p0 })
+assert(list[0], p0, 'p0 should be first')
+assert(list[1], p1, 'p1 should be second')
+assert(list[2], p2, 'p2 should be third')
+assert(compare(list[0], list[1]), -1, 'two first in order')
+assert(compare(list[1], list[2]), -1, 'two last in order')
+
+exit $unit_test

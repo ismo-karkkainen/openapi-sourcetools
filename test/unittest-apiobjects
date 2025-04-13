@@ -221,4 +221,70 @@ assert(oos.key?('op2'), true, 'has op2')
 assert(oos.key?('op3'), true, 'has op3')
 assert(oos.key?('op4'), true, 'has op4')
 
+$context = 'ServerVariableObject'
+doc = YAML.safe_load(%(---
+srv1:
+- url: http://example.com/{var}
+  variables:
+    var:
+      default: "a"
+      enum: ["a", "b"]
+- url: http://example.com/{var2}
+  variables:
+    var2:
+      default: "c"
+      enum: ["c", "d"]
+srv2:
+- url: http://example.com/{var}
+  variables:
+    var:
+      default: "a"
+      enum: ["a", "b"]
+srv3:
+- url: http://example.com/{var2}
+  variables:
+    var2:
+      default: "c"
+))
+svo = ApiObjects::ServerVariableObject.new('var', doc['srv1'].first.dig('variables', 'var'))
+assert(svo.name, 'var', 'name is right')
+assert(svo.default, 'a', 'default is right')
+assert(svo.enum, %w[a b], 'enum is right')
+svo2 = ApiObjects::ServerVariableObject.new('var2', doc['srv3'].first.dig('variables', 'var2'))
+assert(svo2.enum, [], 'enum is empty')
+
+$context = 'ServerVariableObject.<=>'
+assert(svo <=> svo2, -1, 'svo < svo2')
+svo3 = ApiObjects::ServerVariableObject.new('var', doc['srv2'].first.dig('variables', 'var'))
+assert(svo3 <=> svo, 0, 'svo3 == svo')
+assert(svo <=> svo, 0, 'svo == svo')
+assert(svo2 <=> svo3, 1, 'svo3 < svo2')
+
+$context = 'ServerObject'
+so = ApiObjects::ServerObject.new(doc['srv1'].first)
+assert(so.url, 'http://example.com/{var}', 'url ok')
+assert(so.variables.size, 1, 'has variable')
+assert(so.variables.first.name, 'var', 'variable name ok')
+assert(so.variables.first.default, 'a', 'variable default ok')
+assert(so.variables.first.enum, %w[a b], 'variable enum ok')
+
+$context = 'ServerObject.<=>'
+so2 = ApiObjects::ServerObject.new(doc['srv1'].last)
+assert(so2 <=> so, -1, 'so < so2')
+so3 = ApiObjects::ServerObject.new(doc['srv2'].first)
+assert(so3 <=> so, 0, 'so == so3')
+so4 = ApiObjects::ServerObject.new(doc['srv3'].first)
+assert(so2 <=> so4, 1, 'so4 > so2')
+
+$context = 'ServerAlternatives'
+sa1 = ApiObjects::ServerAlternatives.new(doc['srv1'])
+assert(sa1.servers.size, 2, 'all servers present')
+assert(sa1.servers.first.url, 'http://example.com/{var2}', 'sorted')
+
+$context = 'ServerAlternatives.<=>'
+sa2 = ApiObjects::ServerAlternatives.new(doc['srv2'])
+sa3 = ApiObjects::ServerAlternatives.new(doc['srv3'])
+assert(sa1 <=> sa2, -1, 'sa1 < sa2')
+assert(sa2 <=> sa3, 1, 'sa2 > sa3')
+
 exit $unit_test

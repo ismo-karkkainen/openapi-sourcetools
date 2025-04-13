@@ -187,5 +187,69 @@ module OpenAPISourceTools
       end
       out
     end
+
+    # Single server variable object.
+    class ServerVariableObject
+      include Comparable
+
+      attr_reader :name, :default, :enum
+
+      def initialize(name, variable_object)
+        @name = name
+        @default = variable_object['default']
+        @enum = (variable_object['enum'] || []).sort!
+      end
+
+      def <=>(other)
+        d = @name <=> other.name
+        return d unless d.zero?
+        d = @default <=> other.default
+        return d unless d.zero?
+        @enum <=> other.enum
+      end
+    end
+
+    # Single server object with variables.
+    class ServerObject
+      include Comparable
+
+      attr_reader :url, :variables
+
+      def initialize(server_object)
+        @url = server_object['url']
+        vs = server_object['variables'] || {}
+        @variables = vs.keys.sort!.map do |name|
+          obj = vs[name]
+          ServerVariableObject.new(name, obj)
+        end
+      end
+
+      def <=>(other)
+        d = @url <=> other.url
+        return d unless d.zero?
+        if @variables.nil? || other.variables.nil?
+          return -1 if @variables.nil?
+          return 1 if other.variables.nil?
+        end
+        @variables <=> other.variables
+      end
+    end
+
+    # Combines servers array with set identifier.
+    class ServerAlternatives
+      include Comparable
+
+      attr_reader :servers
+      attr_accessor :set_id
+
+      def initialize(server_objects)
+        @servers = server_objects.map { |so| ServerObject.new(so) }
+        @servers.sort!
+      end
+
+      def <=>(other)
+        @servers <=> other.servers
+      end
+    end
   end
 end

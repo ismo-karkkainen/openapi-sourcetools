@@ -1,0 +1,159 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright © 2025 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../lib/openapi/sourcetools/common'
+require 'optparse'
+include OpenAPISourceTools
+
+def key(item)
+  "#{item['pattern']}::#{item.fetch('minLength', 0)}::#{item.fetch('maxLength', 'inf')}"
+end
+
+def find_patterns(doc, pmm)
+  if doc.is_a?(Hash)
+    if doc.key?('pattern')
+      item = { 'pattern' => doc['pattern'] }
+      item['minLength'] = doc['minLength'] if doc.key?('minLength')
+      item['maxLength'] = doc['maxLength'] if doc.key?('maxLength')
+      pmm[key(doc)] = item
+      return
+    end
+    doc = doc.values
+  end
+  doc.each { |v| find_patterns(v, pmm) } if doc.is_a?(Array)
+end
+
+def pattern_list2hash(list)
+  pmms = {}
+  list.each { |item| pmms[key(item)] = item }
+  pmms
+end
+
+def add_strings(item)
+  passes = []
+  fails = []
+  min_len = item.fetch('minLength', 0)
+  fails.push('f' * (min_len - 1)) unless min_len.zero?
+  max_len = item['maxLength']
+  fails.push('f' * (max_len + 1)) unless max_len.nil?
+  # Fails within length limits require considering the pattern.
+  # All passes require considering the pattern.
+  item['pass'] = passes
+  item['fail'] = fails
+end
+
+def merge_arrays(current, past)
+  if current.is_a?(Array)
+    if past.is_a?(Array)
+      return current.concat(past)
+    end
+    current
+  elsif past.is_a?(Array)
+    past
+  else
+    false
+  end
+end
+
+def merge_existing(pmms, existing)
+  pmms.each do |k, v|
+    ex = existing[k]
+    next if ex.nil?
+    %w[pass fail].each do |arr|
+      m = merge_arrays(v[arr], ex[arr])
+      v[arr] = m.is_a?(Array) ? m.sort!.uniq : m
+    end
+    ex.each do |ek, ev|
+      v[ek] = ev unless v.key?(ek)
+    end
+  end
+end
+
+def add_removed(pmms, existing)
+  existing.each { |k, v| pmms[k] = v unless pmms.key?(k) }
+end
+
+def compare(a, b)
+  d = a['pattern'] <=> b['pattern']
+  return d unless d.zero?
+  d = a.fetch('minLength', 0) <=> b.fetch('minLength', 0)
+  return d unless d.zero?
+  a.fetch('maxLength', Float::INFINITY) <=> b.fetch('maxLength', Float::INFINITY)
+end
+
+def pattern_hash2list(pmms)
+  pmms.values.sort { |a, b| compare(a, b) }
+end
+
+def main
+  array_name = 'patterns'
+  input_name = nil
+  output_name = nil
+  source_tests = nil
+  keep = false
+  chain = []
+
+  parser = OptionParser.new do |opts|
+    opts.summary_indent = '  '
+    opts.summary_width = 20
+    opts.banner = 'Usage: openapi-patterntests [options]'
+    opts.separator ''
+    opts.separator 'Options:'
+    opts.on('-i', '--input FILE', 'Read API spec from FILE, not stdin.') do |f|
+      input_name = f
+    end
+    opts.on('-o', '--output FILE', 'Output to FILE, not stdout.') do |f|
+      output_name = f
+    end
+    opts.on('-t', '--tests FILE', 'Read existing tests from FILE.') do |f|
+      source_tests = f
+    end
+    opts.on('-u', '--under STR', %(Top-level "#{array_name}" is under dot-separated keys.)) do |s|
+      chain = s.split('.').reject(&:empty?)
+    end
+    opts.on('-k', '--[no-]keep', "Keep missing test patterns, default = #{Common.yesno(keep)}.") do |b|
+      keep = b
+    end
+    opts.on('-h', '--help', 'Print this help and exit.') do
+      $stdout.puts %(#{opts}
+
+Loads API document in OpenAPI format, extracts string patterns, and outputs
+a YAML file that contains mapping from patterns to matching and not mathcing
+strings for testing generated code.
+)
+      exit 0
+    end
+  end
+  parser.order!
+
+  doc = Common.load_source(input_name)
+  return 2 if doc.nil?
+
+  if source_tests.nil?
+    ex = {}
+    pats = []
+  else
+    ex = Common.load_source(source_tests)
+    return 2 if ex.nil?
+    parent = chain.empty? ? ex : ex.dig(*chain)
+    return Common.aargh("Key chain #{chain.join('.')} not found in source tests.", 4) if parent.nil?
+    pats = parent[array_name] || []
+  end
+  chain.push(array_name)
+
+  existing = pattern_list2hash(pats)
+  pmms = {}
+  find_patterns(doc, pmms)
+  pmms.each_value { |item| add_strings(item) }
+  merge_existing(pmms, existing)
+  add_removed(pmms, existing) if keep
+  pats = pattern_hash2list(pmms)
+
+  Common.bury(ex, chain, pats)
+  Common.dump_result(output_name, ex, 3)
+end
+
+exit(main) if defined?($unit_test).nil?

@@ -50,6 +50,26 @@ ok: operation_objects: has op1
 ok: operation_objects: has op2
 ok: operation_objects: has op3
 ok: operation_objects: has op4
+ok: ServerVariableObject: name is right
+ok: ServerVariableObject: default is right
+ok: ServerVariableObject: enum is right
+ok: ServerVariableObject: enum is empty
+ok: ServerVariableObject.<=>: svo < svo2
+ok: ServerVariableObject.<=>: svo3 == svo
+ok: ServerVariableObject.<=>: svo == svo
+ok: ServerVariableObject.<=>: svo3 < svo2
+ok: ServerObject: url ok
+ok: ServerObject: has variable
+ok: ServerObject: variable name ok
+ok: ServerObject: variable default ok
+ok: ServerObject: variable enum ok
+ok: ServerObject.<=>: so < so2
+ok: ServerObject.<=>: so == so3
+ok: ServerObject.<=>: so4 > so2
+ok: ServerAlternatives: all servers present
+ok: ServerAlternatives: sorted
+ok: ServerAlternatives.<=>: sa1 < sa2
+ok: ServerAlternatives.<=>: sa2 > sa3
 ####ERR
 ####COMMAND Docs unit tests
 ####CODE 0
@@ -90,7 +110,7 @@ ok: join: indented 1
 ok: join: indented 4 and replaced
 ok: join: indented 2 and replaced
 ok: join: indented 5, replaced 2
-ok: join: last indent 0 after nil
+ok: join: last indent 0 after -100
 ok: config=: wrong config type
 ok: config=: config not changed
 ####ERR
@@ -133,6 +153,14 @@ ok: parameters: name matches
 ok: parameters: name matches
 ok: parameters: no local parameters
 ok: parameters: no local parameters
+ok: response_codes: correct order
+ok: response_codes: single response code
+ok: response_codes: empty responses object
+ok: response_code_condition: exact match
+ok: response_code_condition: var/eq/exact
+ok: response_code_condition: var/range
+ok: response_code_condition: and/range
+ok: response_code_condition: lte/range
 ####ERR
 ####COMMAND Loaders unit tests
 ####CODE 0

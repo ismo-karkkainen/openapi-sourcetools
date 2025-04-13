@@ -25,6 +25,7 @@ Does not validate the document against OpenAPI format specification.'
   s.executables << 'openapi-generate'
   s.executables << 'openapi-merge'
   s.executables << 'openapi-modifypaths'
+  s.executables << 'openapi-patterntests'
   s.executables << 'openapi-processpaths'
   s.homepage = "https://#{SimpleIDN.to_ascii('ismo-kärkkäinen.fi')}/#{OpenAPISourceTools::NAME}/index.html"
   s.license = 'UPL-1.0'

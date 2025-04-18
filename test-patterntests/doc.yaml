@@ -21,3 +21,22 @@ components:
       pattern: "^application/json$"
     Whatever:
       type: string
+    StringLikePropertyName:
+      type: string
+      pattern: "^[a-z]+$"
+    StringLikePropertyNameButLimited:
+      type: string
+      pattern: "^[a-z]+$"
+      minLength: 2
+      maxLength: 22
+    Object:
+      type: object
+      properties:
+        name:
+          $ref: "#/components/schemas/String20"
+        description:
+          $ref: "#/components/schemas/String64"
+      patternProperties:
+        "^[a-z]+$":
+          type:
+            "$ref": "#/components/schemas/String30"

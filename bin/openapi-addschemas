@@ -48,10 +48,13 @@ def replace_inlines(obj, components, top_level_name = nil)
   when 'array'
     return false unless replace_inlines(obj['items'], components)
   when 'object'
-    props = obj.fetch('properties', {})
-    props.keys.sort!.each do |name|
-      return false unless replace_inlines(props[name], components)
+    %w[properties patternProperties].each do |prop_name|
+      props = obj.fetch(prop_name, {})
+      props.keys.sort!.each do |name|
+        return false unless replace_inlines(props[name], components)
+      end
     end
+    return false unless replace_inlines(obj['additionalProperties'], components)
   end
   r = components.ref_string(top_level_name) || components.reference(obj)
   components.store_anchor(obj, r)

@@ -21,6 +21,13 @@ def find_patterns(doc, pmm)
       pmm[key(doc)] = item
       return
     end
+    pps = doc['patternProperties']
+    unless pps.nil?
+      pps.keys.sort!.each do |pat|
+        item = { 'pattern' => pat }
+        pmm[key(item)] = item
+      end
+    end
     doc = doc.values
   end
   doc.each { |v| find_patterns(v, pmm) } if doc.is_a?(Array)

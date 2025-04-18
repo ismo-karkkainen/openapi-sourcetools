@@ -11,6 +11,10 @@ ok: find_patterns: no extras from array
 ok: find_patterns: missing min from array
 ok: find_patterns: no extras deeper
 ok: find_patterns: missing min deeper
+ok: find_patterns: no extras deeper
+ok: find_patterns: missing min under patternProperties
+ok: find_patterns: property pattern
+ok: find_patterns: property pattern 2
 ok: pattern_list2hash: same number of elements
 ok: pattern_list2hash: dsfkjh is present
 ok: pattern_list2hash: qewiuh is present

@@ -81,11 +81,20 @@ paths:
                     maxLength: 32
                   other:
                     type: number
+                additionalProperties:
+                  type: object
+                  properties:
+                    addi:
+                      type: string
+                      minLength: 10
+                      maxLength: 32
+                    prop:
+                      type: object
           headers:
             content-type:
               schema:
                 type: string
-                pattern: application/json
+                pattern: "^application/json$"
             content-length:
               schema:
                 type: integer
@@ -116,6 +125,12 @@ paths:
                   maxLength: 32
                 other:
                   type: number
+              patternProperties:
+                "^[a-x]+$":
+                  description: From patternProperties.
+                  type: integer
+                  minimum: 0
+              additionalProperties: true
       responses:
         204:
           description: Empty.

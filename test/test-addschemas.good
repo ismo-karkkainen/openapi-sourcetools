@@ -42,7 +42,7 @@ paths:
       required: true
       description: Something.
       schema:
-        "$ref": "#/components/schemas/Schema6x"
+        "$ref": "#/components/schemas/Schema7x"
     get:
       tags:
       - test
@@ -55,20 +55,20 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/Schema2x"
+                "$ref": "#/components/schemas/Schema4x"
           headers:
             content-type:
               schema:
-                "$ref": "#/components/schemas/Schema4x"
+                "$ref": "#/components/schemas/Schema6x"
             content-length:
               schema:
-                "$ref": "#/components/schemas/Schema3x"
+                "$ref": "#/components/schemas/Schema5x"
         404:
           description: Error.
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/Schema5x"
+                "$ref": "#/components/schemas/Schema2x"
   "/something":
     post:
       summary: Similar types should become equivalent references
@@ -77,7 +77,7 @@ paths:
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/Schema2x"
+              "$ref": "#/components/schemas/Schema8x"
       responses:
         204:
           description: Empty.
@@ -86,7 +86,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/Schema5x"
+                "$ref": "#/components/schemas/Schema2x"
 components:
   schemas:
     Schema0x:
@@ -96,6 +96,15 @@ components:
     Schema1x:
       type: number
     Schema2x:
+      type: object
+    Schema3x:
+      type: object
+      properties:
+        addi:
+          "$ref": "#/components/schemas/Schema0x"
+        prop:
+          "$ref": "#/components/schemas/Schema2x"
+    Schema4x:
       description: Object.
       type: object
       required:
@@ -105,17 +114,30 @@ components:
           "$ref": "#/components/schemas/Schema0x"
         other:
           "$ref": "#/components/schemas/Schema1x"
-    Schema3x:
+      additionalProperties:
+        "$ref": "#/components/schemas/Schema3x"
+    Schema5x:
       type: integer
       minimum: 0
-    Schema4x:
-      type: string
-      pattern: application/json
-    Schema5x:
-      description: Whatever.
-      type: object
     Schema6x:
       type: string
+      pattern: "^application/json$"
+    Schema7x:
+      type: string
+    Schema8x:
+      description: Object.
+      type: object
+      required:
+      - field
+      properties:
+        field:
+          "$ref": "#/components/schemas/Schema0x"
+        other:
+          "$ref": "#/components/schemas/Schema1x"
+      patternProperties:
+        "^[a-x]+$":
+          "$ref": "#/components/schemas/Schema5x"
+      additionalProperties: true
 ####ERR
 ####COMMAND Processed output
 ####CODE 0

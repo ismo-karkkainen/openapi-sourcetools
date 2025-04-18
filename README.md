@@ -46,9 +46,9 @@ If the intent is to clean-up the document, omitting `--add` and `openapi-process
 
 ## openapi-addschemas
 
-Checks for presence of schma definitions first inside the schemas under "components/schemas", and then elsewhere in the document. For any definition found, adds a definition under "components/schemas" and replaces the original with a reference.
+Checks for presence of schma definitions first inside the schemas under "components/schemas", and then elsewhere in the document. Mappings under names "properties", "patternProperties", and "additionalProperties" are checked. For any definition found, adds a definition under "components/schemas" and replaces the original with a reference.
 
-This does not change existing schemas declared at level immediately under "components/schemas" that are practically identical to refer to one of them. The properties of objects will be changed to references.
+This does not change existing schemas declared at level immediately under "components/schemas" that are practically identical to use references. The properties of objects will be changed to references.
 
 For simple types such as a string with no size or content limitations, output may appear annoying. For processing the document later, I think it is easier to detect that you have another string with different limitations and make a decision to treat it as a different type or provide a function to check the limitations, given a generic string, than to keep track of what you have already encountered when openapi-generate is being run.
 
@@ -218,11 +218,11 @@ You may want to add for example a version string element into the start of the p
 
 ## openapi-patterntests
 
-Extracts string patters and length limits from schemas for use in test case generation in code generators. Currently adds empty arrays under fail and pass. User can supply strings that match the pattern in pass-array, and strings that do not match the pattern are in fail-array.
+Extracts string patterns and length limits from schemas and from patternProperties for use in test case generation in code generators. User can supply strings that match the pattern in pass-array, and strings that do not match the pattern are in fail-array. If there are length limits, fail array contains too short or too long string as applicable. Currently adds empty arrays under pass.
 
 The provided strings should also take into account the length limits so that test cases for too short or too long strings can be added.
 
-Currently does not consider the pattern so test cases must be added manually by the user. Once some patterns are handled automatically, it will likely be necessary for the user to check the test strings.
+Currently does not consider the pattern so test cases must be added manually by the user. Once some patterns are handled automatically, it will still be necessary for the user to check the test strings.
 
 ## openapi-processpaths
 

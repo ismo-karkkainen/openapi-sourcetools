@@ -40,6 +40,13 @@ r = {}
 find_patterns(d, r)
 assert(r['patstr::1::6'], { 'pattern' => 'patstr', 'minLength' => 1, 'maxLength' => 6 }, 'no extras deeper')
 assert(r['patstr::0::6'], p1, 'missing min deeper')
+d = { 'key' => p0, 'patternProperties' => { 'propPat' => p1, 'propPat2' => [] } }
+r = {}
+find_patterns(d, r)
+assert(r['patstr::1::6'], { 'pattern' => 'patstr', 'minLength' => 1, 'maxLength' => 6 }, 'no extras deeper')
+assert(r['patstr::0::6'], p1, 'missing min under patternProperties')
+assert(r['propPat::0::inf'], { 'pattern' => 'propPat' }, 'property pattern')
+assert(r['propPat2::0::inf'], { 'pattern' => 'propPat2' }, 'property pattern 2')
 
 $context = 'pattern_list2hash'
 p0 = { 'pattern' => 'dsfkjh', 'minLength' => 1, 'maxLength' => 6 }

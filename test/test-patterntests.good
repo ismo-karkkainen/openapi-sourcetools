@@ -45,6 +45,16 @@ patterns:
   fail:
   - fffffffff
   - fffffffffffffffffffffffffffffff
+- pattern: "^[a-z]+$"
+  pass: []
+  fail: []
+- pattern: "^[a-z]+$"
+  minLength: 2
+  maxLength: 22
+  pass: []
+  fail:
+  - f
+  - fffffffffffffffffffffff
 - pattern: "^application/json$"
   pass: []
   fail: []
@@ -77,6 +87,16 @@ patterns:
   fail:
   - fffffffff
   - fffffffffffffffffffffffffffffff
+- pattern: "^[a-z]+$"
+  pass: []
+  fail: []
+- pattern: "^[a-z]+$"
+  minLength: 2
+  maxLength: 22
+  pass: []
+  fail:
+  - f
+  - fffffffffffffffffffffff
 - pattern: "^application/json$"
   pass: []
   fail: []
@@ -109,6 +129,16 @@ patterns:
   fail:
   - fffffffff
   - fffffffffffffffffffffffffffffff
+- pattern: "^[a-z]+$"
+  pass: []
+  fail: []
+- pattern: "^[a-z]+$"
+  minLength: 2
+  maxLength: 22
+  pass: []
+  fail:
+  - f
+  - fffffffffffffffffffffff
 - pattern: "^abc$"
   minLength: 3
   maxLength: 3
@@ -151,6 +181,16 @@ root:
       fail:
       - fffffffff
       - fffffffffffffffffffffffffffffff
+    - pattern: "^[a-z]+$"
+      pass: []
+      fail: []
+    - pattern: "^[a-z]+$"
+      minLength: 2
+      maxLength: 22
+      pass: []
+      fail:
+      - f
+      - fffffffffffffffffffffff
     - pattern: "^application/json$"
       pass: []
       fail: []

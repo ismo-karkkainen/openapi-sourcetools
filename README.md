@@ -210,6 +210,8 @@ Takes multiple documents and adds content without over-writing.
 
 Intended use is to keep common components in one file and add them to multiple API documents to avoid information duplication. Also applies to adding health check path or similar.
 
+Tags are merged based on tag name only. Servers are merged based on url only.
+
 ## openapi-modifypaths
 
 Takes a document and allows, adding, deleting, or replacing path prefixes.

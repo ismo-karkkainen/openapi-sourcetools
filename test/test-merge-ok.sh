@@ -15,4 +15,14 @@ do
     cat e
     rm -f o e
 done
+
+echo "####COMMAND tagsecsrv"
+$M tagsecsrv.yaml tagsecsrv-tags.yaml tagsecsrv-security.yaml tagsecsrv-servers.yaml >o 2>e
+echo "####CODE $?"
+echo "####OUT"
+cat o
+echo "####ERR"
+cat e
+rm -f o e
+
 ) > $(basename $0 .sh).res

@@ -1,0 +1,13 @@
+servers:
+- url: https:://test.somewhere.tld
+  variables:
+    test: {}
+- url: "https://{test}.elsewhere.tld"
+  variables:
+    test:
+      default: "abc"
+security:
+- api_key: []
+tags:
+- name: test
+  description: Still irrelevant

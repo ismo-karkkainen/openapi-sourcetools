@@ -6,8 +6,8 @@
 
 require_relative '../lib/openapi/sourcetools/common'
 require 'optparse'
-require 'set'
 include OpenAPISourceTools
+
 
 def raise_se(message)
   raise StandardError, message
@@ -26,6 +26,14 @@ def too_deep(path, max_depths)
   max_depths.fetch(path.first) <= path.size
 end
 
+def add_missing(existing, incoming, field)
+  incoming.each do |t|
+    tv = t[field]
+    next if tv.nil?
+    existing.push(t) if existing.index { |e| e.key?(field) && e[field] == tv }.nil?
+  end
+end
+
 def add_undefined(merged, incoming, filename, path, max_depths)
   incoming.each_pair do |key, value|
     unless merged.key? key
@@ -40,9 +48,11 @@ def add_undefined(merged, incoming, filename, path, max_depths)
       add_undefined(m, value, filename, path, max_depths)
       path.pop
     elsif m.is_a? Array
-      value.each do |v|
-        next if m.include? v
-        m.push v
+      case key
+      when 'tags' then add_missing(m, value, 'name')
+      when 'servers' then add_missing(m, value, 'url')
+      else
+        value.each { |v| m.push(v) unless m.include?(v) }
       end
     else
       raise_se "Re-definition of #{key} #{path_combo(path)} in #{filename}"
@@ -65,10 +75,10 @@ def gather_refs(doc, found)
 end
 
 def has_refd_anchor(item, refs)
-  return !((item.index { |v| has_refd_anchor(v, refs) }).nil?) if item.is_a?(Array)
+  return !item.index { |v| has_refd_anchor(v, refs) }.nil? if item.is_a?(Array)
   return false unless item.is_a?(Hash)
-  return true if refs.member?('#' + item.fetch('$anchor', ''))
-  !((item.values.index { |v| has_refd_anchor(v, refs) }).nil?)
+  return true if refs.member?("##{item.fetch('$anchor', '')}")
+  !item.values.index { |v| has_refd_anchor(v, refs) }.nil?
 end
 
 def prune(merged)
@@ -83,7 +93,7 @@ def prune(merged)
     end
     # Add schema ref for all schemas that have referenced anchor somewhere.
     (merged.dig(*%w[components schemas]) || {}).each do |name, schema|
-      refs.add("#/components/Schemas/#{name}") if has_refd_anchor(schema, refs)
+      refs.add("#/components/schemas/#{name}") if has_refd_anchor(schema, refs)
     end
     used = {}
     all = merged.fetch('components', {})

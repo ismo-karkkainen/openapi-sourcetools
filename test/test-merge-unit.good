@@ -7,6 +7,16 @@ ok: too_deep: just root
 ok: too_deep: too deep
 ok: too_deep: not deep
 ok: too_deep: border case
+ok: add_missing: added to empty
+ok: add_missing: only one item
+ok: add_missing: still only one item
+ok: add_missing: no key, not added
+ok: add_missing: existing unchanged
+ok: add_missing: no key in existing, added
+ok: add_missing: new item added
+ok: add_missing: same key, not added
+ok: add_missing: existing unchanged
+ok: add_missing: existing unchanged
 ok: gather_refs: 3 references
 ok: gather_refs: anchor in
 ok: gather_refs: arr in

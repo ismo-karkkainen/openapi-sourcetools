@@ -1,0 +1,12 @@
+servers:
+- url: https:://test.somewhere.tld
+  variables:
+    test:
+      default: "123"
+      enum: ["123", "456"]
+security:
+- api_key: []
+- somekey: []
+tags:
+- name: test
+  description: Irrelevant.

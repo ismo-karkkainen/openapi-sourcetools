@@ -5,7 +5,7 @@
 
 module OpenAPISourceTools
   NAME = 'openapi-sourcetools'
-  VERSION = '0.9.1'
+  VERSION = '0.9.2'
 
   def self.info(separator = ': ')
     "#{NAME}#{separator}#{VERSION}"

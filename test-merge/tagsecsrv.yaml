@@ -1,0 +1,10 @@
+servers:
+- url: https:://test.somewhere.tld
+  description: Server test object.
+  variables:
+    test: {}
+security:
+- api_key: []
+tags:
+- name: test
+  description: Test tag.

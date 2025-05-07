@@ -6,7 +6,7 @@
 
 require_relative '../shared/unittest'
 require 'yaml'
-require 'set'
+
 
 $unit_test = 0
 load '../bin/openapi-merge'
@@ -31,6 +31,27 @@ assert(too_deep(%w[shallow], md), true, 'just root')
 assert(too_deep(%w[shallow toodeep], md), true, 'too deep')
 assert(too_deep(%w[deep notenough], md), false, 'not deep')
 assert(too_deep(%w[deep middle notenough], md), true, 'border case')
+
+$context = 'add_missing'
+ex = []
+inc = [ { foo: 123 } ]
+add_missing(ex, inc, :foo)
+assert(ex.first, inc.first, 'added to empty')
+assert(ex.size, 1, 'only one item')
+add_missing(ex, inc, :foo)
+assert(ex.size, 1, 'still only one item')
+inc2 = [ { key: 123 } ]
+add_missing(ex, inc2, :bar)
+assert(ex.size, 1, 'no key, not added')
+assert(ex.first, inc.first, 'existing unchanged')
+add_missing(ex, inc2, :key)
+assert(ex.size, 2, 'no key in existing, added')
+assert(ex.last, inc2.first, 'new item added')
+inc3 = [ { key: 123, val: 'str' } ]
+add_missing(ex, inc3, :key)
+assert(ex.size, 2, 'same key, not added')
+assert(ex.first, inc.first, 'existing unchanged')
+assert(ex.last, inc2.first, 'existing unchanged')
 
 $context = 'gather_refs'
 def doc1

@@ -164,3 +164,24 @@ externalDocs:
 - url: https://someplace.tld
   description: Test external document.
 ####ERR
+####COMMAND tagsecsrv
+####CODE 0
+####OUT
+---
+servers:
+- url: https:://test.somewhere.tld
+  description: Server test object.
+  variables:
+    test: {}
+- url: https://{test}.elsewhere.tld
+  variables:
+    test:
+      default: abc
+security:
+- api_key: []
+- somekey: []
+tags:
+- name: test
+  description: Test tag.
+- name: added
+####ERR

@@ -70,6 +70,29 @@ ok: ServerAlternatives: all servers present
 ok: ServerAlternatives: sorted
 ok: ServerAlternatives.<=>: sa1 < sa2
 ok: ServerAlternatives.<=>: sa2 > sa3
+ok: SecurityScheme.<=>: name copied
+ok: SecurityScheme.<=>: scheme copied
+ok: SecurityScheme.<=>: ss1 < ss2
+ok: SecurityScheme.<=>: ss2 > ss1
+ok: SecurityRequirementObject: Header parameter
+ok: SecurityRequirementObject: no query
+ok: SecurityRequirementObject: query parameter
+ok: SecurityRequirementObject: no headers
+ok: SecurityRequirementObject: http authorization
+ok: SecurityRequirementObject: no query
+ok: SecurityRequirementObject: oauth2 authorization
+ok: SecurityRequirementObject: no query
+ok: SecurityRequirementObject: oidc authorization
+ok: SecurityRequirementObject: no query
+ok: SecurityRequirementObject: query parameter too
+ok: SecurityRequirementObject: http authorization too
+ok: SecurityRequirementObject.<=>: smaller first
+ok: SecurityRequirementObject.<=>: key order
+ok: SecurityRequirementObject.<=>: scope order
+ok: SecurityAlternatives: sros set
+ok: SecurityAlternatives: schemes set
+ok: SecurityAlternatives.<=>: smaller first
+ok: SecurityAlternatives.<=>: equal
 ####ERR
 ####COMMAND Docs unit tests
 ####CODE 0
@@ -113,6 +136,9 @@ ok: join: indented 5, replaced 2
 ok: join: last indent 0 after -100
 ok: config=: wrong config type
 ok: config=: config not changed
+ok: json: JSON simple output
+ok: json: JSON pretty output
+ok: yaml: YAML output
 ####ERR
 ####COMMAND Helper unit tests
 ####CODE 0

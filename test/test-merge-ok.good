@@ -8,7 +8,7 @@ info:
   title: test
 jsonSchemaDialect: https://somewhere.tld/something
 servers:
-- url: https:://test.somewhere.tld
+- url: https://test.somewhere.tld
   description: Server test object.
   variables:
     test: {}
@@ -68,7 +68,7 @@ info:
   title: test
 jsonSchemaDialect: https://somewhere.tld/something
 servers:
-- url: https:://test.somewhere.tld
+- url: https://test.somewhere.tld
   description: Server test object.
   variables:
     test: {}
@@ -121,7 +121,7 @@ info:
   title: test
 jsonSchemaDialect: https://somewhere.tld/something
 servers:
-- url: https:://test.somewhere.tld
+- url: https://test.somewhere.tld
   description: Server test object.
   variables:
     test: {}
@@ -184,4 +184,300 @@ tags:
 - name: test
   description: Test tag.
 - name: added
+####ERR
+####COMMAND first
+####CODE 0
+####OUT
+---
+openapi:
+  version: 3.0.0
+info:
+  title: first
+jsonSchemaDialect: https://somewhere.tld/first
+servers:
+- url: https://first.somewhere.tld
+  description: Server first test object.
+  variables:
+    first: {}
+paths:
+  "/first":
+    get: {}
+webhooks:
+  first:
+    get: {}
+components:
+  schemas:
+    first: {}
+  responses:
+    first: {}
+  parameters:
+    first: {}
+  examples:
+    first: {}
+  requestBodies:
+    first: {}
+  headers:
+    first: {}
+  securitySchemes:
+    first: {}
+  links:
+    first: {}
+  callbacks:
+    first: {}
+  pathItems:
+    first: {}
+security:
+- api_key: []
+tags:
+- name: testfirst
+  description: Test tag first.
+externalDocs:
+- url: https://someplace.tld
+  description: Test first external document.
+####ERR
+####COMMAND last
+####CODE 0
+####OUT
+---
+openapi:
+  version: 3.1.1
+info:
+  title: last
+jsonSchemaDialect: https://somewhere.tld/last
+servers:
+- url: https://last.somewhere.tld
+  description: Server last test object.
+  variables:
+    last: {}
+paths:
+  "/last":
+    get: {}
+webhooks:
+  last:
+    get: {}
+components:
+  schemas:
+    last: {}
+  responses:
+    last: {}
+  parameters:
+    last: {}
+  examples:
+    last: {}
+  requestBodies:
+    last: {}
+  headers:
+    last: {}
+  securitySchemes:
+    last: {}
+  links:
+    last: {}
+  callbacks:
+    last: {}
+  pathItems:
+    last: {}
+security:
+- api_key: []
+tags:
+- name: testlast
+  description: Test tag.
+externalDocs:
+- url: https://someplace.tld
+  description: Test external document.
+- url: https://someplace.tld
+  description: Test last external document.
+####ERR
+####COMMAND first partial
+####CODE 0
+####OUT
+---
+openapi:
+  version: 3.0.0
+info:
+  title: first
+jsonSchemaDialect: https://somewhere.tld/first
+servers:
+- url: https://first.somewhere.tld
+  description: Server first test object.
+  variables:
+    first: {}
+security:
+- api_key: []
+externalDocs:
+- url: https://someplace.tld
+  description: Test first external document.
+- url: https://someplace.tld
+  description: Test external document.
+- url: https://someplace.tld
+  description: Test last external document.
+paths:
+  "/test":
+    get: {}
+  "/last":
+    get: {}
+webhooks:
+  test:
+    get: {}
+  last:
+    get: {}
+components:
+  schemas:
+    test: {}
+    last: {}
+  responses:
+    test: {}
+    last: {}
+  parameters:
+    test: {}
+    last: {}
+  examples:
+    test: {}
+    last: {}
+  requestBodies:
+    test: {}
+    last: {}
+  headers:
+    test: {}
+    last: {}
+  securitySchemes:
+    test: {}
+    last: {}
+  links:
+    test: {}
+    last: {}
+  callbacks:
+    test: {}
+    last: {}
+  pathItems:
+    test: {}
+    last: {}
+tags:
+- name: test
+  description: Test tag.
+- name: testlast
+  description: Test tag.
+####ERR
+####COMMAND last partial
+####CODE 0
+####OUT
+---
+openapi:
+  version: 3.1.1
+info:
+  title: last
+jsonSchemaDialect: https://somewhere.tld/last
+servers:
+- url: https://last.somewhere.tld
+  description: Server last test object.
+  variables:
+    last: {}
+paths:
+  "/first":
+    get: {}
+  "/test":
+    get: {}
+webhooks:
+  first:
+    get: {}
+  test:
+    get: {}
+components:
+  schemas:
+    first: {}
+    test: {}
+  responses:
+    first: {}
+    test: {}
+  parameters:
+    first: {}
+    test: {}
+  examples:
+    first: {}
+    test: {}
+  requestBodies:
+    first: {}
+    test: {}
+  headers:
+    first: {}
+    test: {}
+  securitySchemes:
+    first: {}
+    test: {}
+  links:
+    first: {}
+    test: {}
+  callbacks:
+    first: {}
+    test: {}
+  pathItems:
+    first: {}
+    test: {}
+security:
+- api_key: []
+tags:
+- name: testfirst
+  description: Test tag first.
+- name: test
+  description: Test tag.
+externalDocs:
+- url: https://someplace.tld
+  description: Test first external document.
+- url: https://someplace.tld
+  description: Test external document.
+- url: https://someplace.tld
+  description: Test last external document.
+####ERR
+####COMMAND mixed
+####CODE 0
+####OUT
+---
+openapi:
+  version: 3.1.1
+info:
+  title: last
+jsonSchemaDialect: https://somewhere.tld/first
+servers:
+- url: https://first.somewhere.tld
+  description: Server first test object.
+  variables:
+    first: {}
+security:
+- api_key: []
+externalDocs:
+- url: https://someplace.tld
+  description: Test first external document.
+- url: https://someplace.tld
+  description: Test external document.
+- url: https://someplace.tld
+  description: Test last external document.
+paths:
+  "/test":
+    get: {}
+webhooks:
+  test:
+    get: {}
+components:
+  schemas:
+    test: {}
+  responses:
+    test: {}
+  parameters:
+    test: {}
+  examples:
+    test: {}
+  requestBodies:
+    test: {}
+  headers:
+    test: {}
+  securitySchemes:
+    test: {}
+  links:
+    test: {}
+  callbacks:
+    test: {}
+  pathItems:
+    test: {}
+tags:
+- name: test
+  description: Test tag.
 ####ERR

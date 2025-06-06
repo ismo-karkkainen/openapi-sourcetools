@@ -251,5 +251,83 @@ module OpenAPISourceTools
         @servers <=> other.servers
       end
     end
+
+    # Simple holder if security scheme objects.
+    class SecurityScheme
+      include Comparable
+
+      attr_reader :name, :scheme
+
+      def initialize(name, scheme)
+        @name = name
+        @scheme = scheme
+      end
+
+      def <=>(other)
+        @name <=> other.name
+      end
+    end
+
+    # Simple holder that determines where parameters are placed.
+    class SecurityRequirementObject
+      include Comparable
+
+      attr_reader :reqs, :extras
+
+      def initialize(reqs, schemes)
+        @reqs = reqs
+        @extras = {}
+        @reqs.each do |name, scopes|
+          scheme = schemes[name].scheme
+          case scheme['type']
+          when 'apiKey'
+            if scheme['in'] == 'header'
+              h = @extras[:headers] || {}
+              h[scheme['name']] = scopes
+              @extras[:headers] = h
+            elsif scheme['in'] == 'query'
+              q = @extras[:query] || {}
+              q[scheme['name']] = scopes
+              @extras[:query] = q
+            end
+          when 'http', 'oauth2', 'openIdConnect'
+            h = @extras[:headers] || {}
+            h['authorization'] = scopes
+            @extras[:headers] = h
+          else
+            raise "Unknown security type: #{scheme['type']} for #{name}"
+          end
+        end
+      end
+
+      def <=>(other)
+        d = @reqs.size <=> other.reqs.size
+        return d unless d.zero?
+        d = @reqs.keys.sort! <=> other.reqs.keys.sort!
+        return d unless d.zero?
+        @reqs.keys.sort!.each do |name|
+          d = @reqs[name].sort <=> other.reqs[name].sort
+          return d unless d.zero?
+        end
+        0
+      end
+    end
+
+    # Available possibilities.
+    class SecurityAlternatives
+      include Comparable
+
+      attr_reader :sros, :schemes
+      attr_accessor :set_id
+
+      def initialize(sros, schemes)
+        @sros = sros
+        @schemes = schemes
+      end
+
+      def <=>(other)
+        @sros.sort <=> other.sros.sort
+      end
+    end
   end
 end

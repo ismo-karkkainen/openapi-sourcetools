@@ -287,4 +287,97 @@ sa3 = ApiObjects::ServerAlternatives.new(doc['srv3'])
 assert(sa1 <=> sa2, -1, 'sa1 < sa2')
 assert(sa2 <=> sa3, 1, 'sa2 > sa3')
 
+$context = 'SecurityScheme.<=>'
+akh = {
+  'type' => 'apiKey',
+  'in' => 'header',
+  'name' => 'apih'
+}
+akq = {
+  'type' => 'apiKey',
+  'in' => 'query',
+  'name' => 'apiq'
+}
+ss1 = ApiObjects::SecurityScheme.new('akh', akh)
+ss2 = ApiObjects::SecurityScheme.new('akq', akq)
+assert(ss1.name, 'akh', 'name copied')
+assert(ss1.scheme, akh, 'scheme copied')
+assert(ss1 <=> ss2, -1, 'ss1 < ss2')
+assert(ss2 <=> ss1, 1, 'ss2 > ss1')
+
+$context = 'SecurityRequirementObject'
+h = {
+  'type' => 'http',
+  'scheme' => 'Bearer'
+}
+ss3 = ApiObjects::SecurityScheme.new('http', h)
+oa = {
+  'type' => 'oauth2',
+  'flows' => {
+    'implicit' => {
+      'authorizationUrl' => 'https://www.skjfhaksfjdhf.com/oauth/authorize'
+    },
+    'password' => {
+      'tokenUrl' => 'https://www.skjfhaksfjdhf.com/oauth/token',
+      'scopes' => {}
+    },
+    'clientCredentials' => {
+      'tokenUrl' => 'https://www.skjfhaksfjdhf.com/oauth/token'
+    },
+    'authorizationCode' => {
+      'authorizationUrl' => 'https://www.skjfhaksfjdhf.com/oauth/authorize',
+      'tokenUrl' => 'https://www.skjfhaksfjdhf.com/oauth/token'
+    }
+  }
+}
+ss4 = ApiObjects::SecurityScheme.new('oauth2', oa)
+oidc = {
+  'type' => 'openIdConnect',
+  'openIdConnectUrl' => 'https://www.skjfhaksfjdhf.com/.well-known/openid-configuration'
+}
+ss5 = ApiObjects::SecurityScheme.new('oidc', oidc)
+schemes = {
+  'akh' => ss1,
+  'akq' => ss2,
+  'http' => ss3,
+  'oauth2' => ss4,
+  'oidc' => ss5
+}
+sro1 = ApiObjects::SecurityRequirementObject.new({ 'akh' => [] }, schemes)
+assert(sro1.extras[:headers], { akh['name'] => [] }, 'Header parameter')
+assert(sro1.extras.key?(:query), false, 'no query')
+sro2 = ApiObjects::SecurityRequirementObject.new({ 'akq' => [] }, schemes)
+assert(sro2.extras[:query], { akq['name'] => [] }, 'query parameter')
+assert(sro2.extras.key?(:headers), false, 'no headers')
+sro3 = ApiObjects::SecurityRequirementObject.new({ 'http' => [] }, schemes)
+assert(sro3.extras[:headers], { 'authorization' => [] }, 'http authorization')
+assert(sro3.extras.key?(:query), false, 'no query')
+sro4 = ApiObjects::SecurityRequirementObject.new({ 'oauth2' => [ 'scope' ] }, schemes)
+assert(sro4.extras[:headers], { 'authorization' => [ 'scope' ] }, 'oauth2 authorization')
+assert(sro4.extras.key?(:query), false, 'no query')
+s = %w[scope scope2]
+sro5 = ApiObjects::SecurityRequirementObject.new({ 'oidc' => s }, schemes)
+assert(sro5.extras[:headers], { 'authorization' => s }, 'oidc authorization')
+assert(sro5.extras.key?(:query), false, 'no query')
+sro6 = ApiObjects::SecurityRequirementObject.new({ 'akq' => [], 'http' => s }, schemes)
+assert(sro6.extras[:query], { akq['name'] => [] }, 'query parameter too')
+assert(sro6.extras[:headers], { 'authorization' => s }, 'http authorization too')
+
+$context = 'SecurityRequirementObject.<=>'
+assert(sro1 <=> sro6, -1, 'smaller first')
+assert(sro1 <=> sro2, -1, 'key order')
+sro7 = ApiObjects::SecurityRequirementObject.new({ 'akq' => [ 'scope' ], 'http' => s }, schemes)
+assert(sro7 <=> sro6, 1, 'scope order')
+
+$context = 'SecurityAlternatives'
+sa1 = ApiObjects::SecurityAlternatives.new([sro1], schemes)
+assert(sa1.sros, [sro1], 'sros set')
+assert(sa1.schemes, schemes, 'schemes set')
+
+$context = 'SecurityAlternatives.<=>'
+sa2 = ApiObjects::SecurityAlternatives.new([sro6], schemes)
+sa3 = ApiObjects::SecurityAlternatives.new([sro1], schemes)
+assert(sa1 <=> sa2, -1, 'smaller first')
+assert(sa1 <=> sa3, 0, 'equal')
+
 exit $unit_test

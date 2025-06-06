@@ -1,0 +1,45 @@
+openapi:
+  version: "3.1.1"
+info:
+  title: last
+jsonSchemaDialect: https://somewhere.tld/last
+servers:
+- url: https://last.somewhere.tld
+  description: Server last test object.
+  variables:
+    last: {}
+paths:
+  /last:
+    get: {}
+webhooks:
+  last:
+    get: {}
+components:
+  schemas:
+    last: {}
+  responses:
+    last: {}
+  parameters:
+    last: {}
+  examples:
+    last: {}
+  requestBodies:
+    last: {}
+  headers:
+    last: {}
+  securitySchemes:
+    last: {}
+  links:
+    last: {}
+  callbacks:
+    last: {}
+  pathItems:
+    last: {}
+security:
+- api_key: []
+tags:
+- name: testlast
+  description: Test tag.
+externalDocs:
+- url: https://someplace.tld
+  description: Test last external document.

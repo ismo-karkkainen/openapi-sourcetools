@@ -1,0 +1,15 @@
+openapi:
+  version: "3.1.1"
+info:
+  title: last
+jsonSchemaDialect: https://somewhere.tld/last
+servers:
+- url: https://last.somewhere.tld
+  description: Server last test object.
+  variables:
+    last: {}
+security:
+- api_key: []
+externalDocs:
+- url: https://someplace.tld
+  description: Test last external document.

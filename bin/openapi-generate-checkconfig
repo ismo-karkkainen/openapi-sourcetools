@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright © 2024-2025 Ismo Kärkkäinen
+# Copyright © 2024-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
 require_relative '../lib/openapi/sourcetools/common'
@@ -70,4 +70,4 @@ That and read check require the configuration files to be YAML/JSON.
   0
 end
 
-exit(main)
+exit(main) if File.basename(__FILE__) == File.basename($PROGRAM_NAME)

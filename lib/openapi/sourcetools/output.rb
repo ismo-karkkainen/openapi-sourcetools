@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
-# Copyright © 2024-2025 Ismo Kärkkäinen
+# Copyright © 2024-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
+
+require 'json'
+require 'yaml'
 
 
 module OpenAPISourceTools
@@ -9,13 +12,19 @@ module OpenAPISourceTools
   # You can have it in configuration and pass hash to initialize.
   class OutputConfiguration
     attr_reader :indent_character, :indent_step
-    attr_reader :tab, :tab_replaces_count
+    attr_reader :tab, :tab_replaces_count, :prettified_json
 
     def initialize(cfg = {})
       @indent_character = cfg['indent_character'] || ' '
       @indent_step = cfg['indent_step'] || 4
       @tab = cfg['tab'] || "\t"
       @tab_replaces_count = cfg['tab_replaces_count'] || 0
+      @prettified_json = {
+        array_nl: "\n",
+        object_nl: "\n",
+        indent: '  ',
+        space: ' '
+      }.merge(cfg['prettified_json'] || {})
     end
   end
 
@@ -80,6 +89,18 @@ module OpenAPISourceTools
       end
       @last_indent = indent
       indented.join(separator)
+    end
+
+    def yaml(something)
+      YAML.dump(something)
+    end
+
+    def json(something)
+      JSON.generate(something)
+    end
+
+    def pretty_json(something)
+      JSON.generate(something, @config.prettified_json)
     end
   end
 end

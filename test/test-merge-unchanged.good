@@ -8,7 +8,7 @@ info:
   title: test
 jsonSchemaDialect: https://somewhere.tld/something
 servers:
-- url: https:://test.somewhere.tld
+- url: https://test.somewhere.tld
   description: Server test object.
   variables:
     test: {}
@@ -58,7 +58,7 @@ info:
   title: test
 jsonSchemaDialect: https://somewhere.tld/something
 servers:
-- url: https:://test.somewhere.tld
+- url: https://test.somewhere.tld
   description: Server test object.
   variables:
     test: {}
@@ -108,7 +108,7 @@ info:
   title: test
 jsonSchemaDialect: https://somewhere.tld/something
 servers:
-- url: https:://test.somewhere.tld
+- url: https://test.somewhere.tld
   description: Server test object.
   variables:
     test: {}
@@ -158,7 +158,7 @@ info:
   title: test
 jsonSchemaDialect: https://somewhere.tld/something
 servers:
-- url: https:://test.somewhere.tld
+- url: https://test.somewhere.tld
   description: Server test object.
   variables:
     test: {}

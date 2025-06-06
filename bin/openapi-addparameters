@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright © 2024-2025 Ismo Kärkkäinen
+# Copyright © 2024-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
 require_relative '../lib/openapi/sourcetools/apiobjects'
@@ -87,7 +87,8 @@ replaces the original with reference.
 
 Optionally adds parameters to all operations objects by copying parameters
 from path item and replacing ones referred to in operations object. The
-path item parameters are left in place. Even empty arrays are added.
+path item parameters are left in place. Even empty arrays are added. This
+feature is intended to simplify code generation.
 
 #{components.help}
 )
@@ -109,4 +110,4 @@ path item parameters are left in place. Even empty arrays are added.
   Common.dump_result(output_name, doc, 3)
 end
 
-exit(main) unless defined?($unit_test)
+exit(main) if File.basename(__FILE__) == File.basename($PROGRAM_NAME)

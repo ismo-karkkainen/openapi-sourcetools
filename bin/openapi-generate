@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright © 2021-2025 Ismo Kärkkäinen
+# Copyright © 2021-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
 require_relative '../lib/openapi/sourcetools/common'
@@ -58,4 +58,4 @@ After all generators have loaded succesfully, tasks are run.
   gen.run
 end
 
-exit(main) unless defined?($unit_test)
+exit(main) if File.basename(__FILE__) == File.basename($PROGRAM_NAME)

@@ -28,3 +28,13 @@ Re-definition of get under paths./test in paths.yaml
 ####OUT
 ####ERR
 Re-definition of get under webhooks.test in webhooks.yaml
+####COMMAND openapi in first and last
+####CODE 1
+####OUT
+####ERR
+Key can only be in first or last, not both: openapi
+####COMMAND info and servers in first and last
+####CODE 1
+####OUT
+####ERR
+Key can only be in first or last, not both: info servers

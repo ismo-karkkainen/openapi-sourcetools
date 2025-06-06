@@ -5,6 +5,7 @@
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
 require_relative '../shared/unittest'
+require 'json'
 require 'yaml'
 
 $unit_test = 0
@@ -77,5 +78,13 @@ rescue ArgumentError
   assert(true, true, 'wrong config type')
 end
 assert(o.config, c, 'config not changed')
+
+$context = 'json'
+obj = { 'a' => 1, 'b' => [ 'something' ] }
+assert(o.json(obj), JSON.generate(obj), 'JSON simple output')
+assert(o.pretty_json(obj), JSON.generate(obj, o.config.prettified_json), 'JSON pretty output')
+
+$context = 'yaml'
+assert(o.yaml(obj), YAML.dump(obj), 'YAML output')
 
 exit $unit_test

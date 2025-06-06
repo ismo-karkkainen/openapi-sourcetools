@@ -1,0 +1,45 @@
+openapi:
+  version: "3.0.0"
+info:
+  title: first
+jsonSchemaDialect: https://somewhere.tld/first
+servers:
+- url: https://first.somewhere.tld
+  description: Server first test object.
+  variables:
+    first: {}
+paths:
+  /first:
+    get: {}
+webhooks:
+  first:
+    get: {}
+components:
+  schemas:
+    first: {}
+  responses:
+    first: {}
+  parameters:
+    first: {}
+  examples:
+    first: {}
+  requestBodies:
+    first: {}
+  headers:
+    first: {}
+  securitySchemes:
+    first: {}
+  links:
+    first: {}
+  callbacks:
+    first: {}
+  pathItems:
+    first: {}
+security:
+- api_key: []
+tags:
+- name: testfirst
+  description: Test tag first.
+externalDocs:
+- url: https://someplace.tld
+  description: Test first external document.

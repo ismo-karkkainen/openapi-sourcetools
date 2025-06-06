@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright © 2021-2025 Ismo Kärkkäinen
+# Copyright © 2021-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
 require_relative '../lib/openapi/sourcetools/common'
@@ -34,9 +34,14 @@ def add_missing(existing, incoming, field)
   end
 end
 
-def add_undefined(merged, incoming, filename, path, max_depths)
+def add_undefined(merged, incoming, filename, path, max_depths, firsts, lasts)
   incoming.each_pair do |key, value|
     unless merged.key? key
+      merged[key] = value
+      next
+    end
+    next if firsts.member?(key) # When key appears the second or more times.
+    if lasts.member?(key) # If last is kept, always copy value.
       merged[key] = value
       next
     end
@@ -45,7 +50,7 @@ def add_undefined(merged, incoming, filename, path, max_depths)
     raise_se("Re-definition of #{key} #{path_combo(path)} in #{filename}") if too_deep(path, max_depths)
     if m.is_a? Hash # paths or similar
       path.push key
-      add_undefined(m, value, filename, path, max_depths)
+      add_undefined(m, value, filename, path, max_depths, firsts, lasts)
       path.pop
     elsif m.is_a? Array
       case key
@@ -121,6 +126,8 @@ end
 def main
   output_file = nil
   keep = false
+  firsts = Set.new
+  lasts = Set.new
 
   parser = OptionParser.new do |opts|
     opts.summary_indent = '  '
@@ -137,6 +144,12 @@ def main
     opts.on('-p', '--prune', 'Prune all unreferenced objects under components (default).') do
       keep = false
     end
+    opts.on('-f', '--first KEY', 'Keep only the first occurrence of top-level KEY.') do |key|
+      firsts.add(key)
+    end
+    opts.on('-l', '--last KEY', 'Keep only the last occurrence of top-level KEY.') do |key|
+      lasts.add(key)
+    end
     opts.on('-h', '--help', 'Print this help and exit.') do
       $stdout.puts %(#{opts}
 
@@ -148,20 +161,27 @@ allowed only to append to the merged document, not re-define anything in it.
   end
   parser.order!
 
-  max_depths = Hash.new(0)
-  max_depths['openapi'] = 1
-  max_depths['info'] = 1
-  max_depths['servers'] = 1
-  max_depths['paths'] = 2 # Allows get, post, etc. from different files.
-  max_depths['webhooks'] = 2
-  max_depths['components'] = 2
-  max_depths['security'] = 1
-  max_depths['tags'] = 1
+  overlap = firsts & lasts
+  unless overlap.empty?
+    return Common.aargh("Key can only be in first or last, not both: #{overlap.to_a.sort!.join(' ')}", 1)
+  end
+
+  max_depths = Hash.new(0).merge!({
+    'openapi' => 1,
+    'info' => 1,
+    'servers' => 1,
+    'paths' => 2, # Allows get, post, etc. from different files.
+    'webhooks' => 2,
+    'components' => 2,
+    'security' => 1,
+    'tags' => 1
+  })
+
   merged = {}
   ARGV.each do |filename|
     s = Common.load_source(filename)
     return 2 if s.nil?
-    add_undefined(merged, s, filename, [], max_depths)
+    add_undefined(merged, s, filename, [], max_depths, firsts, lasts)
   rescue StandardError => e
     return Common.aargh(e.to_s, 4)
   end
@@ -171,4 +191,4 @@ allowed only to append to the merged document, not re-define anything in it.
   Common.dump_result(output_file, merged, 3)
 end
 
-exit(main) if defined?($unit_test).nil?
+exit(main) if File.basename(__FILE__) == File.basename($PROGRAM_NAME)

@@ -44,9 +44,24 @@ The main effect of the above programs is to add items under components and have 
 
 If the intent is to clean-up the document, omitting `--add` and `openapi-processpaths` is probably desired. Running programs one by one, applying changes and continuing until desired outcome has been reached is probably what you want to do.
 
+Merging multiple files into a single API document can be done as follows:
+
+```sh
+openapi-merge -o apidoc.yaml input_document.yaml common_types.yaml
+```
+
+If you have multiple API documents you need to merge together so that prefixes can be used to split traffic to different services, you can first add prefixes to paths, then merge with all other files to produce final document. Below the `client_info.yaml` is expected to have the top-level keys used with `--first` parameters so that they replace the matching keys of the APIs that are included in the merged API.
+
+```sh
+openapi-modifypaths --add prefix1 -i input_doc1.yaml -o tmp_doc1.yaml
+openapi-modifypaths --add prefix2 -i input_doc2.yaml -o tmp_doc2.yaml
+openapi-merge --first openapi --first info --first servers client_info.yaml tmp_doc1.yaml tmp_doc2.yaml common_types.yaml > clientapi.yaml
+rm tmp_doc*.yaml
+```
+
 ## openapi-addschemas
 
-Checks for presence of schma definitions first inside the schemas under "components/schemas", and then elsewhere in the document. Mappings under names "properties", "patternProperties", and "additionalProperties" are checked. For any definition found, adds a definition under "components/schemas" and replaces the original with a reference.
+Checks for presence of schema definitions first inside the schemas under "components/schemas", and then elsewhere in the document. Mappings under names "properties", "patternProperties", and "additionalProperties" are checked. For any definition found, adds a definition under "components/schemas" and replaces the original with a reference.
 
 This does not change existing schemas declared at level immediately under "components/schemas" that are practically identical to use references. The properties of objects will be changed to references.
 
@@ -210,6 +225,10 @@ Takes multiple documents and adds content without over-writing.
 
 Intended use is to keep common components in one file and add them to multiple API documents to avoid information duplication. Also applies to adding health check path or similar.
 
+For merging multiple documents to form common client API document, use `--first` and/or `--last` parameters to specify top-level keys where the first or last occurrence is used without any merging. That way you can keep a short partial document that has version etc. for the combined document without having to split source API documents to parts with version etc. and paths in separate files.
+
+Typical use for merging to single client API document would be to add prefixes to paths for each API provided by different services, then merge all together using `--first` or `--last` to select the keys for the combined client API from first or last given file.
+
 Tags are merged based on tag name only. Servers are merged based on url only.
 
 ## openapi-modifypaths
@@ -306,6 +325,6 @@ openapi-oftypes is intended for gathering information and making checks so that 
 
 ## License
 
-Copyright © 2021-2025 Ismo Kärkkäinen
+Copyright © 2021-2026 Ismo Kärkkäinen
 
 Licensed under Universal Permissive License. See LICENSE.txt.

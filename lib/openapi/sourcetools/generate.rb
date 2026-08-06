@@ -4,6 +4,7 @@
 # Copyright © 2024-2025 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
+require 'fileutils'
 require_relative 'common'
 require_relative 'loaders'
 require_relative 'gen'

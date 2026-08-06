@@ -217,7 +217,7 @@ Optionally adds information for each oneOf and anyOf case.
       # Otherwise there is no need to do anything.
     end
   end
-  return 4 unless warning || Common::Out.count.zero?
+  return 4 unless warning || (Common::Out.count || 0).zero?
   Common.dump_result(output_name, doc, 3)
 end
 

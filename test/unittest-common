@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright 2024-2025 Ismo Kärkkäinen
+# Copyright 2024-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
 require_relative '../shared/unittest'
@@ -11,25 +11,36 @@ require_relative '../lib/openapi/sourcetools/common'
 include OpenAPISourceTools
 
 $context = 'aargh'
-assert(Common::aargh('message').nil?, true, 'Default return value')
-assert(Common::aargh('message2', 1), 1, 'Return value')
+assert(Common.aargh('message').nil?, true, 'Default return value')
+assert(Common.aargh('message2', 1), 1, 'Return value')
 
 $context = 'yesno'
-assert(Common::yesno(true), 'yes', 'True returns yes')
-assert(Common::yesno(false), 'no', 'False returns no')
+assert(Common.yesno(true), 'yes', 'True returns yes')
+assert(Common.yesno(false), 'no', 'False returns no')
 
 $context = 'bury'
 obj = { a: { c: 'c' } }
 path = [ :a, :b ]
-Common::bury(obj, path, 'b')
+Common.bury(obj, path, 'b')
 assert(obj.dig(*path), 'b', 'New key inserted')
 obj = { a: { c: {} } }
 path = [ :a, :c, :d ]
-Common::bury(obj, path, 'd')
+Common.bury(obj, path, 'd')
 assert(obj.dig(*path), 'd', 'New item found')
 obj = {}
-Common::bury(obj, path, 'd')
+Common.bury(obj, path, 'd')
 assert(obj.dig(*path), 'd', 'New items along path found')
+
+$context = 'ensure_separate'
+# File has alias issue show up in testing.
+doc = Common.load_source('test-retained.yaml')
+begin
+  d = YAML.dump(Common.ensure_separate(doc))
+  YAML.safe_load(d) # No aliases allowed, should raise.
+  assert(true, true, 'No exception')
+rescue e
+  assert(true, false, "raised an exception, #{e}")
+end
 
 $context = 'Out'
 Common::Out.put('visible')

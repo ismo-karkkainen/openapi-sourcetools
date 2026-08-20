@@ -1,25 +1,24 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright © 2024-2026 Ismo Kärkkäinen
+# Copyright © 2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
 require_relative '../lib/openapi/sourcetools/apiobjects'
 require_relative '../lib/openapi/sourcetools/common'
 require 'optparse'
+require 'yaml'
 
 
 def main
   input_name = nil
   output_name = nil
-  path = %w[components responses]
-  components = OpenAPISourceTools::ApiObjects::Components.new(path, 'Response')
-  replacer = OpenAPISourceTools::ApiObjects::ValueSubValueReplacer.new('responses', components)
+  retainer = OpenAPISourceTools::ApiObjects::ValueRetainer.new('$ref')
 
   parser = OptionParser.new do |opts|
     opts.summary_indent = '  '
     opts.summary_width = 26
-    opts.banner = 'Usage: openapi-addresponses [options]'
+    opts.banner = 'Usage: openapi-clearrefs [options]'
     opts.separator ''
     opts.separator 'Options:'
     opts.on('-i', '--input FILE', 'Read API spec from FILE, not stdin.') do |f|
@@ -28,14 +27,10 @@ def main
     opts.on('-o', '--output FILE', 'Output to FILE, not stdout.') do |f|
       output_name = f
     end
-    components.add_options(opts)
     opts.on('-h', '--help', 'Print this help and exit.') do
       $stdout.puts %(#{opts}
-
-Loads API document in OpenAPI format and moves responses under components and
-replaces the original with reference.
-
-#{components.help}
+Loads API document in OpenAPI format and from objects with '$ref' key, deletes
+all other keys.
 )
       exit 0
     end
@@ -44,11 +39,7 @@ replaces the original with reference.
 
   doc = OpenAPISourceTools::Common.load_source(input_name)
   return 2 if doc.nil?
-
-  components.items = doc.dig(*path) || {}
-  replacer.replace(doc.fetch('paths', {}))
-  OpenAPISourceTools::Common.bury(doc, path, components.items) unless components.items.empty?
-
+  retainer.process(doc)
   OpenAPISourceTools::Common.dump_result(output_name, doc, 3)
 end
 

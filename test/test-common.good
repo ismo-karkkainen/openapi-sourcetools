@@ -8,6 +8,7 @@ ok: yesno: False returns no
 ok: bury: New key inserted
 ok: bury: New item found
 ok: bury: New items along path found
+ok: ensure_separate: No exception
 ok: Out: First message
 ok: Out: Second message
 ####ERR

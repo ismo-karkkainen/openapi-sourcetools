@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright 2024-2025 Ismo Kärkkäinen
+# Copyright 2024-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
 require_relative '../shared/unittest'
@@ -78,6 +78,24 @@ assert(s.size, 1, 'No new name added with prefix')
 r = cmp.reference(a)
 assert(s.size, 2, 'New reference added with prefix')
 assert(r.start_with?("#{path}/#{prefix}"), true, 'Reference starts with prefix')
+
+$context = 'Components.to_reference_object'
+path = 'testing'
+prefix = 'Prefix'
+cmp = ApiObjects::Components.new(path, prefix, %w[ignore])
+a = { a: 5, b: [ 1, 2 ] }
+assert(cmp.to_reference_object(a).object_id, a.object_id, 'Same returned')
+assert(a.key?('$ref'), true, 'Reference key')
+assert(a.size, 1, 'No retained keys')
+assert(cmp.items.size, 1, 'New name added')
+cmp.retain_ignored = true
+b = { a: 5, b: [ 1, 2 ], 'ignore' => 'value' }
+assert(cmp.to_reference_object(b).object_id, b.object_id, 'Same returned')
+assert(b.key?('$ref'), true, 'Reference key')
+assert(b.key?('ignore'), true, 'ignored key')
+assert(b.size, 2, 'No other retained keys')
+assert(a['$ref'], b['$ref'], 'Same reference')
+assert(cmp.items.size, 1, 'No new name added')
 
 $context = 'Components.add_schema_name'
 path = 'testing'
@@ -379,5 +397,129 @@ sa2 = ApiObjects::SecurityAlternatives.new([sro6], schemes)
 sa3 = ApiObjects::SecurityAlternatives.new([sro1], schemes)
 assert(sa1 <=> sa2, -1, 'smaller first')
 assert(sa1 <=> sa3, 0, 'equal')
+
+$context = 'ValueRetainer'
+ret = ApiObjects::ValueRetainer.new('trigger')
+doc = YAML.safe_load(%(---
+top:
+  parent:
+    trigger:
+      key: value
+      key2: value2
+    deleted: value
+  something:
+    trigger: value
+    erased:
+    - key: value
+      key2: value2
+  multi:
+    trigger: 5
+    other:
+      trigger: gone
+      key: absent
+  in_array:
+  - key: value
+    other: remains
+  - trigger: remains
+    other: removed
+  - deeper:
+      deleted: key
+      trigger: value
+  same:
+    other: value
+))
+ret.process(doc)
+expected = YAML.safe_load(%(---
+top:
+  parent:
+    trigger:
+      key: value
+      key2: value2
+  something:
+    trigger: value
+  multi:
+    trigger: 5
+  in_array:
+  - key: value
+    other: remains
+  - trigger: remains
+  - deeper:
+      trigger: value
+  same:
+    other: value
+))
+assert(ApiObjects.same(doc, expected), true, 'triggers remain')
+
+$context = 'ValueReplacer'
+path = 'testing'
+prefix = 'Prefix'
+cmp = ApiObjects::Components.new(path, prefix)
+rep = ApiObjects::ValueReplacer.new('trigger', cmp)
+doc = YAML.safe_load(%(---
+top:
+  indifferent:
+    trigger:
+      key: value
+      key2: value2
+  something:
+    trigger:
+    - key: value
+      key2: value2
+    - other: value
+    - '$ref': "testing/Prefix0x"
+testing:
+  Prefix0x:
+    key: value
+    key2: value2
+))
+cmp.items = doc['testing']
+rep.replace(doc['top'])
+assert(doc.dig('top', 'indifferent', 'trigger', '$ref'), 'testing/Prefix0x', 'replaced hash')
+assert(doc.dig('top', 'something', 'trigger').first['$ref'], 'testing/Prefix0x', 'replaced in array')
+assert(doc.dig('top', 'something', 'trigger')[1]['$ref'], 'testing/Prefix1x', 'replaced 2nd in array')
+assert(doc.dig('top', 'something', 'trigger')[2]['$ref'], 'testing/Prefix0x', 'kept 3rd in array')
+assert(cmp.items.size, 2, 'added one item')
+
+$context = 'ValueSubValueReplacer'
+path = 'testing'
+prefix = 'Prefix'
+cmp = ApiObjects::Components.new(path, prefix)
+rep = ApiObjects::ValueSubValueReplacer.new('trigger', cmp)
+doc = YAML.safe_load(%(---
+top:
+  indifferent:
+    trigger:
+      something:
+        replaced: value1
+      else:
+        key: value
+      key: value
+  something:
+    arrayvalue:
+    - key: value
+      key2: value2
+    - other: value
+    - trigger:
+        key: value
+        object:
+          replaced: value1
+    - trigger:
+        middle:
+          '$ref': "testing/Prefix0x"
+testing:
+  Prefix0x:
+    key: value
+))
+cmp.items = doc['testing']
+rep.replace(doc['top'])
+assert(doc.dig('top', 'indifferent', 'trigger', 'something', '$ref'), 'testing/Prefix1x', 'replaced hash')
+assert(doc.dig('top', 'indifferent', 'trigger', 'else', '$ref'), 'testing/Prefix0x', 'replaced hash')
+assert(doc.dig('top', 'indifferent', 'trigger', 'key'), 'value', 'non-hash kept')
+assert(doc.dig('top', 'something', 'arrayvalue')[0]['key2'], 'value2', 'non-hash not replaced in array')
+assert(doc.dig('top', 'something', 'arrayvalue')[1]['other'], 'value', 'non-hash not replaced in array')
+assert(doc.dig('top', 'something', 'arrayvalue')[2].dig('trigger', 'key'), 'value', 'non-hash not replaced in array')
+assert(doc.dig('top', 'something', 'arrayvalue')[2].dig('trigger', 'object', '$ref'), 'testing/Prefix1x', 'replaced in array')
+assert(doc.dig('top', 'something', 'arrayvalue')[3].dig('trigger', 'middle', '$ref'), 'testing/Prefix0x', 'kept ref in array')
+assert(cmp.items.size, 2, 'added 1')
 
 exit $unit_test

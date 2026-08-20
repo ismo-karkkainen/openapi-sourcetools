@@ -1,6 +1,6 @@
 #!/bin/sh
 
-M="../bin/openapi-addheaders"
+M="../bin/openapi-addrequestbodies"
 
 (
 echo "####COMMAND Invalid output file"
@@ -88,6 +88,44 @@ paths:
               schema:
                 description: Whatever.
                 type: object
+    post:
+      summary: Blah blah blah
+      operationId: postRoot
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Object.
+              type: object
+              required:
+              - field
+              properties:
+                field:
+                  type: string
+                  minLength: 10
+                  maxLength: 32
+                other:
+                  type: number
+      responses:
+        204:
+          description: Empty.
+        404:
+          description: Error.
+          content:
+            application/json:
+              schema:
+                description: Whatever.
+                type: object
+          headers:
+            content-type:
+              description: ignored
+              schema:
+                type: string
+                pattern: application/json
+            content-length:
+              schema:
+                type: integer
+                minimum: 0
   /something:
     post:
       summary: Similar types should become equivalent references
@@ -100,6 +138,42 @@ paths:
               type: object
               required:
               - field
+              properties:
+                field:
+                  type: string
+                  minLength: 10
+                  maxLength: 32
+                other:
+                  type: number
+      responses:
+        204:
+          description: Empty.
+        404:
+          description: Error.
+          content:
+            application/json:
+              schema:
+                description: Whatever.
+                type: object
+          headers:
+            content-type:
+              description: ignored
+              schema:
+                type: string
+                pattern: application/json
+            content-length:
+              schema:
+                type: integer
+                minimum: 0
+    put:
+      summary: Different request body
+      operationId: postSomething
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Object.
+              type: object
               properties:
                 field:
                   type: string

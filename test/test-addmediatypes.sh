@@ -1,6 +1,6 @@
 #!/bin/sh
 
-M="../bin/openapi-addheaders"
+M="../bin/openapi-addmediatypes"
 
 (
 echo "####COMMAND Invalid output file"

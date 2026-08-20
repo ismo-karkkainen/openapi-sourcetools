@@ -28,7 +28,7 @@ task :uninstall do
 end
 
 desc 'Test.'
-task test: %i[testpatterntests testaddsecurityschemes testgeneratecheckconfig testmodifypaths testmerge testprocesspaths testfrequencies testaddschemas testaddresponses testaddheaders testaddparameters testcheckschemas testgenerate testoftypes testcommon]
+task test: %i[testclearrefs testaddrequestbodies testaddmediatypes testpatterntests testaddsecurityschemes testgeneratecheckconfig testmodifypaths testmerge testprocesspaths testfrequencies testaddschemas testaddresponses testaddheaders testaddparameters testcheckschemas testgenerate testoftypes testcommon]
 
 desc 'Test modifypaths.'
 task :testmodifypaths do
@@ -103,6 +103,21 @@ end
 desc 'Test patterntests.'
 task :testpatterntests do
   sh './test.sh patterntests'
+end
+
+desc 'Test addmediatypes.'
+task :testaddmediatypes do
+  sh './test.sh addmediatypes'
+end
+
+desc 'Test addrequestbodies.'
+task :testaddrequestbodies do
+  sh './test.sh addrequestbodies'
+end
+
+desc 'Test clearrefs.'
+task :testclearrefs do
+  sh './test.sh clearrefs'
 end
 
 desc 'Lint using Rubocop'

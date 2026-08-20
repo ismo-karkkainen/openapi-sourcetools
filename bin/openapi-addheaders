@@ -8,30 +8,14 @@ require_relative '../lib/openapi/sourcetools/apiobjects'
 require_relative '../lib/openapi/sourcetools/common'
 require 'optparse'
 require 'yaml'
-include OpenAPISourceTools
 
-
-def replace_headers(obj, components)
-  return unless obj.is_a?(Hash)
-  obj.each do |k, v|
-    if k == 'headers'
-      v.keys.sort!.each do |name|
-        r = v[name]
-        next unless r.is_a?(Hash) # Could complain.
-        next if r.key?('$ref')
-        v[name] = { '$ref' => components.reference(r) }
-      end
-    else
-      replace_headers(v, components)
-    end
-  end
-end
 
 def main
   input_name = nil
   output_name = nil
   path = %w[components headers]
-  components = ApiObjects::Components.new(path, 'Header')
+  components = OpenAPISourceTools::ApiObjects::Components.new(path, 'Header')
+  replacer = OpenAPISourceTools::ApiObjects::ValueSubValueReplacer.new('headers', components)
 
   parser = OptionParser.new do |opts|
     opts.summary_indent = '  '
@@ -59,15 +43,15 @@ replaces the original with reference.
   end
   parser.order!
 
-  doc = Common.load_source(input_name)
+  doc = OpenAPISourceTools::Common.load_source(input_name)
   return 2 if doc.nil?
 
   components.items = doc.dig(*path) || {}
-  replace_headers(doc.dig('components', 'responses') || {}, components)
-  replace_headers(doc.fetch('paths', {}), components)
-  Common.bury(doc, path, components.items) unless components.items.empty?
+  replacer.replace(doc.dig('components', 'responses') || {})
+  replacer.replace(doc.fetch('paths', {}))
+  OpenAPISourceTools::Common.bury(doc, path, components.items) unless components.items.empty?
 
-  Common.dump_result(output_name, doc, 3)
+  OpenAPISourceTools::Common.dump_result(output_name, doc, 3)
 end
 
 exit(main) if File.basename(__FILE__) == File.basename($PROGRAM_NAME)

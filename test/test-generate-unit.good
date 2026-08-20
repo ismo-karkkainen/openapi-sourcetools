@@ -26,6 +26,16 @@ ok: Components.reference: No new name added either
 ok: Components.reference: No new name added with prefix
 ok: Components.reference: New reference added with prefix
 ok: Components.reference: Reference starts with prefix
+ok: Components.to_reference_object: Same returned
+ok: Components.to_reference_object: Reference key
+ok: Components.to_reference_object: No retained keys
+ok: Components.to_reference_object: New name added
+ok: Components.to_reference_object: Same returned
+ok: Components.to_reference_object: Reference key
+ok: Components.to_reference_object: ignored key
+ok: Components.to_reference_object: No other retained keys
+ok: Components.to_reference_object: Same reference
+ok: Components.to_reference_object: No new name added
 ok: Components.add_schema_name: Schema name in set
 ok: Components.add_schema_name: Schema name not in set
 ok: Components.store_anchor: Not anchor, not added
@@ -93,6 +103,21 @@ ok: SecurityAlternatives: sros set
 ok: SecurityAlternatives: schemes set
 ok: SecurityAlternatives.<=>: smaller first
 ok: SecurityAlternatives.<=>: equal
+ok: ValueRetainer: triggers remain
+ok: ValueReplacer: replaced hash
+ok: ValueReplacer: replaced in array
+ok: ValueReplacer: replaced 2nd in array
+ok: ValueReplacer: kept 3rd in array
+ok: ValueReplacer: added one item
+ok: ValueSubValueReplacer: replaced hash
+ok: ValueSubValueReplacer: replaced hash
+ok: ValueSubValueReplacer: non-hash kept
+ok: ValueSubValueReplacer: non-hash not replaced in array
+ok: ValueSubValueReplacer: non-hash not replaced in array
+ok: ValueSubValueReplacer: non-hash not replaced in array
+ok: ValueSubValueReplacer: replaced in array
+ok: ValueSubValueReplacer: kept ref in array
+ok: ValueSubValueReplacer: added 1
 ####ERR
 ####COMMAND Docs unit tests
 ####CODE 0

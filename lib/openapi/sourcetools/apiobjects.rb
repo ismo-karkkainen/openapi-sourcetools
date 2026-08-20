@@ -37,10 +37,99 @@ module OpenAPISourceTools
       end
     end
 
+    # Any value with given key has all but retained keys removed.
+    class ValueRetainer
+      attr_reader :key
+      attr_accessor :retain
+
+      def initialize(trigger_key)
+        @key = trigger_key
+        @retain = [ trigger_key ]
+      end
+
+      def process(obj)
+        if obj.is_a?(Array)
+          obj.each { |item| process(item) }
+          return
+        end
+        return unless obj.is_a?(Hash)
+        if obj.key?(@key)
+          obj.delete_if { |k, _v| !@retain.include?(k) }
+        end
+        obj.each_value do |value|
+          process(value)
+        end
+      end
+    end
+
+    # A replacer for value of a given key.
+    class ValueReplacer
+      attr_reader :key, :components
+
+      def initialize(trigger_key, components)
+        @key = trigger_key
+        @components = components
+      end
+
+      def replace(obj)
+        if obj.is_a?(Array)
+          obj.each { |item| replace(item) }
+          return
+        end
+        return unless obj.is_a?(Hash)
+        obj.each do |key, value|
+          if key == @key
+            if value.is_a?(Array)
+              value.each do |item|
+                next unless item.is_a?(Hash)
+                next if item.key?('$ref')
+                @components.to_reference_object(item)
+              end
+            elsif value.is_a?(Hash)
+              next if value.key?('$ref')
+              @components.to_reference_object(value)
+            end
+          else
+            replace(value)
+          end
+        end
+      end
+    end
+
+    # A replacer for sub-values of a value of a given key.
+    class ValueSubValueReplacer
+      attr_reader :key, :components
+
+      def initialize(trigger_key, components)
+        @key = trigger_key
+        @components = components
+      end
+
+      def replace(obj)
+        if obj.is_a?(Array)
+          obj.each { |item| replace(item) }
+          return
+        end
+        return unless obj.is_a?(Hash)
+        obj.each do |key, value|
+          if key == @key && value.is_a?(Hash)
+            value.keys.sort!.each do |sub_key|
+              sub_value = value[sub_key]
+              next unless sub_value.is_a?(Hash)
+              next if sub_value.key?('$ref')
+              @components.to_reference_object(value[sub_key])
+            end
+          else
+            replace(value)
+          end
+        end
+      end
+    end
+
     # A component in the API specification for reference and anchor handling.
     class Components
       attr_reader :path, :prefix, :anchor2ref, :schema_names
-      attr_accessor :items, :ignored_keys
+      attr_accessor :items, :ignored_keys, :retain_ignored
 
       def initialize(path, prefix, ignored_keys = %w[summary description examples example $anchor])
         path = "#/#{path.join('/')}/" if path.is_a?(Array)
@@ -51,6 +140,7 @@ module OpenAPISourceTools
         @schema_names = Set.new
         @items = {}
         @ignored_keys = Set.new(ignored_keys)
+        @retain_ignored = false
       end
 
       def add_options(opts)
@@ -59,6 +149,9 @@ module OpenAPISourceTools
         end
         opts.on('--ignore FIELD', 'Ignore FIELD in comparisons.') do |f|
           @ignored_keys.add(f)
+        end
+        opts.on('--retain-ignored', 'Retain ignored fields in reference object.') do
+          @retain_ignored = true
         end
       end
 
@@ -89,6 +182,17 @@ module OpenAPISourceTools
           @schema_names.add(cand)
           return ref_string(cand)
         end
+      end
+
+      def to_reference_object(obj, ref = nil)
+        ref = reference(obj) if ref.nil?
+        if @retain_ignored
+          obj.delete_if { |k, _v| !@ignored_keys.member?(k) }
+        else
+          obj.clear
+        end
+        obj['$ref'] = ref
+        obj
       end
 
       def store_anchor(obj, ref = nil)

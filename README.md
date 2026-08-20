@@ -8,7 +8,7 @@ The end result is intended to make processing an OpenAPI documents easier for pu
 
 The purpose of openapi-merge is to avoid duplication of parts between documents. Only one in this category but proved useful.
 
-The various openapi-addsomething programs are intended to ensure there is only one copy of each practically identical schema, header, parameter, and response. Besides avoiding duplicated definitions, they also ensure that code generation does not need to check if same type has already been declared, when you process the #/components/schemas section.
+The various openapi-addsomething programs are intended to ensure there is only one copy of each practically identical schema, media type, response body, header, parameter, and response. Besides avoiding duplicated definitions, they also ensure that code generation does not need to check if same type has already been declared, when you process the #/components/schemas section.
 
 The practically identical is from a programming point of view. Summary, description, and examples are ignored by default. That also means that generating documentation for schemas that happen to look the same but are intended to be different loses one of the schemas. The case may occur during gradual move from old types to new ones. Hence generating documentation and code during the same run may be impractical.
 
@@ -18,17 +18,27 @@ The openapi-processpaths and openapi-frequencies were intended to obtain data ab
 
 None of these programs verify that the documents fed to them comply with any OpenAPI version. If the document is close enough, processing will succeed.
 
+To avoid deleting information that may be in practically identical schemas having different examples, the `--retain-ignored` parameter can be given. In that case the ignored keys are retained in the object that receives `$ref`. Hence after the openapi-addsomething has been run, you can check if there are examples you want to retain. This feature is added from purely practical point of view.
+
 ## Quick Start
 
-To process an API document to obtain a document that has various things moved under components and originals replaced with references, run:
+To process an API document to obtain a document that has various things moved under components and originals replaced with references, while retaining original examples and few other keys not considered important, run:
 
 ```sh
 cat input_document.yaml |
-openapi-addschemas |
-openapi-addheaders |
-openapi-addparameters --add |
-openapi-addresponses |
+openapi-addschemas --retain-ignored |
+openapi-addmediatypes --retain-ignored |
+openapi-addrequestbodies --retain-ignored |
+openapi-addheaders --retain-ignored |
+openapi-addparameters --add --retain-ignored |
+openapi-addresponses --retain-ignored |
 cat > processed_document.yaml
+```
+
+To remove the retained fields from reference objects, run:
+
+```sh
+openapi-clearrefs --input processed_document.yaml --output cleaned_document.yaml
 ```
 
 To add split paths and to copy security requirement object arrays to operation objects, run:
@@ -63,13 +73,26 @@ rm tmp_doc*.yaml
 
 Checks for presence of schema definitions first inside the schemas under "components/schemas", and then elsewhere in the document. Mappings under names "properties", "patternProperties", and "additionalProperties" are checked. For any definition found, adds a definition under "components/schemas" and replaces the original with a reference.
 
-This does not change existing schemas declared at level immediately under "components/schemas" that are practically identical to use references. The properties of objects will be changed to references.
+This does not change existing schemas declared at level immediately under "components/schemas" that are practically identical, to use references. The properties of objects will be changed to references.
 
 For simple types such as a string with no size or content limitations, output may appear annoying. For processing the document later, I think it is easier to detect that you have another string with different limitations and make a decision to treat it as a different type or provide a function to check the limitations, given a generic string, than to keep track of what you have already encountered when openapi-generate is being run.
+
+## openapi-addmediatypes
+
+If you ran `openapi-addschemas` then the media type object usually ends up having a schema key that has a reference. Hence not necessarily very useful. Added for completeness.
+
+This does not change existing media types declared at level immediately under "components/mediaTypes" that are practically identical, to use references.
+
+## openapi-addrequestbodies
+
+Replaces requestBody with reference.
+
+This does not change existing request bodies declared at level immediately under "components/requestBodies" that are practically identical, to use references.
 
 ## openapi-checkschemas
 
 Checks schemas and reports if they appear to be equivalent. Expects that openapi-addschemas has been run. Does not modify the source document.
+
 Two schemas with same number or properties with same types but different property names can be equivalent. That alone does not mean that one should be dropped as different contexts may have similar types. Mainly intended to be used for checking if there is something to clean up.
 
 ## openapi-addheaders

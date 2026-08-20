@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Copyright © 2021-2025 Ismo Kärkkäinen
+# Copyright © 2021-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
 require 'pathname'
@@ -56,6 +56,19 @@ module OpenAPISourceTools
       parts
     end
 
+    # Occasionally saved YAML has aliases. This is added to avoid them.
+    def self.ensure_separate(obj)
+      if obj.is_a?(Array)
+        return obj.map { |v| ensure_separate(v) }
+      end
+      return obj unless obj.is_a?(Hash)
+      out = {}
+      obj.each do |key, value|
+        out[key] = ensure_separate(value)
+      end
+      out
+    end
+
     def self.load_source(input)
       YAML.safe_load(input.nil? ? $stdin : File.read(input))
     rescue Errno::ENOENT
@@ -65,7 +78,9 @@ module OpenAPISourceTools
     end
 
     def self.dump_result(output, doc, error_return)
-      doc = YAML.dump(doc, line_width: 1_000_000) unless doc.is_a?(String)
+      # Safe load did not allow aliases, but saved output may have them.
+      # Observed with empty object or array.
+      doc = YAML.dump(ensure_separate(doc), line_width: 1_000_000) unless doc.is_a?(String)
       if output.nil?
         $stdout.puts doc
       else

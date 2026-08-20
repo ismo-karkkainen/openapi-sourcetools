@@ -35,18 +35,9 @@ tags:
 - name: test
   description: Only for testing purposes.
 paths:
-  "/root/{par}":
-    parameters:
-    - name: par
-      in: path
-      required: true
-      description: Something.
-      schema:
-        "$ref": "#/components/schemas/Schema7x"
+  "/root":
     get:
-      tags:
-      - test
-      summary: Parameter in path
+      summary: Plain headers
       description: Afterwards, inlined string type should be a reference.
       operationId: getRootPar
       responses:
@@ -54,21 +45,21 @@ paths:
           description: Blah blah blah.
           content:
             application/json:
-              schema:
-                "$ref": "#/components/schemas/Schema4x"
+              "$ref": "#/components/mediaTypes/MediaType0x"
           headers:
             content-type:
               schema:
-                "$ref": "#/components/schemas/Schema6x"
+                type: string
+                pattern: application/json
             content-length:
               schema:
-                "$ref": "#/components/schemas/Schema5x"
+                type: integer
+                minimum: 0
         404:
           description: Error.
           content:
             application/json:
-              schema:
-                "$ref": "#/components/schemas/Schema2x"
+              "$ref": "#/components/mediaTypes/MediaType1x"
   "/something":
     post:
       summary: Similar types should become equivalent references
@@ -76,8 +67,7 @@ paths:
       requestBody:
         content:
           application/json:
-            schema:
-              "$ref": "#/components/schemas/Schema8x"
+            "$ref": "#/components/mediaTypes/MediaType0x"
       responses:
         204:
           description: Empty.
@@ -85,59 +75,36 @@ paths:
           description: Error.
           content:
             application/json:
+              "$ref": "#/components/mediaTypes/MediaType1x"
+          headers:
+            content-type:
+              description: ignored
               schema:
-                "$ref": "#/components/schemas/Schema2x"
+                type: string
+                pattern: application/json
+            content-length:
+              schema:
+                type: integer
+                minimum: 0
 components:
-  schemas:
-    Schema0x:
-      type: string
-      minLength: 10
-      maxLength: 32
-    Schema1x:
-      type: number
-    Schema2x:
-      type: object
-    Schema3x:
-      type: object
-      properties:
-        addi:
-          "$ref": "#/components/schemas/Schema0x"
-        prop:
-          "$ref": "#/components/schemas/Schema2x"
-    Schema4x:
-      description: Object.
-      type: object
-      required:
-      - field
-      properties:
-        field:
-          "$ref": "#/components/schemas/Schema0x"
-        other:
-          "$ref": "#/components/schemas/Schema1x"
-      additionalProperties:
-        "$ref": "#/components/schemas/Schema3x"
-    Schema5x:
-      type: integer
-      minimum: 0
-    Schema6x:
-      type: string
-      pattern: "^application/json$"
-    Schema7x:
-      type: string
-    Schema8x:
-      description: Object.
-      type: object
-      required:
-      - field
-      properties:
-        field:
-          "$ref": "#/components/schemas/Schema0x"
-        other:
-          "$ref": "#/components/schemas/Schema1x"
-      patternProperties:
-        "^[a-x]+$":
-          "$ref": "#/components/schemas/Schema5x"
-      additionalProperties: true
+  mediaTypes:
+    MediaType0x:
+      schema:
+        description: Object.
+        type: object
+        required:
+        - field
+        properties:
+          field:
+            type: string
+            minLength: 10
+            maxLength: 32
+          other:
+            type: number
+    MediaType1x:
+      schema:
+        description: Whatever.
+        type: object
 ####ERR
 ####COMMAND Processed output
 ####CODE 0
@@ -170,8 +137,7 @@ paths:
       requestBody:
         content:
           application/json:
-            schema:
-              "$ref": "#/components/schemas/Schema2x"
+            "$ref": "#/components/mediaTypes/MediaType0x"
         required: true
       responses:
         '204':
@@ -182,27 +148,20 @@ paths:
             headername:
               description: Description of the header.
               schema:
-                "$ref": "#/components/schemas/Schema4x"
+                type: string
           content:
             application/json:
-              schema:
-                "$ref": "#/components/schemas/Schema3x"
+              "$ref": "#/components/mediaTypes/MediaType1x"
         '404':
           description: Error response with an error object, possibly empty.
           content:
             application/json:
-              schema:
-                "$ref": "#/components/schemas/Schema3x"
-              examples:
-                name:
-                  summary: Summary.
-                  value: any
+              "$ref": "#/components/mediaTypes/MediaType1x"
         '500':
           description: Error response with an error object, possibly empty.
           content:
             application/json:
-              schema:
-                "$ref": "#/components/schemas/Schema3x"
+              "$ref": "#/components/mediaTypes/MediaType1x"
   "/health":
     get:
       tags:
@@ -219,69 +178,56 @@ paths:
             headername:
               description: Header description.
               schema:
-                "$ref": "#/components/schemas/Schema4x"
+                type: string
           content:
             application/json:
-              schema:
-                "$ref": "#/components/schemas/Schema3x"
+              "$ref": "#/components/mediaTypes/MediaType1x"
         '404':
           description: Error response with an error object, possibly empty.
           content:
             application/json:
-              schema:
-                "$ref": "#/components/schemas/Schema3x"
+              "$ref": "#/components/mediaTypes/MediaType1x"
         '405':
           description: Error response with an error object, possibly empty.
           headers:
             headername:
               description: Header description.
               schema:
-                "$ref": "#/components/schemas/Schema4x"
+                type: string
               example: string
           content:
             application/json:
-              schema:
-                "$ref": "#/components/schemas/Schema3x"
+              "$ref": "#/components/mediaTypes/MediaType1x"
         '500':
           description: Error response with an error object, possibly empty.
           content:
             application/json:
-              schema:
-                "$ref": "#/components/schemas/Schema3x"
-              examples:
-                name:
-                  summary: yrammuS
-                  value:
-                    key: value
+              "$ref": "#/components/mediaTypes/MediaType1x"
 components:
-  schemas:
-    Schema0x:
-      description: Another description.
-      type: string
-      pattern: ".+"
-      minLength: 1
-      maxLength: 32768
-    Schema1x:
-      description: Field description.
-      type: string
-      pattern: "^(?:[A-Za-z\\d+/]{4})+(?:[A-Za-z\\d+/]{3}=|[A-Za-z\\d+/]{2}==)?$"
-      minLength: 32
-      maxLength: 1024
-    Schema2x:
-      description: Request body description.
-      type: object
-      required:
-      - field
-      properties:
-        field:
-          "$ref": "#/components/schemas/Schema1x"
-        another:
-          "$ref": "#/components/schemas/Schema0x"
-    Schema3x:
-      description: Whatever is deemed appropriate, if anything.
-      type: object
-    Schema4x:
-      type: string
+  mediaTypes:
+    MediaType0x:
+      schema:
+        description: Request body description.
+        type: object
+        required:
+        - field
+        properties:
+          field:
+            description: Field description.
+            type: string
+            pattern: "^(?:[A-Za-z\\d+/]{4})+(?:[A-Za-z\\d+/]{3}=|[A-Za-z\\d+/]{2}==)?$"
+            minLength: 32
+            maxLength: 1024
+          another:
+            description: Another description.
+            type: string
+            pattern: ".+"
+            minLength: 1
+            maxLength: 32768
+    MediaType1x:
+      schema:
+        description: Whatever is deemed appropriate, if anything.
+        type: object
 ####ERR
 ####COMMAND Processed output, retain ignored
 ####CODE 0
@@ -316,9 +262,7 @@ paths:
         content:
           application/json:
             examples: []
-            schema:
-              description: Request body description.
-              "$ref": "#/components/schemas/Schema2x"
+            "$ref": "#/components/mediaTypes/MediaType0x"
         required: true
       responses:
         '204':
@@ -329,31 +273,25 @@ paths:
             headername:
               description: Description of the header.
               schema:
-                "$ref": "#/components/schemas/Schema4x"
+                type: string
               examples: []
           content:
             application/json:
-              schema:
-                description: Whatever is deemed appropriate, if anything.
-                "$ref": "#/components/schemas/Schema3x"
+              "$ref": "#/components/mediaTypes/MediaType1x"
         '404':
           description: Error response with an error object, possibly empty.
           content:
             application/json:
-              schema:
-                description: Whatever is deemed appropriate, if anything.
-                "$ref": "#/components/schemas/Schema3x"
               examples:
                 name:
                   summary: Summary.
                   value: any
+              "$ref": "#/components/mediaTypes/MediaType1x"
         '500':
           description: Error response with an error object, possibly empty.
           content:
             application/json:
-              schema:
-                description: Whatever is deemed appropriate, if anything.
-                "$ref": "#/components/schemas/Schema3x"
+              "$ref": "#/components/mediaTypes/MediaType1x"
   "/health":
     get:
       tags:
@@ -370,74 +308,60 @@ paths:
             headername:
               description: Header description.
               schema:
-                "$ref": "#/components/schemas/Schema4x"
+                type: string
           content:
             application/json:
-              schema:
-                description: Whatever is deemed appropriate, if anything.
-                "$ref": "#/components/schemas/Schema3x"
+              "$ref": "#/components/mediaTypes/MediaType1x"
         '404':
           description: Error response with an error object, possibly empty.
           content:
             application/json:
-              schema:
-                description: Whatever is deemed appropriate, if anything.
-                examples: []
-                "$ref": "#/components/schemas/Schema3x"
+              "$ref": "#/components/mediaTypes/MediaType1x"
         '405':
           description: Error response with an error object, possibly empty.
           headers:
             headername:
               description: Header description.
               schema:
-                "$ref": "#/components/schemas/Schema4x"
+                type: string
               examples: []
           content:
             application/json:
-              schema:
-                description: Whatever is deemed appropriate, if anything.
-                "$ref": "#/components/schemas/Schema3x"
+              "$ref": "#/components/mediaTypes/MediaType1x"
         '500':
           description: Error response with an error object, possibly empty.
           content:
             application/json:
-              schema:
-                description: Whatever is deemed appropriate, if anything.
-                "$ref": "#/components/schemas/Schema3x"
               examples:
                 name:
                   summary: yrammuS
                   value:
                     key: value
+              "$ref": "#/components/mediaTypes/MediaType1x"
 components:
-  schemas:
-    Schema0x:
-      description: Another description.
-      type: string
-      pattern: ".+"
-      minLength: 1
-      maxLength: 32768
-    Schema1x:
-      description: Field description.
-      type: string
-      pattern: "^(?:[A-Za-z\\d+/]{4})+(?:[A-Za-z\\d+/]{3}=|[A-Za-z\\d+/]{2}==)?$"
-      minLength: 32
-      maxLength: 1024
-    Schema2x:
-      description: Request body description.
-      type: object
-      required:
-      - field
-      properties:
-        field:
-          description: Field description.
-          "$ref": "#/components/schemas/Schema1x"
-        another:
-          description: Another description.
-          "$ref": "#/components/schemas/Schema0x"
-    Schema3x:
-      description: Whatever is deemed appropriate, if anything.
-      type: object
-    Schema4x:
-      type: string
+  mediaTypes:
+    MediaType0x:
+      examples: []
+      schema:
+        description: Request body description.
+        type: object
+        required:
+        - field
+        properties:
+          field:
+            description: Field description.
+            type: string
+            pattern: "^(?:[A-Za-z\\d+/]{4})+(?:[A-Za-z\\d+/]{3}=|[A-Za-z\\d+/]{2}==)?$"
+            minLength: 32
+            maxLength: 1024
+          another:
+            description: Another description.
+            type: string
+            pattern: ".+"
+            minLength: 1
+            maxLength: 32768
+    MediaType1x:
+      schema:
+        description: Whatever is deemed appropriate, if anything.
+        type: object
 ####ERR

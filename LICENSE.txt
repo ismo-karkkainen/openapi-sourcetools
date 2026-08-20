@@ -1,4 +1,4 @@
-Copyright (c) 2021-2024 Ismo Kärkkäinen
+Copyright (c) 2021-2026 Ismo Kärkkäinen
 
 The Universal Permissive License (UPL), Version 1.0
 

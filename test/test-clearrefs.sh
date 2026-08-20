@@ -1,6 +1,6 @@
 #!/bin/sh
 
-M="../bin/openapi-addresponses"
+M="../bin/openapi-clearrefs"
 
 (
 echo "####COMMAND Invalid output file"
@@ -36,15 +36,7 @@ echo "####ERR"
 cat e
 
 echo "####COMMAND Processed output"
-$M -i test.yaml >o 2>e
-echo "####CODE $?"
-echo "####OUT"
-cat o
-echo "####ERR"
-cat e
-
-echo "####COMMAND Processed output, retain ignored"
-$M --retain-ignored -i test-retained.yaml >o 2>e
+$M -i test-clearrefs.yaml >o 2>e
 echo "####CODE $?"
 echo "####OUT"
 cat o

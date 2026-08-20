@@ -7,12 +7,12 @@
 require_relative '../lib/openapi/sourcetools/apiobjects'
 require_relative '../lib/openapi/sourcetools/common'
 require 'optparse'
-include OpenAPISourceTools
+
 
 def replace_parameter(p, components)
   return p unless p.is_a?(Hash) # Could complain.
   return p if p.key?('$ref')
-  { '$ref' => components.reference(p) }
+  components.to_reference_object(p)
 end
 
 def replace_parameters(obj, components)
@@ -46,7 +46,7 @@ def add_operations_parameters(paths, referenced)
   # Below that are operations objects.
   paths.each_value do |item|
     top_nameloc2ref = nameloc2ref(item['parameters'] || [], referenced)
-    oos = ApiObjects.operation_objects(item)
+    oos = OpenAPISourceTools::ApiObjects.operation_objects(item)
     oos.each_value do |operation|
       nl2r = nameloc2ref(operation['parameters'] || [], referenced)
       params = top_nameloc2ref.merge(nl2r)
@@ -61,7 +61,7 @@ def main
   output_name = nil
   add2operations = false
   path = %w[components parameters]
-  components = ApiObjects::Components.new(path, 'Parameter')
+  components = OpenAPISourceTools::ApiObjects::Components.new(path, 'Parameter')
 
   parser = OptionParser.new do |opts|
     opts.summary_indent = '  '
@@ -97,17 +97,17 @@ feature is intended to simplify code generation.
   end
   parser.order!
 
-  doc = Common.load_source(input_name)
+  doc = OpenAPISourceTools::Common.load_source(input_name)
   return 2 if doc.nil?
 
   components.items = doc.dig(*path) || {}
   replace_parameters(doc.fetch('paths', {}), components)
-  Common.bury(doc, path, components.items) unless components.items.empty?
+  OpenAPISourceTools::Common.bury(doc, path, components.items) unless components.items.empty?
   # If nothing has parameters, this adds empty arrays.
   # Consistency might be desired for code generation templates.
   add_operations_parameters(doc.fetch('paths', {}), components.items) if add2operations
 
-  Common.dump_result(output_name, doc, 3)
+  OpenAPISourceTools::Common.dump_result(output_name, doc, 3)
 end
 
 exit(main) if File.basename(__FILE__) == File.basename($PROGRAM_NAME)

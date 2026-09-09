@@ -1,0 +1,18 @@
+---
+# Test array sorting with multiple sort keys
+items:
+- category: B
+  priority: 2
+  name: Item4
+- category: A
+  priority: 1
+  name: Item1
+- category: A
+  priority: 2
+  name: Item3
+- category: B
+  priority: 1
+  name: Item2
+- category: A
+  priority: 1
+  name: Item0

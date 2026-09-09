@@ -68,7 +68,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/Schema2x"
+                "$ref": "#/components/schemas/Schema1x"
   "/something":
     post:
       summary: Similar types should become equivalent references
@@ -86,7 +86,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/Schema2x"
+                "$ref": "#/components/schemas/Schema1x"
 components:
   schemas:
     Schema0x:
@@ -94,16 +94,16 @@ components:
       minLength: 10
       maxLength: 32
     Schema1x:
-      type: number
-    Schema2x:
       type: object
-    Schema3x:
+    Schema2x:
       type: object
       properties:
         addi:
           "$ref": "#/components/schemas/Schema0x"
         prop:
-          "$ref": "#/components/schemas/Schema2x"
+          "$ref": "#/components/schemas/Schema1x"
+    Schema3x:
+      type: number
     Schema4x:
       description: Object.
       type: object
@@ -113,9 +113,9 @@ components:
         field:
           "$ref": "#/components/schemas/Schema0x"
         other:
-          "$ref": "#/components/schemas/Schema1x"
+          "$ref": "#/components/schemas/Schema3x"
       additionalProperties:
-        "$ref": "#/components/schemas/Schema3x"
+        "$ref": "#/components/schemas/Schema2x"
     Schema5x:
       type: integer
       minimum: 0
@@ -133,7 +133,7 @@ components:
         field:
           "$ref": "#/components/schemas/Schema0x"
         other:
-          "$ref": "#/components/schemas/Schema1x"
+          "$ref": "#/components/schemas/Schema3x"
       patternProperties:
         "^[a-x]+$":
           "$ref": "#/components/schemas/Schema5x"

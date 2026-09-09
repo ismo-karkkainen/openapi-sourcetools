@@ -1,98 +1,118 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright 2024-2025 Ismo Kärkkäinen
+# Copyright 2024-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
-require_relative '../shared/unittest'
+require 'test/unit'
+include Test::Unit::Assertions
 
-$unit_test = 0
 load '../bin/openapi-modifypaths'
 
-$context = 'path2pieces'
-p = path2pieces('foo')
-assert(p.size, 1, 'One piece')
-assert(p.first, 'foo', 'Original string')
-p = path2pieces('//foo/bar/baz///')
-assert(p.size, 3, 'Three pieces')
-assert(p[0], 'foo', 'First part')
-assert(p[1], 'bar', 'Second part')
-assert(p[2], 'baz', 'Third part')
-p = path2pieces('/')
-assert(p.empty?, true, 'Nothing from /')
-p = path2pieces('')
-assert(p.empty?, true, 'Nothing from empty string')
+class ModifyPathsTest < Test::Unit::TestCase
+  def test_path2pieces
+    p = path2pieces('foo')
+    assert_equal(p.size, 1, 'One piece')
+    assert_equal(p.first, 'foo', 'Original string')
+    p = path2pieces('//foo/bar/baz///')
+    assert_equal(p.size, 3, 'Three pieces')
+    assert_equal(p[0], 'foo', 'First part')
+    assert_equal(p[1], 'bar', 'Second part')
+    assert_equal(p[2], 'baz', 'Third part')
+    p = path2pieces('/')
+    assert_equal(p.empty?, true, 'Nothing from /')
+    p = path2pieces('')
+    assert_equal(p.empty?, true, 'Nothing from empty string')
+  end
 
-$context = 'pieces2path'
-assert(pieces2path([]), '/', 'Only /')
-assert(pieces2path([ 'foo' ]), '/foo', 'One part')
-assert(pieces2path([ 'foo', 'bar' ]), '/foo/bar', 'Two parts')
+  def test_pieces2path
+    assert_equal(pieces2path([]), '/', 'Only /')
+    assert_equal(pieces2path([ 'foo' ]), '/foo', 'One part')
+    assert_equal(pieces2path([ 'foo', 'bar' ]), '/foo/bar', 'Two parts')
+  end
 
-$context = 'add'
-assert(add(['foo'], ['path']), ['foo', 'path'], 'Normal case')
-assert(add([], ['path']), ['path'], 'Nothing to add')
+  def test_add
+    assert_equal(add(['foo'], ['path']), ['foo', 'path'], 'Normal case')
+    assert_equal(add([], ['path']), ['path'], 'Nothing to add')
+  end
 
-$context = 'remove_complete_prefix'
-a = [ 'one', 'two', 'three' ]
-p2 = [ 'one', 'two' ]
-p1 = [ 'one' ]
-s2 = [ 'two', 'three' ]
-s1 = [ 'three' ]
-assert(remove_complete_prefix([], a).nil?, true, 'Nothing to remove')
-assert(remove_complete_prefix(a, a), [], 'Everything removed')
-assert(remove_complete_prefix(p1, a), s2, 'One removed')
-assert(remove_complete_prefix(p2, a), s1, 'Two removed')
-assert(remove_complete_prefix(p1 + s1, a).nil?, true, 'Mismatch')
-assert(remove_complete_prefix(p1 + a, a).nil?, true, 'Too long')
+  def test_remove_complete_prefix
+    a = [ 'one', 'two', 'three' ]
+    p2 = [ 'one', 'two' ]
+    p1 = [ 'one' ]
+    s2 = [ 'two', 'three' ]
+    s1 = [ 'three' ]
+    assert_equal(remove_complete_prefix([], a).nil?, true, 'Nothing to remove')
+    assert_equal(remove_complete_prefix(a, a), [], 'Everything removed')
+    assert_equal(remove_complete_prefix(p1, a), s2, 'One removed')
+    assert_equal(remove_complete_prefix(p2, a), s1, 'Two removed')
+    assert_equal(remove_complete_prefix(p1 + s1, a).nil?, true, 'Mismatch')
+    assert_equal(remove_complete_prefix(p1 + a, a).nil?, true, 'Too long')
+  end
 
-$context = 'remove'
-assert(remove([], a), a, 'Nothing to remove')
-assert(remove(a, a), [], 'Everything removed')
-assert(remove(p1, a), s2, 'One removed')
-assert(remove(p2, a), s1, 'Two removed')
-assert(remove(p1 + s1, a), a, 'Mismatch')
-assert(remove(p1 + a, a), a, 'Too long')
+  def test_remove
+    a = [ 'one', 'two', 'three' ]
+    p2 = [ 'one', 'two' ]
+    p1 = [ 'one' ]
+    s2 = [ 'two', 'three' ]
+    s1 = [ 'three' ]
+    assert_equal(remove([], a), a, 'Nothing to remove')
+    assert_equal(remove(a, a), [], 'Everything removed')
+    assert_equal(remove(p1, a), s2, 'One removed')
+    assert_equal(remove(p2, a), s1, 'Two removed')
+    assert_equal(remove(p1 + s1, a), a, 'Mismatch')
+    assert_equal(remove(p1 + a, a), a, 'Too long')
+  end
 
-$context = 'replace'
-r = [ 'four' ]
-assert(replace([], r, a), a, 'Nothing to replace')
-assert(replace(a, r, a), r, 'Everything replaced')
-assert(replace(p1, r, a), r + s2, 'One replaced')
-assert(replace(p2, r, a), r + s1, 'Two replaced')
-assert(replace(p1 + s1, r, a), a, 'Mismatch')
-assert(replace(p1 + a, r, a), a, 'Too long')
+  def test_replace
+    a = [ 'one', 'two', 'three' ]
+    p2 = [ 'one', 'two' ]
+    p1 = [ 'one' ]
+    s2 = [ 'two', 'three' ]
+    s1 = [ 'three' ]
+    r = [ 'four' ]
+    assert_equal(replace([], r, a), a, 'Nothing to replace')
+    assert_equal(replace(a, r, a), r, 'Everything replaced')
+    assert_equal(replace(p1, r, a), r + s2, 'One replaced')
+    assert_equal(replace(p2, r, a), r + s1, 'Two replaced')
+    assert_equal(replace(p1 + s1, r, a), a, 'Mismatch')
+    assert_equal(replace(p1 + a, r, a), a, 'Too long')
+  end
 
-$context = 'add_op'
-op = add_op('foo')
-assert(op.is_a?(Proc), true, 'add_op proc')
-assert(op.call(['bar']), ['foo', 'bar'], 'Adds original argument')
+  def test_add_op
+    op = add_op('foo')
+    assert_equal(op.is_a?(Proc), true, 'add_op proc')
+    assert_equal(op.call(['bar']), ['foo', 'bar'], 'Adds original argument')
+  end
 
-$context = 'remove_op'
-op = remove_op('foo')
-assert(op.is_a?(Proc), true, 'remove_op proc')
-assert(op.call(['foo', 'bar']), ['bar'], 'Removes original argument')
-assert(op.call(['baz', 'bar']), ['baz', 'bar'], 'No match')
+  def test_remove_op
+    op = remove_op('foo')
+    assert_equal(op.is_a?(Proc), true, 'remove_op proc')
+    assert_equal(op.call(['foo', 'bar']), ['bar'], 'Removes original argument')
+    assert_equal(op.call(['baz', 'bar']), ['baz', 'bar'], 'No match')
+  end
 
-$context = 'replace_op'
-op = replace_op('foo', 'bar')
-assert(op.is_a?(Proc), true, 'replace_op proc')
-assert(op.call(['foo', 'bar']), ['bar', 'bar'], 'Replaces original argument')
-assert(op.call(['baz', 'bar']), ['baz', 'bar'], 'No match')
+  def test_replace_op
+    op = replace_op('foo', 'bar')
+    assert_equal(op.is_a?(Proc), true, 'replace_op proc')
+    assert_equal(op.call(['foo', 'bar']), ['bar', 'bar'], 'Replaces original argument')
+    assert_equal(op.call(['baz', 'bar']), ['baz', 'bar'], 'No match')
+  end
 
-$context = 'perform_operations'
-orig = {
-  '/base' => 1,
-  '/remove' => 2,
-  '/replace/base' => 3
-}
-ops = [ replace_op('replace', 'new'), remove_op('remove'), add_op('add') ]
-p = perform_operations(orig, ops)
-assert(p.size, orig.size, 'Size did not change')
-assert(p.key?('/add/base'), true, '/add/base is present')
-assert(p.key?('/add'), true, '/add is present')
-assert(p.key?('/add/new/base'), true, '/add/new/base is present')
-assert(p['/add/base'], orig['/base'], '/add/base has original value')
-assert(p['/add'], orig['/remove'], '/add has original value')
-assert(p['/add/new/base'], orig['/replace/base'], '/add/new/base has original value')
-
-exit $unit_test
+  def test_perform_operations
+    orig = {
+      '/base' => 1,
+      '/remove' => 2,
+      '/replace/base' => 3
+    }
+    ops = [ replace_op('replace', 'new'), remove_op('remove'), add_op('add') ]
+    p = perform_operations(orig, ops)
+    assert_equal(p.size, orig.size, 'Size did not change')
+    assert_equal(p.key?('/add/base'), true, '/add/base is present')
+    assert_equal(p.key?('/add'), true, '/add is present')
+    assert_equal(p.key?('/add/new/base'), true, '/add/new/base is present')
+    assert_equal(p['/add/base'], orig['/base'], '/add/base has original value')
+    assert_equal(p['/add'], orig['/remove'], '/add has original value')
+    assert_equal(p['/add/new/base'], orig['/replace/base'], '/add/new/base has original value')
+  end
+end

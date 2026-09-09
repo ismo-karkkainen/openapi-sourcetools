@@ -1,0 +1,11 @@
+---
+# Test array sorting by object properties
+servers:
+- url: https://prod.example.com
+  name: Production
+  description: Production server
+- url: https://dev.example.com
+  name: Development
+  description: Development server
+- url: https://staging.example.com
+  name: Staging

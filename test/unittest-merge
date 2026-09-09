@@ -1,64 +1,66 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright 2024-2025 Ismo Kärkkäinen
+# Copyright 2024-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
-require_relative '../shared/unittest'
+require 'test/unit'
 require 'yaml'
+include Test::Unit::Assertions
 
-
-$unit_test = 0
 load '../bin/openapi-merge'
 
-$context = 'raise_se'
-msg = 'msg'
-begin
-  raise_se(msg)
-rescue StandardError => e
-  assert(e.to_s, msg, 'exception and message')
-rescue Exception
-  assert(true, false, 'Unexpected exception')
-end
+class MergeTest < Test::Unit::TestCase
+  def test_raise_se
+    msg = 'msg'
+    begin
+      raise_se(msg)
+    rescue StandardError => e
+      assert_equal(e.to_s, msg, 'exception and message')
+    rescue Exception
+      assert_equal(true, false, 'Unexpected exception')
+    end
+  end
 
-$context = 'too_deep'
-md = {
-  'shallow' => 1,
-  'deep' => 3
-}
-assert(too_deep([], md), false, 'empty')
-assert(too_deep(%w[shallow], md), true, 'just root')
-assert(too_deep(%w[shallow toodeep], md), true, 'too deep')
-assert(too_deep(%w[deep notenough], md), false, 'not deep')
-assert(too_deep(%w[deep middle notenough], md), true, 'border case')
+  def test_too_deep
+    md = {
+      'shallow' => 1,
+      'deep' => 3
+    }
+    assert_equal(too_deep([], md), false, 'empty')
+    assert_equal(too_deep(%w[shallow], md), true, 'just root')
+    assert_equal(too_deep(%w[shallow toodeep], md), true, 'too deep')
+    assert_equal(too_deep(%w[deep notenough], md), false, 'not deep')
+    assert_equal(too_deep(%w[deep middle notenough], md), true, 'border case')
+  end
 
-$context = 'add_missing'
-ex = []
-inc = [ { foo: 123 } ]
-add_missing(ex, inc, :foo)
-assert(ex.first, inc.first, 'added to empty')
-assert(ex.size, 1, 'only one item')
-add_missing(ex, inc, :foo)
-assert(ex.size, 1, 'still only one item')
-inc2 = [ { key: 123 } ]
-add_missing(ex, inc2, :bar)
-assert(ex.size, 1, 'no key, not added')
-assert(ex.first, inc.first, 'existing unchanged')
-add_missing(ex, inc2, :key)
-assert(ex.size, 2, 'no key in existing, added')
-assert(ex.last, inc2.first, 'new item added')
-inc3 = [ { key: 123, val: 'str' } ]
-add_missing(ex, inc3, :key)
-assert(ex.size, 2, 'same key, not added')
-assert(ex.first, inc.first, 'existing unchanged')
-assert(ex.last, inc2.first, 'existing unchanged')
+  def test_add_missing
+    ex = []
+    inc = [ { foo: 123 } ]
+    add_missing(ex, inc, :foo)
+    assert_equal(ex.first, inc.first, 'added to empty')
+    assert_equal(ex.size, 1, 'only one item')
+    add_missing(ex, inc, :foo)
+    assert_equal(ex.size, 1, 'still only one item')
+    inc2 = [ { key: 123 } ]
+    add_missing(ex, inc2, :bar)
+    assert_equal(ex.size, 1, 'no key, not added')
+    assert_equal(ex.first, inc.first, 'existing unchanged')
+    add_missing(ex, inc2, :key)
+    assert_equal(ex.size, 2, 'no key in existing, added')
+    assert_equal(ex.last, inc2.first, 'new item added')
+    inc3 = [ { key: 123, val: 'str' } ]
+    add_missing(ex, inc3, :key)
+    assert_equal(ex.size, 2, 'same key, not added')
+    assert_equal(ex.first, inc.first, 'existing unchanged')
+    assert_equal(ex.last, inc2.first, 'existing unchanged')
+  end
 
-$context = 'gather_refs'
-def doc1
-  anchor = '#anchor'
-  arr = '#/components/schemas/Arr'
-  normal = '#/components/schemas/Normal'
-  [anchor, arr, normal, YAML.safe_load(%(
+  def doc1
+    anchor = '#anchor'
+    arr = '#/components/schemas/Arr'
+    normal = '#/components/schemas/Normal'
+    [anchor, arr, normal, YAML.safe_load(%(
 root:
   "$ref": "#{anchor}"
   key:
@@ -73,18 +75,20 @@ nothing:
   - "$ref"
   key: "#/components/schemas/NotReference"
 ))]
-end
-anchor, arr, normal, doc = doc1
-refs = Set.new
-gather_refs(doc, refs)
-assert(refs.size, 3, '3 references')
-assert(refs.member?(anchor), true, 'anchor in')
-assert(refs.member?(arr), true, 'arr in')
-assert(refs.member?(normal), true, 'normal in')
+  end
 
-$context = 'has_refd_anchor'
-def doc2
-  YAML.safe_load(%(
+  def test_gather_refs
+    anchor, arr, normal, doc = doc1
+    refs = Set.new
+    gather_refs(doc, refs)
+    assert_equal(refs.size, 3, '3 references')
+    assert_equal(refs.member?(anchor), true, 'anchor in')
+    assert_equal(refs.member?(arr), true, 'arr in')
+    assert_equal(refs.member?(normal), true, 'normal in')
+  end
+
+  def doc2
+    YAML.safe_load(%(
 root:
   "$ref": "#anchor"
   key:
@@ -114,17 +118,19 @@ components:
       "$ref": "#/components/schemas/Normal"
 
 ))
-end
-doc = doc2
-refs = Set.new
-gather_refs(doc, refs)
-def dig(doc, name)
-  doc.dig('components', 'schemas', name)
-end
-assert(has_refd_anchor(dig(doc, 'Refd'), refs), true, 'Refd')
-assert(has_refd_anchor(dig(doc, 'Unrefd'), refs), false, 'Unrefd')
-assert(has_refd_anchor(dig(doc, 'InArray'), refs), true, 'InArray')
-assert(has_refd_anchor(dig(doc, 'Invalid'), refs), false, 'Invalid')
-assert(has_refd_anchor(dig(doc, 'Missing'), refs), false, 'Missing')
+  end
 
-exit $unit_test
+  def test_has_refd_anchor
+    doc = doc2
+    refs = Set.new
+    gather_refs(doc, refs)
+    def dig(doc, name)
+      doc.dig('components', 'schemas', name)
+    end
+    assert_equal(has_refd_anchor(dig(doc, 'Refd'), refs), true, 'Refd')
+    assert_equal(has_refd_anchor(dig(doc, 'Unrefd'), refs), false, 'Unrefd')
+    assert_equal(has_refd_anchor(dig(doc, 'InArray'), refs), true, 'InArray')
+    assert_equal(has_refd_anchor(dig(doc, 'Invalid'), refs), false, 'Invalid')
+    assert_equal(has_refd_anchor(dig(doc, 'Missing'), refs), false, 'Missing')
+  end
+end

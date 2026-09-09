@@ -1,0 +1,10 @@
+---
+# Test regex pattern matching
+example: should be last
+examples: should be last too
+name: first
+description: second
+schema: third
+x-custom: fourth
+x-vendor: fourth-too
+other: last-group

@@ -29,30 +29,38 @@ def replace_inlines(obj, components, top_level_name = nil)
     return true
   end
   # Is inlined, process parts recursively.
-  items = obj['allOf']
-  items = obj['anyOf'] if items.nil?
-  items = obj['oneOf'] if items.nil?
-  # All above need special treatment in code generation templates.
-  return replace_inlines(items, components) unless items.nil?
-  t = obj['type']
-  if t.nil? # Some kind of intermediate-level object.
+  %w[allOf anyOf oneOf items prefixItems additionalProperties unevaluatedItems
+    unevaluatedProperties if then else not
+  ].each do |prop_name|
+    return false unless replace_inlines(obj[prop_name], components)
+  end
+  %w[properties patternProperties dependentSchemas].each do |prop_name|
+    props = obj[prop_name]
+    next if props.nil?
+    props.keys.sort!.each do |name|
+      return false unless replace_inlines(props[name], components)
+    end
+  end
+  looks_like_type = false
+  # required is omitted since it is in schema and in parameters.
+  %w[type items prefixItems properties patternProperties additionalProperties
+    unevaluatedItems unevaluatedProperties enum const minimum maximum multipleOf
+    exclusiveMinimum exclusiveMaximum maxLength minLength pattern maxItems minItems
+    uniqueItems maxContains minContains maxProperties minProperties propertyNames
+    dependentRequired format contentEncoding contentMediaType contentSchema
+  ].each do |kw|
+    if obj.key?(kw)
+      looks_like_type = true
+      break
+    end
+  end
+  unless looks_like_type
+    # Some kind of intermediate-level object.
     (obj.keys.sort! { |a, b| a.to_s <=> b.to_s }).each do |key|
       next if key == 'securitySchemes'
       return false unless replace_inlines(obj[key], components)
     end
     return true
-  end
-  case t
-  when 'array'
-    return false unless replace_inlines(obj['items'], components)
-  when 'object'
-    %w[properties patternProperties].each do |prop_name|
-      props = obj.fetch(prop_name, {})
-      props.keys.sort!.each do |name|
-        return false unless replace_inlines(props[name], components)
-      end
-    end
-    return false unless replace_inlines(obj['additionalProperties'], components)
   end
   r = components.ref_string(top_level_name) || components.reference(obj)
   components.store_anchor(obj, r)

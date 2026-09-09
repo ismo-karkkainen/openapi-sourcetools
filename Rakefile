@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Copyright 2021-2025 Ismo Kärkkäinen
+# Copyright 2021-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
 require 'rubocop/rake_task'
@@ -28,7 +28,7 @@ task :uninstall do
 end
 
 desc 'Test.'
-task test: %i[testclearrefs testaddrequestbodies testaddmediatypes testpatterntests testaddsecurityschemes testgeneratecheckconfig testmodifypaths testmerge testprocesspaths testfrequencies testaddschemas testaddresponses testaddheaders testaddparameters testcheckschemas testgenerate testoftypes testcommon]
+task test: %i[testclearrefs testaddrequestbodies testaddmediatypes testpatterntests testaddsecurityschemes testgeneratecheckconfig testmodifypaths testmerge testprocesspaths testfrequencies testaddschemas testaddresponses testaddheaders testaddparameters testcheckschemas testgenerate testoftypes testcommon testorder]
 
 desc 'Test modifypaths.'
 task :testmodifypaths do
@@ -118,6 +118,11 @@ end
 desc 'Test clearrefs.'
 task :testclearrefs do
   sh './test.sh clearrefs'
+end
+
+desc 'Test order.'
+task :testorder do
+  sh './test.sh order'
 end
 
 desc 'Lint using Rubocop'

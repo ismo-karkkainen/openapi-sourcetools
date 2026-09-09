@@ -1,0 +1,8 @@
+---
+x-order:
+- openapi
+- info
+- jsonSchemaDialect
+- servers
+- paths
+- components

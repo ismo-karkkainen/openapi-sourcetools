@@ -87,6 +87,10 @@ module OpenAPISourceTools
         return d unless d.zero?
         @path <=> other.path
       end
+
+      def to_s
+        "Root: #{@root} [#{@keys.join(', ')}] #{@path}"
+      end
     end
 
     def self.prepare_prefix(name_prefix, root)

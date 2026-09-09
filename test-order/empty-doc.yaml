@@ -1,0 +1,9 @@
+---
+# Test empty structures
+emptyHash: {}
+emptyArray: []
+hashWithEmpty:
+  nested: {}
+arrayWithEmpty:
+- {}
+- name: test

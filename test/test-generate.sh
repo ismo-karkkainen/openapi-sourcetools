@@ -49,4 +49,4 @@ echo "####ERR"
 cat e
 
 rm -rf x o e out
-) > $(basename $0 .sh).res
+) | grep -v -e '^Finished in' > $(basename $0 .sh).res

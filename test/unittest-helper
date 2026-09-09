@@ -1,14 +1,18 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright 2024-2025 Ismo Kärkkäinen
+# Copyright 2024-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
-require_relative '../shared/unittest'
+require 'test/unit'
 require 'yaml'
+require_relative '../lib/openapi/sourcetools/helper'
+include Test::Unit::Assertions
+include OpenAPISourceTools
 
-def doc1
-  YAML.safe_load(%(
+class HelperTest < Test::Unit::TestCase
+  def doc1
+    YAML.safe_load(%(
 ---
 name: top
 children:
@@ -22,73 +26,73 @@ offspring:
 - name: third
 - name: fourth
 ))
-end
+  end
 
-$unit_test = 0
-require_relative '../lib/openapi/sourcetools/helper'
-include OpenAPISourceTools
+  def test_store_parents_parent
+    d = doc1
+    h = Helper.new(d)
+    assert_equal(h.parent(d).nil?, true, 'Top level no parent')
+    assert_equal(h.parent(d['children']), d, 'single parent is top')
+    d['offspring'].each do |offs|
+      assert_equal(h.parent(offs), d, "Offspring #{offs['name']} parent is top")
+    end
+    p = d.dig('children')
+    c = p.dig('children')[0]
+    assert_equal(h.parent(c), p, "Child #{c['name']} parent is #{p['name']}")
+    c = p.dig('children')[1]
+    assert_equal(h.parent(c), p, "Child #{c['name']} parent is #{p['name']}")
+    p = d.dig('children', 'children')[0]
+    c = p.dig('children')[0]
+    assert_equal(h.parent(c), p, "Child #{c['name']} parent is #{p['name']}")
+    assert_equal(h.parent({}).nil?, true, 'Other object has no parent')
+    assert_equal(h.parent(d.keys[0]).nil?, true, 'Keys have no parent')
+    assert_equal(h.parent(d.dig('children', 'name')).nil?, true, 'String value has no parent')
+  end
 
-$context = 'store_parents/parent'
-d = doc1
-h = Helper.new(d)
-assert(h.parent(d).nil?, true, 'Top level no parent')
-assert(h.parent(d['children']), d, 'single parent is top')
-d['offspring'].each do |offs|
-  assert(h.parent(offs), d, "Offspring #{offs['name']} parent is top")
-end
-p = d.dig('children')
-c = p.dig('children')[0]
-assert(h.parent(c), p, "Child #{c['name']} parent is #{p['name']}")
-c = p.dig('children')[1]
-assert(h.parent(c), p, "Child #{c['name']} parent is #{p['name']}")
-p = d.dig('children', 'children')[0]
-c = p.dig('children')[0]
-assert(h.parent(c), p, "Child #{c['name']} parent is #{p['name']}")
-assert(h.parent({}).nil?, true, 'Other object has no parent')
-assert(h.parent(d.keys[0]).nil?, true, 'Keys have no parent')
-assert(h.parent(d.dig('children', 'name')).nil?, true, 'String value has no parent')
+  def test_category_and_name
+    d = doc1
+    h = Helper.new(d)
+    assert_equal(h.category_and_name([]).nil?, true, 'Not string')
+    assert_equal(h.category_and_name({ '$ref' => 1 }).nil?, true, 'ref not string')
+    assert_equal(h.category_and_name('not_ref').nil?, true, 'Not reference string')
+    assert_equal(h.category_and_name({ '$ref' => 'not_ref' }).nil?, true, 'ref not reference string')
+    assert_equal(h.category_and_name('#/components/nothing').nil?, true, 'Not reference string')
+    cat, name = h.category_and_name('#/components/cat/name')
+    assert_equal(cat, 'cat', 'category found')
+    assert_equal(name, 'name', 'name found')
+    cat, name = h.category_and_name({ '$ref' => '#/components/cat/name' })
+    assert_equal(cat, 'cat', 'category found again')
+    assert_equal(name, 'name', 'name found again')
+  end
 
-$context = 'category_and_name'
-d = doc1
-h = Helper.new(d)
-assert(h.category_and_name([]).nil?, true, 'Not string')
-assert(h.category_and_name({ '$ref' => 1 }).nil?, true, 'ref not string')
-assert(h.category_and_name('not_ref').nil?, true, 'Not reference string')
-assert(h.category_and_name({ '$ref' => 'not_ref' }).nil?, true, 'ref not reference string')
-assert(h.category_and_name('#/components/nothing').nil?, true, 'Not reference string')
-cat, name = h.category_and_name('#/components/cat/name')
-assert(cat, 'cat', 'category found')
-assert(name, 'name', 'name found')
-cat, name = h.category_and_name({ '$ref' => '#/components/cat/name' })
-assert(cat, 'cat', 'category found again')
-assert(name, 'name', 'name found again')
-
-$context = 'dereference'
-def doc2
-  YAML.safe_load(%(
+  def doc2
+    YAML.safe_load(%(
 ---
 components:
   category:
     name: 5
 ))
-end
-d = doc2
-h = Helper.new(d)
-assert(h.dereference('invalid').nil?, true, 'invalid')
-assert(h.dereference('#/components/missing/name').nil?, true, 'no category')
-assert(h.dereference('#/components/category/missing').nil?, true, 'no name')
-assert(h.dereference('#/components/category/name'), 5, 'valid')
+  end
 
-$context = 'basename'
-d = doc2
-h = Helper.new(d)
-assert(h.basename('invalid').nil?, true, 'invalid')
-assert(h.basename('#/components/partial').nil?, true, 'missing part')
-assert(h.basename('#/components/cat/name'), 'name', 'name returned')
+  def test_dereference
+    d = doc2
+    h = Helper.new(d)
+    assert_equal(h.dereference('invalid').nil?, true, 'invalid')
+    assert_equal(h.dereference('#/components/missing/name').nil?, true, 'no category')
+    assert_equal(h.dereference('#/components/category/missing').nil?, true, 'no name')
+    assert_equal(h.dereference('#/components/category/name'), 5, 'valid')
+  end
 
-$context = 'parameters'
-def doc3
-  YAML.safe_load(%(
+  def test_basename
+    d = doc2
+    h = Helper.new(d)
+    assert_equal(h.basename('invalid').nil?, true, 'invalid')
+    assert_equal(h.basename('#/components/partial').nil?, true, 'missing part')
+    assert_equal(h.basename('#/components/cat/name'), 'name', 'name returned')
+  end
+
+  def doc3
+    YAML.safe_load(%(
 ---
 paths:
   "/no/parameter":
@@ -117,30 +121,32 @@ components:
       name: param3
       in: header
 ))
-end
-d = doc3
-h = Helper.new(d)
-cp = d.dig('components', 'parameters')
-p = h.parameters(d.dig('paths', '/no/parameter', 'put'))
-assert(p.empty?, true, 'no parameters')
-p = h.parameters(d.dig('paths', '/no/parameter', 'get'))
-assert(p.size, 1, 'one parameter')
-assert(p.first['$ref'].end_with?("/#{cp.dig('param3', 'name')}"), true, 'name matches')
-p = h.parameters(d.dig('paths', '/parent/parameter', 'put'))
-assert(p.size, 1, 'one parameter')
-assert(p.first['$ref'].end_with?("/#{cp.dig('param1', 'name')}"), true, 'name matches')
-p = h.parameters(d.dig('paths', '/parent/parameter', 'get'))
-assert(p.size, 2, 'two parameters')
-assert(p.first['$ref'].end_with?("/#{cp.dig('param1', 'name')}"), true, 'name matches')
-assert(p.last['$ref'].end_with?("/#{cp.dig('param2', 'name')}"), true, 'name matches')
-p = h.parameters(d.dig('paths', '/parent/parameter', 'put'), true)
-assert(p.empty?, true, 'no local parameters')
-p = h.parameters(d.dig('paths', '/no/parameter', 'put'), true)
-assert(p.empty?, true, 'no local parameters')
+  end
 
-$context = 'response_codes'
-def doc4
-  YAML.safe_load(%(
+  def test_parameters
+    d = doc3
+    h = Helper.new(d)
+    cp = d.dig('components', 'parameters')
+    p = h.parameters(d.dig('paths', '/no/parameter', 'put'))
+    assert_equal(p.empty?, true, 'no parameters')
+    p = h.parameters(d.dig('paths', '/no/parameter', 'get'))
+    assert_equal(p.size, 1, 'one parameter')
+    assert_equal(p.first['$ref'].end_with?("/#{cp.dig('param3', 'name')}"), true, 'name matches')
+    p = h.parameters(d.dig('paths', '/parent/parameter', 'put'))
+    assert_equal(p.size, 1, 'one parameter')
+    assert_equal(p.first['$ref'].end_with?("/#{cp.dig('param1', 'name')}"), true, 'name matches')
+    p = h.parameters(d.dig('paths', '/parent/parameter', 'get'))
+    assert_equal(p.size, 2, 'two parameters')
+    assert_equal(p.first['$ref'].end_with?("/#{cp.dig('param1', 'name')}"), true, 'name matches')
+    assert_equal(p.last['$ref'].end_with?("/#{cp.dig('param2', 'name')}"), true, 'name matches')
+    p = h.parameters(d.dig('paths', '/parent/parameter', 'put'), true)
+    assert_equal(p.empty?, true, 'no local parameters')
+    p = h.parameters(d.dig('paths', '/no/parameter', 'put'), true)
+    assert_equal(p.empty?, true, 'no local parameters')
+  end
+
+  def doc4
+    YAML.safe_load(%(
 ---
 responses:
   '400':
@@ -156,21 +162,26 @@ responses:
   '200':
     description: 'Specific success'
 ))
+  end
+
+  def test_response_codes
+    d = doc4
+    h = Helper.new(d)
+    r = h.response_codes(d['responses'])
+    assert_equal(r, ['200', '400', '500', '2xx', '3XX', 'default'], 'correct order')
+    r = h.response_codes({ '200' => 'thing' })
+    assert_equal(r, ['200'], 'single response code')
+    r = h.response_codes({})
+    assert_equal(r, [], 'empty responses object')
+  end
+
+  def test_response_code_condition
+    d = doc4
+    h = Helper.new(d)
+    assert_equal(h.response_code_condition('200'), 'code == 200', 'exact match')
+    assert_equal(h.response_code_condition('201', op_eq: 'eq', var: 'v'), 'v eq 201', 'var/eq/exact')
+    assert_equal(h.response_code_condition('2xx', var: 'foo'), '(200 <= foo) && (foo <= 299)', 'var/range')
+    assert_equal(h.response_code_condition('3XX', op_and: 'and'), '(300 <= code) and (code <= 399)', 'and/range')
+    assert_equal(h.response_code_condition('40x', op_lte: '.lte.'), '(400 .lte. code) && (code .lte. 409)', 'lte/range')
+  end
 end
-d = doc4
-h = Helper.new(d)
-r = h.response_codes(d['responses'])
-assert(r, ['200', '400', '500', '2xx', '3XX', 'default'], 'correct order')
-r = h.response_codes({ '200' => 'thing' })
-assert(r, ['200'], 'single response code')
-r = h.response_codes({})
-assert(r, [], 'empty responses object')
-
-$context = 'response_code_condition'
-assert(h.response_code_condition('200'), 'code == 200', 'exact match')
-assert(h.response_code_condition('201', op_eq: 'eq', var: 'v'), 'v eq 201', 'var/eq/exact')
-assert(h.response_code_condition('2xx', var: 'foo'), '(200 <= foo) && (foo <= 299)', 'var/range')
-assert(h.response_code_condition('3XX', op_and: 'and'), '(300 <= code) and (code <= 399)', 'and/range')
-assert(h.response_code_condition('40x', op_lte: '.lte.'), '(400 .lte. code) && (code .lte. 409)', 'lte/range')
-
-exit $unit_test

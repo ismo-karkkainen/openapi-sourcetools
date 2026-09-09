@@ -1,0 +1,8 @@
+---
+# Test multiple regex patterns and priority
+xCustom: matches x- pattern
+example: matches example pattern
+examples: matches example pattern
+name: exact match
+description: exact match
+other: wildcard

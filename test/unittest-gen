@@ -1,45 +1,45 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright 2024-2025 Ismo Kärkkäinen
+# Copyright 2024-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
-require_relative '../shared/unittest'
+require 'test/unit'
 require 'yaml'
-
-$unit_test = 0
 require_relative '../lib/openapi/sourcetools/gen'
+include Test::Unit::Assertions
 
+class GenTest < Test::Unit::TestCase
+  def test_defaults
+    assert_equal(Gen.doc.nil?, true, 'doc nil')
+    assert_equal(Gen.outdir.nil?, true, 'outdir nil')
+    assert_equal(Gen.d.is_a?(OpenAPISourceTools::Docs), true, 'docs set')
+    assert_equal(Gen.wd.is_a?(String), true, 'wd set')
+    assert_equal(Gen.configuration.nil?, true, 'configuration nil')
+    assert_equal(Gen.in_name.nil?, true, 'in_name nil')
+    assert_equal(Gen.in_basename.nil?, true, 'in_basename nil')
+    assert_equal(Gen.tasks.is_a?(Array), true, 'tasks set')
+    assert_equal(Gen.tasks.empty?, true, 'tasks is empty')
+    assert_equal(Gen.g.is_a?(Hash), true, 'g set')
+    assert_equal(Gen.g.empty?, true, 'g is empty')
+    assert_equal(Gen.x.is_a?(Hash), true, 'x set')
+    assert_equal(Gen.x.empty?, true, 'x is empty')
+    assert_equal(Gen.h.nil?, true, 'h nil')
+    assert_equal(Gen.t.nil?, true, 't nil')
+    assert_equal(Gen.task_index.nil?, true, 'task_index nil')
+    assert_equal(Gen.loaders.is_a?(Array), true, 'loaders set')
+    assert_equal(Gen.loaders.empty?, true, 'loaders is empty')
+  end
 
-$context = 'defaults'
-assert(Gen.doc.nil?, true, 'doc nil')
-assert(Gen.outdir.nil?, true, 'outdir nil')
-assert(Gen.d.is_a?(OpenAPISourceTools::Docs), true, 'docs set')
-assert(Gen.wd.is_a?(String), true, 'wd set')
-assert(Gen.configuration.nil?, true, 'configuration nil')
-assert(Gen.in_name.nil?, true, 'in_name nil')
-assert(Gen.in_basename.nil?, true, 'in_basename nil')
-assert(Gen.tasks.is_a?(Array), true, 'tasks set')
-assert(Gen.tasks.empty?, true, 'tasks is empty')
-assert(Gen.g.is_a?(Hash), true, 'g set')
-assert(Gen.g.empty?, true, 'g is empty')
-assert(Gen.x.is_a?(Hash), true, 'x set')
-assert(Gen.x.empty?, true, 'x is empty')
-assert(Gen.h.nil?, true, 'h nil')
-assert(Gen.t.nil?, true, 't nil')
-assert(Gen.task_index.nil?, true, 'task_index nil')
-assert(Gen.loaders.is_a?(Array), true, 'loaders set')
-assert(Gen.loaders.empty?, true, 'loaders is empty')
-
-$context = 'setup'
-Gen.setup('doc', 'dir/name.ext', 'outdir', '../test-generate/gen-config')
-assert(Gen.doc, 'doc', 'doc set')
-assert(Gen.outdir, 'outdir', 'outdir set')
-assert(Gen.in_name, 'name.ext', 'in_name set')
-assert(Gen.in_basename, 'name', 'in_basename set')
-assert(Gen.tasks.is_a?(Array), true, 'tasks set')
-assert(Gen.tasks.size, 1, 'tasks has default helper task')
-assert(Gen.configuration.is_a?(Hash), true, 'configuration set')
-assert(Gen.configuration['root'] || '', 'value', 'configuration loaded')
-
-exit $unit_test
+  def test_setup
+    Gen.setup('doc', 'dir/name.ext', 'outdir', '../test-generate/gen-config')
+    assert_equal(Gen.doc, 'doc', 'doc set')
+    assert_equal(Gen.outdir, 'outdir', 'outdir set')
+    assert_equal(Gen.in_name, 'name.ext', 'in_name set')
+    assert_equal(Gen.in_basename, 'name', 'in_basename set')
+    assert_equal(Gen.tasks.is_a?(Array), true, 'tasks set')
+    assert_equal(Gen.tasks.size, 1, 'tasks has default helper task')
+    assert_equal(Gen.configuration.is_a?(Hash), true, 'configuration set')
+    assert_equal(Gen.configuration['root'] || '', 'value', 'configuration loaded')
+  end
+end

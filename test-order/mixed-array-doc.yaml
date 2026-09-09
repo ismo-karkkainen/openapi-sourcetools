@@ -1,0 +1,10 @@
+---
+# Test arrays with mixed content types (objects, scalars)
+mixedArray:
+- name: object1
+  value: 1
+- just a string
+- name: object2
+  value: 2
+- 42
+- name: object3

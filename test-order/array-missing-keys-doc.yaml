@@ -1,0 +1,14 @@
+---
+# Test array sorting with missing keys in some objects
+people:
+- name: Alice
+  age: 30
+  email: alice@example.com
+- name: Bob
+  email: bob@example.com
+- age: 25
+  email: charlie@example.com
+- name: David
+  age: 35
+- name: David
+  email: david@example.com

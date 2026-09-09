@@ -1,0 +1,573 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright © 2026 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../lib/openapi/sourcetools/common'
+require_relative '../lib/openapi/sourcetools/order'
+require 'optparse'
+require 'yaml'
+require 'json'
+
+# Functions related to order instructions.
+
+def metadata
+  'openapi-order-metadata'
+end
+
+def metadata_key
+  'key'
+end
+
+def metadata_regexp
+  'regexp'
+end
+
+def default_order_data(order_key, regexp_prefix)
+  <<EOF
+---
+#{metadata}:
+  #{metadata_key}: "#{order_key}"
+  #{metadata_regexp}: "#{regexp_prefix}"
+# Generic orders for any location of a key.
+'**':
+  servers:
+    #{order_key}: &ServerObject_order
+    - url
+    - name
+    - description
+    - variables
+    '*':
+      #{order_key}: &ServerObject
+      - name
+      - description
+      variables:
+        #{order_key}:
+        - '*'
+        '*':
+          #{order_key}: &ServerVariableObject
+          - description
+          - enum
+          - default
+  server: *ServerObject
+  parameters:
+    #{order_key}: &ParameterObject_order
+    - name
+    - in
+    '*': &ParameterObject
+      #{order_key}:
+      - '$ref'
+      - name
+      - in
+      - required
+      - deprecated
+      - description
+      - content
+      - schema
+      - '*'
+      - #{regexp_prefix}^example[s]?$
+  schema: &Schema
+    #{order_key}:
+    - '$ref'
+    - title
+    - description
+    - deprecated
+    - type
+    - format
+    - enum
+    - const
+    - default
+    - readOnly
+    - writeOnly
+    # Numeric types.
+    - minimum
+    - exclusiveMinimum
+    - exclusiveMaximum
+    - maximum
+    - multipleOf
+    # Strings.
+    - minLength
+    - maxLength
+    - pattern
+    # Core.
+    - allOf
+    - anyOf
+    - oneOf
+    - not
+    - if
+    - then
+    - else
+    # Objects.
+    - required
+    - dependentRequired
+    - minProperties
+    - maxProperties
+    - properties
+    - #{regexp_prefix}^.+Properties$
+    - propertyNames
+    - dependentSchemas
+    - discriminator
+    # Arrays.
+    - minItems
+    - maxItems
+    - uniqueItems
+    - items
+    - #{regexp_prefix}^.+Items$
+    - contains
+    - minContains
+    - maxContains
+    # Content
+    - #{regexp_prefix}^content.*$
+    - examples
+    required:
+      #{order_key}:
+      - '*'
+    dependentRequired:
+      #{order_key}:
+      - '*'
+      '*':
+        #{order_key}:
+        - '*'
+  allOf: &Schema_map
+    '*': *Schema
+  anyOf: *Schema_map
+  oneOf: *Schema_map
+  not: *Schema
+  if: *Schema
+  then: *Schema
+  else: *Schema
+  properties: &Schema_ordered_map
+    #{order_key}:
+    - '*'
+    '*': *Schema
+  patternProperties: *Schema_ordered_map
+  additionalProperties: *Schema
+  propertyNames: *Schema
+  items: *Schema
+  contains: *Schema
+  prefixItems: *Schema_map
+  unevaluatedItems: *Schema
+  unevaluatedProperties: *Schema
+  dependentSchemas: *Schema_ordered_map
+  discriminator:
+    #{order_key}:
+    - propertyName
+    - mapping
+    - defaultMapping
+  content:
+    #{order_key}:
+    - '*'
+    '*': &MediaTypeObject
+      #{order_key}:
+      - schema
+      - #{regexp_prefix}.*Schema$
+      - #{regexp_prefix}^(.*E|e)ncoding$
+      - '*'
+      - #{regexp_prefix}^example[s]?$
+  headers: &HeaderObject
+    #{order_key}:
+    - description
+    - required
+    - '*'
+    - schema
+    '*': *ParameterObject
+  responses:
+    #{order_key}:
+    - '*'
+    - default
+    '*': &ResponseObject
+      #{order_key}:
+      - '$ref'
+      - summary
+      - description
+      - headers
+      - content
+      - links
+  links:
+    #{order_key}:
+    - '*'
+    '*': &LinkObject
+      #{order_key}:
+      - description
+      - #{regexp_prefix}^operation.*
+      - parameters
+      - requestBody
+  requestBody: &RequestBodyObject
+    #{order_key}:
+    - description
+    - required
+    - content
+  security:
+    #{order_key}: &SecurityRequirementObject_order
+    - '*'
+  webhooks:
+    #{order_key}:
+    - '*'
+    '*': &PathItemObject
+      #{order_key}:
+      - '$ref'
+      - summary
+      - description
+      - servers
+      - parameters
+      - '*'
+      - additionalOperations
+      '*':
+        #{order_key}: &OperationObject
+        - '$ref'
+        - operationId
+        - summary
+        - description
+        - parameters
+        - requestBody
+        - responses
+      additionalOperations:
+        #{order_key}:
+        - '*'
+        '*': *OperationObject
+  callbacks:
+    #{order_key}:
+    - '*'
+    '*': *PathItemObject
+#{order_key}:
+- openapi
+- '$self'
+- jsonSchemaDialect
+- info
+- servers
+- '*'
+- paths
+- components
+info:
+  #{order_key}:
+  - title
+  - version
+  - summary
+  - description
+  - contact
+  - license
+  - termsOfService
+  contact:
+    #{order_key}:
+    - name
+  license:
+    #{order_key}:
+    - name
+servers:
+  #{order_key}: *ServerObject_order
+  '*': *ServerObject
+security:
+  #{order_key}: *SecurityRequirementObject_order
+tags: # Do not order tags array but do order Tag Objects.
+  '*':
+    #{order_key}:
+    - name
+    - summary
+    - description
+paths:
+  #{order_key}:
+  - '*'
+  '*': *PathItemObject
+components:
+  #{order_key}:
+  - schemas
+  - '*'
+  - securitySchemes
+  - links
+  - callbacks
+  - examples
+  # Regular expressions are for names from various openapi-add* programs.
+  # Variations for number of digits ensure ordering by number.
+  schemas:
+    #{order_key}:
+    - '*'
+    - #{regexp_prefix}^Schema[0-9]{1}x$
+    - #{regexp_prefix}^Schema[0-9]{2}x$
+    - #{regexp_prefix}^Schema[0-9]{3,}x$
+    '*': *Schema
+  responses:
+    #{order_key}:
+    - '*'
+    - #{regexp_prefix}^Response[0-9]{1}x$
+    - #{regexp_prefix}^Response[0-9]{2}x$
+    - #{regexp_prefix}^Response[0-9]{3,}x$
+    '*': *ResponseObject
+  parameters:
+    #{order_key}:
+    - '*'
+    - #{regexp_prefix}^Parameter[0-9]{1}x$
+    - #{regexp_prefix}^Parameter[0-9]{2}x$
+    - #{regexp_prefix}^Parameter[0-9]{3,}x$
+    '*': *ParameterObject
+  requestBodies:
+    #{order_key}:
+    - '*'
+    - #{regexp_prefix}^RequestBody[0-9]{1}x$
+    - #{regexp_prefix}^RequestBody[0-9]{2}x$
+    - #{regexp_prefix}^RequestBody[0-9]{3,}x$
+    '*': *RequestBodyObject
+  headers:
+    #{order_key}:
+    - '*'
+    - #{regexp_prefix}^Header[0-9]{1}x$
+    - #{regexp_prefix}^Header[0-9]{2}x$
+    - #{regexp_prefix}^Header[0-9]{3,}x$
+    '*': *HeaderObject
+  securitySchemes:
+    #{order_key}:
+    - '*'
+  links:
+    #{order_key}:
+    - '*'
+    '*': *LinkObject
+  callbacks:
+    #{order_key}:
+    - '*'
+    '*': *PathItemObject
+  pathItems:
+    #{order_key}:
+    - '*'
+    '*': *PathItemObject
+  mediaTypes:
+    #{order_key}:
+    - '*'
+    - #{regexp_prefix}^MediaType[0-9]{1}x$
+    - #{regexp_prefix}^MediaType[0-9]{2}x$
+    - #{regexp_prefix}^MediaType[0-9]{3,}x$
+    '*': *MediaTypeObject
+  examples:
+    #{order_key}:
+    - '*'
+EOF
+end
+
+def default_order(order_key, regexp_prefix)
+  YAML.load(default_order_data(order_key, regexp_prefix), aliases: true)
+end
+
+# This needs to extract all path/order pairs, store and sort.
+
+def extract_orders(path, order, collection, order_key, regexp_prefix)
+  return true unless order.is_a?(Hash)
+  order.each do |key, value|
+    if key == order_key
+      unless value.is_a?(Array)
+        OpenAPISourceTools::Common.aargh("Not an array: #{path.join('.')}.#{order_key} =\n#{YAML.dump(value)}")
+        return false
+      end
+      value.each_with_index do |v, k|
+        next if v.is_a?(String)
+        OpenAPISourceTools::Common.aargh("Not a string: #{path}.#{order_key}[#{k}] =\n#{YAML.dump(v)}")
+        return false
+      end
+      key_path = OpenAPISourceTools::Ordering::KeyPath.new(path, regexp_prefix)
+      key_order = OpenAPISourceTools::Ordering::Order.new(value, regexp_prefix)
+      collection.push(OpenAPISourceTools::Ordering::KeyPathOrder.new(key_path, key_order))
+    else
+      key = key.to_s unless key.is_a?(String)
+      path.push(key)
+      return false unless extract_orders(path, value, collection, order_key, regexp_prefix)
+      path.pop
+    end
+  end
+end
+
+# Functions related to applying the order to the document.
+
+def reorder(orders, path, item)
+  return false unless OpenAPISourceTools::Ordering::Order.orderable?(item)
+  orders.each do |order|
+    next unless order.path.match?(path)
+    order.order.apply(item)
+    break
+  end
+  true
+end
+
+def order_document(orders, path, item)
+  return unless reorder(orders, path, item) # Scalars do not pass.
+  if item.is_a?(Array)
+    item.each_with_index do |element, idx|
+      # This needs something and using index as string matches the '*'
+      # used when elements of the array are meant to be processed. By
+      # using the index alone, the '*' can be replaced by a regular
+      # expression that matches specific indices, if so desired.
+      path.push(idx.to_s)
+      order_document(orders, path, element)
+      path.pop
+    end
+  else
+    item.each do |key, value|
+      key = key.to_s unless key.is_a?(String)
+      path.push(key)
+      order_document(orders, path, value)
+      path.pop
+    end
+  end
+end
+
+# Functions related to saving the output.
+
+def to_json(doc, _line_width)
+  JSON.dump(doc)
+end
+
+def to_pretty_json(doc, _line_width)
+  JSON.pretty_generate(doc)
+end
+
+def to_yaml(doc, line_width)
+  YAML.dump(doc, line_width: line_width)
+end
+
+def main
+  input_name = nil
+  output_name = nil
+  order_name = nil
+  order_key = 'x-order'
+  regexp_prefix = 're:'
+  format = 'yaml'
+  formats = {
+    'yaml' => method(:to_yaml),
+    'json' => method(:to_json),
+    'pretty_json' => method(:to_pretty_json)
+  }
+  line_width = 80
+  output_default = false
+
+  parser = OptionParser.new do |opts|
+    opts.summary_indent = '  '
+    opts.summary_width = 20
+    opts.banner = 'Usage: openapi-order [options]'
+    opts.separator ''
+    opts.separator 'Options:'
+    opts.on('-i', '--input FILE', 'Read API spec from FILE, not stdin.') do |f|
+      input_name = f
+    end
+    opts.on('-o', '--output FILE', 'Output to FILE, not stdout.') do |f|
+      output_name = f
+    end
+    opts.on('--order FILE', 'Read order instructions from FILE.') do |f|
+      order_name = f
+    end
+    opts.on('-f', '--format FORMAT', "Output format: #{formats.keys.sort!.join(', ')}, default: #{format}") do |f|
+      unless formats.key?(f.downcase)
+        exit(OpenAPISourceTools::Common.aargh("Unknown format: #{f}", 1))
+      end
+      format = f
+    end
+    opts.on('-w', '--width WIDTH', "Set YAML line width, default: #{line_width}") do |w|
+      line_width = w.to_i
+    end
+    opts.separator ''
+    opts.separator 'Order options:'
+    opts.on('--default', 'Output default order to --output, ignore input.') do
+      output_default = true
+    end
+    opts.on('-k', '--key KEY', "Use KEY as default order key, default: #{order_key}") do |k|
+      order_key = k
+    end
+    opts.on('-r', '--regexp PREFIX', "Use PREFIX to indicate regular expression, default: #{regexp_prefix}") do |p|
+      regexp_prefix = p
+    end
+    opts.on('-h', '--help', 'Print this help and exit.') do
+      $stdout.puts %(#{opts}
+Loads YAML document and applies ordering to object keys, and arrays with
+objects, when an order matches the key path to object.
+
+Can be used on generic YAML or JSON files. Default order is for OpenAPI
+documents.
+
+The order instructions key "#{order_key}" value must be an array of strings.
+The values can be any combination of the following:
+- Literal key name.
+- Regular expression starting with "#{regexp_prefix}".
+- "*" that matches any key that does not match anything else.
+First match against a value determines the position, and "*" receives all
+unmatched keys. If order array has no "*", every unmatched key will be placed
+last. Only the first "*" has any effect. Multiple keys placed in the same
+position are sorted within that position.
+
+The path to the "#{order_key}" can have any combination of the following:
+- Literal key name.
+- Regular expression starting with "#{regexp_prefix}".
+- "*" that matches one key of any value.
+- "**" that matches one or more keys of any value.
+The path is used to determine if a value in the document should be ordered
+using the instructions. At top level the path is empty and applies to the root
+of the document. Long paths are considered to be more specific than short
+paths, because they supposedly contain more literal keys or limiting regular
+expressions so thay are intended for a specific case. Of paths of same length
+one with "**" is considered less specific than one without.
+
+The path to a value in the document is matched against paths to "#{order_key}"
+to find the most specific order. For elements in an array, the last item in
+the path is the element index as a string. Hence you can use a "*" parallel
+to "#{order_key}" to match any index, but also literals or regular expressions
+to match specific index can be used.
+
+For object value in the document, the order is used to sort the keys of the
+object. Absence of a key in the object has no effect. Any non-string key is
+converted to string for ordering purposes. Original keys are retained.
+
+For array value in the document, the order is used to select values of keys
+from array elements to use in comparison for sorting the array.
+- Using known object property names is recommended.
+- Values of keys should be scalars and have the same type for same key.
+- Missing key places the element after one that has the key.
+- Object and array values are considered to be a missing value.
+- Elements that are not objects end up last because they have no keys.
+Mixture of objects, arrays, and scalars is not expected in the intended use.
+
+Scalar value in the document is not affected.
+
+Non-string keys in the document and order paths are converted to strings for
+processing.
+
+The --key, --regexp, --format, and --output apply to --default output. If
+format is YAML, the internal YAML document is output as is.
+
+To avoid errors, the value of --key should not appear in the document so that
+it only appears as order instructions key in the order document.
+
+In case the document has a key that starts with "#{regexp_prefix}" you can change it in the
+order file or use "#{regexp_prefix}^#{regexp_prefix}the_rest$" as an anchored regular
+expression that only matches the key. The ":" is part of the prefix itself,
+so provide it if you want to keep it. Useful for readability.
+
+When reading an order file, --key and --regexp are over-ridden by root-level
+object "#{metadata}" keys "#{metadata_key}" and "#{metadata_regexp}" values.
+)
+      exit 0
+    end
+  end
+  parser.order!
+
+  if output_default
+    if format == 'yaml'
+      doc = default_order_data(order_key, regexp_prefix)
+    else
+      doc = default_order(order_key, regexp_prefix)
+      doc = formats[format].call(doc, line_width)
+    end
+  else
+    doc = OpenAPISourceTools::Common.load_source(input_name)
+    return 2 if doc.nil?
+
+    order = order_name.nil? ? default_order(order_key, regexp_prefix) : OpenAPISourceTools::Common.load_source(order_name)
+    return 4 if order.nil?
+    md = order.fetch(metadata, {})
+    order_key = md.fetch(metadata_key, order_key)
+    regexp_prefix = md.fetch(metadata_regexp, regexp_prefix)
+    path_orders = []
+    return 4 unless extract_orders([], order, path_orders, order_key, regexp_prefix)
+    path_orders.sort!.reverse! # Longest key pattern sequence first.
+    order_document(path_orders, [], doc)
+    doc = formats[format].call(doc, line_width)
+  end
+
+  OpenAPISourceTools::Common.dump_result(output_name, doc, 3)
+end
+
+exit(main) if File.basename(__FILE__) == File.basename($PROGRAM_NAME)

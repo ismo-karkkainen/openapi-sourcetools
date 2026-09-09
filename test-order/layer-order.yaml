@@ -1,0 +1,23 @@
+---
+openapi-order-metadata:
+  key: 'a-order'
+  regexp: 'reg:'
+a-order:
+- '*'
+'**':
+  special:
+    a-order:
+    - special2
+    - reg:^special.?$
+    - '*'
+  numbers:
+    a-order:
+    - '5'
+    - reg:^[13579]{1}
+root:
+  '*':
+    numbers:
+      a-order:
+      - '*'
+      - reg:^[13579]{1}
+      - '6'

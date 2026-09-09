@@ -71,9 +71,9 @@ rm tmp_doc*.yaml
 
 ## openapi-addschemas
 
-Checks for presence of schema definitions first inside the schemas under "components/schemas", and then elsewhere in the document. Mappings under names "properties", "patternProperties", and "additionalProperties" are checked. For any definition found, adds a definition under "components/schemas" and replaces the original with a reference.
+Checks for presence of schema definitions first inside the schemas under "components/schemas", and then elsewhere in the document. Mappings under various keys are checked. For any definition found, adds a definition under "components/schemas" and replaces the original with a reference.
 
-This does not change existing schemas declared at level immediately under "components/schemas" that are practically identical, to use references. The properties of objects will be changed to references.
+This does not change existing schemas declared at level immediately under "components/schemas" that are practically identical, to use references. The properties of objects and array items will be changed to references.
 
 For simple types such as a string with no size or content limitations, output may appear annoying. For processing the document later, I think it is easier to detect that you have another string with different limitations and make a decision to treat it as a different type or provide a function to check the limitations, given a generic string, than to keep track of what you have already encountered when openapi-generate is being run.
 
@@ -123,6 +123,10 @@ You should run openapi-addschemas beforehand to reduce unnecessary variation.
 
 Takes the top-level security array and sets up security arrays in operation objects. The presence of security schemes under components are checked for and missing ones are reported. Intended to simplify later code generation.
 
+## openapi-clearrefs
+
+If you have used `--retain-ignored` parameter to avoid losing examples placed with inlined schema definitions, for example, you can clear the reference objects of other keys using this command.
+
 ## openapi-generate
 
 Loads code that processes the OpenAPI format document and produces output. Increasingly intended to just manage things rather than to do actual work.
@@ -130,6 +134,10 @@ Loads code that processes the OpenAPI format document and produces output. Incre
 Loaded code can add tasks during load time. After everything has been loaded, the tasks are run. Task would usually produce output but can omit it.
 
 The input document can in practice be anything that Ruby YAML module can load. There is a helper task that by default is added first. Since processors loaded later can modify the tasks list, it can be removed and replaced with something else. Hence this might be useful in processing other YAML documents besides API as originally intended. Main benefit in running all together is that the tasks can pass information between each other. Processing same file multiple times would have to rely on code producing exactly same results with regard to variable naming etc. Remains to be seen if this should be elsewhere or if there is something that does the job already.
+
+## openapi-order
+
+Designed to order keys in objects, and arrays using keys in the array elements. Internal default order is for OpenAPI documents, but with custom order can be used to order other files as well, including JSON with optional JSON output. Output the default order using --default argument and check help description to get started with specifying your own order instructions file.
 
 ### Configuration File Convenience Functions
 
@@ -345,6 +353,14 @@ If that is all you need to do, considering the gem has been required already, yo
 ## Work in Progress
 
 openapi-oftypes is intended for gathering information and making checks so that the code generation for allOf, oneOf, and anyOf becomes simpler.
+
+Separate program to force all values of xOf, if, then, else, not to be their separate schemas. Specifically anything from core document with applying subschemas with logic or conditionally. This would be done for the benefit of code generation. Keeps everything flat.
+
+Code generation then has to figure out if the schema itself offers a type or if it just represents code that eventually returns something. The types of something can be dug out by following references until a type schema is reached in each branch. This might be good as  a separate program so that user can run it and check that the outcome contains what is expected. Store as extension key.
+
+Separate program like openapi-checkschemas to dig out the types and present to the user, optionally storing under a key for further use?
+
+Since the level below logic and combine operators may have schemas or further logic or combine, values need to be dug. It might be easier to store staightforward schema types first, then accumulate other types after that. If the schema root is simple type, the type is known but the properties may have unknown types. Logic and combining may have loops, but since we are gathering straightforward types, the loop can not add straightforward types to the known list.
 
 ## License
 

@@ -4,148 +4,163 @@
 # Copyright 2024-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
-require_relative '../shared/unittest'
+require 'test/unit'
 require 'yaml'
-
-$unit_test = 0
 require_relative '../lib/openapi/sourcetools/apiobjects'
+include Test::Unit::Assertions
 include OpenAPISourceTools
 
-$context = 'same'
-assert(ApiObjects.same(1, 'b'), false, 'Number is not string')
-assert(ApiObjects.same({ 'b' => 1 }, 'b'), false, 'Hash is not string')
-assert(ApiObjects.same(1, { 'b' => 1 }), false, 'Number is not Hash')
-assert(ApiObjects.same(1, 1), true, 'Equal numbers')
-a = { a: 5, b: [ 1, 2 ] }
-b = { a: 5, b: 'b' }
-assert(ApiObjects.same(a, b), false, 'Different types')
-b = { a: 5, b: [ 1 ] }
-assert(ApiObjects.same(a, b), false, 'Different lengths')
-b = { a: 5, b: [ 1, 2 ], c: 'c' }
-assert(ApiObjects.same(a, b), false, 'Different keys')
-b = { a: 5, b: [ 1, 2 ] }
-assert(ApiObjects.same(a, b), true, 'Same contents')
-b = { a: 5, b: [ 1, 2 ], 'summary' =>'foo' }
-assert(ApiObjects.same(a, b), true, 'Same contents ignoring summary')
-b = { a: 5, b: [ 1, 2 ], 'description' => 'foo' }
-assert(ApiObjects.same(a, b), true, 'Same contents ignoring description')
-b = { a: 5, b: [ 1, 2 ], 'summary' => 'foo', 'description' => 'bar' }
-assert(ApiObjects.same(a, b), true, 'Same contents ignoring description and summary')
+class ApiObjectsTest < Test::Unit::TestCase
+  def test_same
+    assert_equal(ApiObjects.same(1, 'b'), false, 'Number is not string')
+    assert_equal(ApiObjects.same({ 'b' => 1 }, 'b'), false, 'Hash is not string')
+    assert_equal(ApiObjects.same(1, { 'b' => 1 }), false, 'Number is not Hash')
+    assert_equal(ApiObjects.same(1, 1), true, 'Equal numbers')
+    a = { a: 5, b: [ 1, 2 ] }
+    b = { a: 5, b: 'b' }
+    assert_equal(ApiObjects.same(a, b), false, 'Different types')
+    b = { a: 5, b: [ 1 ] }
+    assert_equal(ApiObjects.same(a, b), false, 'Different lengths')
+    b = { a: 5, b: [ 1, 2 ], c: 'c' }
+    assert_equal(ApiObjects.same(a, b), false, 'Different keys')
+    b = { a: 5, b: [ 1, 2 ] }
+    assert_equal(ApiObjects.same(a, b), true, 'Same contents')
+    b = { a: 5, b: [ 1, 2 ], 'summary' => 'foo' }
+    assert_equal(ApiObjects.same(a, b), true, 'Same contents ignoring summary')
+    b = { a: 5, b: [ 1, 2 ], 'description' => 'foo' }
+    assert_equal(ApiObjects.same(a, b), true, 'Same contents ignoring description')
+    b = { a: 5, b: [ 1, 2 ], 'summary' => 'foo', 'description' => 'bar' }
+    assert_equal(ApiObjects.same(a, b), true, 'Same contents ignoring description and summary')
+  end
 
-$context = 'reference'
-a = { a: 5, b: [ 1, 2 ] }
-b = { a: 5, b: 'b' }
-s = { 'bref' => b }
-path = 'testing'
-r = ApiObjects.reference(a, s, path)
-assert(s.size, 2, 'New name added')
-r = ApiObjects.reference(a.merge({ 'summary' => 'foo' }), s, path)
-r2 = ApiObjects.reference(a, s, path)
-assert(r, r2, 'Same object yields same reference')
-assert(s.size, 2, 'No new name added')
-r = ApiObjects.reference(b, s, path)
-assert(s.size, 2, 'No new name added either')
-s = { 'bref' => b }
-prefix = 'Prefix'
-path = 'testing'
-r = ApiObjects.reference(b, s, 'testing', Set.new(%w[summary description]), prefix)
-assert(s.size, 1, 'No new name added with prefix')
-r = ApiObjects.reference(a, s, 'testing', Set.new(%w[summary description]), prefix)
-assert(s.size, 2, 'New reference added with prefix')
-assert(r.start_with?("#{path}/#{prefix}"), true, 'Reference starts with prefix')
+  def test_reference
+    a = { a: 5, b: [ 1, 2 ] }
+    b = { a: 5, b: 'b' }
+    s = { 'bref' => b }
+    path = 'testing'
+    r = ApiObjects.reference(a, s, path)
+    assert_equal(s.size, 2, 'New name added')
+    r = ApiObjects.reference(a.merge({ 'summary' => 'foo' }), s, path)
+    r2 = ApiObjects.reference(a, s, path)
+    assert_equal(r, r2, 'Same object yields same reference')
+    assert_equal(s.size, 2, 'No new name added')
+    r = ApiObjects.reference(b, s, path)
+    assert_equal(s.size, 2, 'No new name added either')
+    s = { 'bref' => b }
+    prefix = 'Prefix'
+    path = 'testing'
+    r = ApiObjects.reference(b, s, 'testing', Set.new(%w[summary description]), prefix)
+    assert_equal(s.size, 1, 'No new name added with prefix')
+    r = ApiObjects.reference(a, s, 'testing', Set.new(%w[summary description]), prefix)
+    assert_equal(s.size, 2, 'New reference added with prefix')
+    assert_equal(r.start_with?("#{path}/#{prefix}"), true, 'Reference starts with prefix')
+  end
 
-$context = 'Components.reference'
-path = 'testing'
-prefix = 'Prefix'
-cmp = ApiObjects::Components.new(path, prefix)
-a = { a: 5, b: [ 1, 2 ] }
-b = { a: 5, b: 'b' }
-cmp.items['bref'] = b
-r = cmp.reference(a)
-s = cmp.items
-assert(s.size, 2, 'New name added')
-r = cmp.reference(a.merge({ 'summary' => 'foo' }))
-r2 = cmp.reference(a)
-assert(r, r2, 'Same object yields same reference')
-assert(s.size, 2, 'No new name added')
-r = cmp.reference(b)
-assert(s.size, 2, 'No new name added either')
-cmp = ApiObjects::Components.new(path, prefix)
-cmp.items['bref'] = b
-r = cmp.reference(b)
-s = cmp.items
-assert(s.size, 1, 'No new name added with prefix')
-r = cmp.reference(a)
-assert(s.size, 2, 'New reference added with prefix')
-assert(r.start_with?("#{path}/#{prefix}"), true, 'Reference starts with prefix')
+  def test_components_reference
+    path = 'testing'
+    prefix = 'Prefix'
+    cmp = ApiObjects::Components.new(path, prefix)
+    a = { a: 5, b: [ 1, 2 ] }
+    b = { a: 5, b: 'b' }
+    cmp.items['bref'] = b
+    r = cmp.reference(a)
+    s = cmp.items
+    assert_equal(s.size, 2, 'New name added')
+    r = cmp.reference(a.merge({ 'summary' => 'foo' }))
+    r2 = cmp.reference(a)
+    assert_equal(r, r2, 'Same object yields same reference')
+    assert_equal(s.size, 2, 'No new name added')
+    r = cmp.reference(b)
+    assert_equal(s.size, 2, 'No new name added either')
+    cmp = ApiObjects::Components.new(path, prefix)
+    cmp.items['bref'] = b
+    r = cmp.reference(b)
+    s = cmp.items
+    assert_equal(s.size, 1, 'No new name added with prefix')
+    r = cmp.reference(a)
+    assert_equal(s.size, 2, 'New reference added with prefix')
+    assert_equal(r.start_with?("#{path}/#{prefix}"), true, 'Reference starts with prefix')
+  end
 
-$context = 'Components.to_reference_object'
-path = 'testing'
-prefix = 'Prefix'
-cmp = ApiObjects::Components.new(path, prefix, %w[ignore])
-a = { a: 5, b: [ 1, 2 ] }
-assert(cmp.to_reference_object(a).object_id, a.object_id, 'Same returned')
-assert(a.key?('$ref'), true, 'Reference key')
-assert(a.size, 1, 'No retained keys')
-assert(cmp.items.size, 1, 'New name added')
-cmp.retain_ignored = true
-b = { a: 5, b: [ 1, 2 ], 'ignore' => 'value' }
-assert(cmp.to_reference_object(b).object_id, b.object_id, 'Same returned')
-assert(b.key?('$ref'), true, 'Reference key')
-assert(b.key?('ignore'), true, 'ignored key')
-assert(b.size, 2, 'No other retained keys')
-assert(a['$ref'], b['$ref'], 'Same reference')
-assert(cmp.items.size, 1, 'No new name added')
+  def test_components_to_reference_object
+    path = 'testing'
+    prefix = 'Prefix'
+    cmp = ApiObjects::Components.new(path, prefix, %w[ignore])
+    a = { a: 5, b: [ 1, 2 ] }
+    assert_equal(cmp.to_reference_object(a).object_id, a.object_id, 'Same returned')
+    assert_equal(a.key?('$ref'), true, 'Reference key')
+    assert_equal(a.size, 1, 'No retained keys')
+    assert_equal(cmp.items.size, 1, 'New name added')
+    cmp.retain_ignored = true
+    b = { a: 5, b: [ 1, 2 ], 'ignore' => 'value' }
+    assert_equal(cmp.to_reference_object(b).object_id, b.object_id, 'Same returned')
+    assert_equal(b.key?('$ref'), true, 'Reference key')
+    assert_equal(b.key?('ignore'), true, 'ignored key')
+    assert_equal(b.size, 2, 'No other retained keys')
+    assert_equal(a['$ref'], b['$ref'], 'Same reference')
+    assert_equal(cmp.items.size, 1, 'No new name added')
+  end
 
-$context = 'Components.add_schema_name'
-path = 'testing'
-prefix = 'Prefix'
-cmp = ApiObjects::Components.new(path, prefix)
-cmp.add_schema_name('name')
-assert(cmp.schema_names.member?('name'), true, 'Schema name in set')
-assert(cmp.schema_names.member?('sdohfg'), false, 'Schema name not in set')
+  def test_components_add_schema_name
+    path = 'testing'
+    prefix = 'Prefix'
+    cmp = ApiObjects::Components.new(path, prefix)
+    cmp.add_schema_name('name')
+    assert_equal(cmp.schema_names.member?('name'), true, 'Schema name in set')
+    assert_equal(cmp.schema_names.member?('sdohfg'), false, 'Schema name not in set')
+  end
 
-$context = 'Components.store_anchor'
-path = 'testing'
-prefix = 'Prefix'
-cmp = ApiObjects::Components.new(path, prefix)
-cmp.store_anchor({})
-assert(cmp.anchor2ref.empty?, true, 'Not anchor, not added')
-obj = { '$anchor' => 'name' }
-cmp.store_anchor(obj, 'ref')
-assert(cmp.anchor2ref[obj['$anchor']], 'ref', 'name mapped to given ref')
-begin
-  cmp.store_anchor(obj)
-  assert(true, false, 'Exception not raised')
-rescue Exception
-  assert(true, true, 'Exception raised')
-end
-obj = { '$anchor' => 'name2', '$ref' => 'ref2' }
-cmp.store_anchor(obj)
-assert(cmp.anchor2ref[obj['$anchor']], obj['$ref'], 'name2 mapped to obj ref')
+  def test_components_store_anchor
+    path = 'testing'
+    prefix = 'Prefix'
+    cmp = ApiObjects::Components.new(path, prefix)
+    cmp.store_anchor({})
+    assert_equal(cmp.anchor2ref.empty?, true, 'Not anchor, not added')
+    obj = { '$anchor' => 'name' }
+    cmp.store_anchor(obj, 'ref')
+    assert_equal(cmp.anchor2ref[obj['$anchor']], 'ref', 'name mapped to given ref')
+    begin
+      cmp.store_anchor(obj)
+      assert_equal(true, false, 'Exception not raised')
+    rescue Exception
+      assert_equal(true, true, 'Exception raised')
+    end
+    obj = { '$anchor' => 'name2', '$ref' => 'ref2' }
+    cmp.store_anchor(obj)
+    assert_equal(cmp.anchor2ref[obj['$anchor']], obj['$ref'], 'name2 mapped to obj ref')
+  end
 
-$context = 'Components.alter_anchors'
-path = 'testing'
-prefix = 'Prefix'
-cmp = ApiObjects::Components.new(path, prefix)
-cmp.add_schema_name('existing')
-cmp.store_anchor({ '$anchor' => 'name' }, 'ref')
-cmp.store_anchor({ '$anchor' => 'existing' }, 'ref2')
-assert(cmp.anchor2ref.size, 2, 'size 2')
-assert(cmp.anchor2ref['name'], 'ref', 'name to ref')
-assert(cmp.anchor2ref['existing'], 'ref2', 'existing to ref2')
-cmp.alter_anchors
-assert(cmp.anchor2ref.size, 2, 'size unchanged')
-assert(cmp.anchor2ref['name'], cmp.ref_string('name'), 'name to ref string')
-assert(cmp.anchor2ref['existing'], 'ref2', 'existing unchanged')
+  def test_components_alter_anchors
+    path = 'testing'
+    prefix = 'Prefix'
+    cmp = ApiObjects::Components.new(path, prefix)
+    cmp.add_schema_name('existing')
+    cmp.store_anchor({ '$anchor' => 'name' }, 'ref')
+    cmp.store_anchor({ '$anchor' => 'existing' }, 'ref2')
+    assert_equal(cmp.anchor2ref.size, 2, 'size 2')
+    assert_equal(cmp.anchor2ref['name'], 'ref', 'name to ref')
+    assert_equal(cmp.anchor2ref['existing'], 'ref2', 'existing to ref2')
+    cmp.alter_anchors
+    assert_equal(cmp.anchor2ref.size, 2, 'size unchanged')
+    assert_equal(cmp.anchor2ref['name'], cmp.ref_string('name'), 'name to ref string')
+    assert_equal(cmp.anchor2ref['existing'], 'ref2', 'existing unchanged')
+  end
 
-$context = 'Components.anchor_ref_replacement'
-assert(cmp.anchor_ref_replacement('#other'), '#other', 'absent not changed')
-assert(cmp.anchor_ref_replacement('#name'), cmp.ref_string('name'), 'name found')
-assert(cmp.anchor_ref_replacement('#existing'), 'ref2', 'existing found')
+  def test_components_anchor_ref_replacement
+    path = 'testing'
+    prefix = 'Prefix'
+    cmp = ApiObjects::Components.new(path, prefix)
+    cmp.add_schema_name('existing')
+    cmp.store_anchor({ '$anchor' => 'name' }, 'ref')
+    cmp.store_anchor({ '$anchor' => 'existing' }, 'ref2')
+    cmp.alter_anchors
+    assert_equal(cmp.anchor_ref_replacement('#other'), '#other', 'absent not changed')
+    assert_equal(cmp.anchor_ref_replacement('#name'), cmp.ref_string('name'), 'name found')
+    assert_equal(cmp.anchor_ref_replacement('#existing'), 'ref2', 'existing found')
+  end
 
-$context = 'operation_objects'
-doc = YAML.safe_load(%(---
+  def test_operation_objects
+    doc = YAML.safe_load(%(---
 test1:
   parameters:
   - "$ref": "#/components/parameters/Parameter0x"
@@ -227,20 +242,21 @@ test2:
     callbacks:
       name: {}
 ))
-oos = ApiObjects.operation_objects(doc['test1'])
-assert(oos.size, 3, '3 objects')
-assert(oos.key?('get'), true, 'has get')
-assert(oos.key?('put'), true, 'has put')
-assert(oos.key?('something'), true, 'has something')
-oos = ApiObjects.operation_objects(doc['test2'])
-assert(oos.size, 4, '4 objects')
-assert(oos.key?('op1'), true, 'has op1')
-assert(oos.key?('op2'), true, 'has op2')
-assert(oos.key?('op3'), true, 'has op3')
-assert(oos.key?('op4'), true, 'has op4')
+    oos = ApiObjects.operation_objects(doc['test1'])
+    assert_equal(oos.size, 3, '3 objects')
+    assert_equal(oos.key?('get'), true, 'has get')
+    assert_equal(oos.key?('put'), true, 'has put')
+    assert_equal(oos.key?('something'), true, 'has something')
+    oos = ApiObjects.operation_objects(doc['test2'])
+    assert_equal(oos.size, 4, '4 objects')
+    assert_equal(oos.key?('op1'), true, 'has op1')
+    assert_equal(oos.key?('op2'), true, 'has op2')
+    assert_equal(oos.key?('op3'), true, 'has op3')
+    assert_equal(oos.key?('op4'), true, 'has op4')
+  end
 
-$context = 'ServerVariableObject'
-doc = YAML.safe_load(%(---
+  def test_server_variable_object
+    doc = YAML.safe_load(%(---
 srv1:
 - url: http://example.com/{var}
   variables:
@@ -264,143 +280,392 @@ srv3:
     var2:
       default: "c"
 ))
-svo = ApiObjects::ServerVariableObject.new('var', doc['srv1'].first.dig('variables', 'var'))
-assert(svo.name, 'var', 'name is right')
-assert(svo.default, 'a', 'default is right')
-assert(svo.enum, %w[a b], 'enum is right')
-svo2 = ApiObjects::ServerVariableObject.new('var2', doc['srv3'].first.dig('variables', 'var2'))
-assert(svo2.enum, [], 'enum is empty')
+    svo = ApiObjects::ServerVariableObject.new('var', doc['srv1'].first.dig('variables', 'var'))
+    assert_equal(svo.name, 'var', 'name is right')
+    assert_equal(svo.default, 'a', 'default is right')
+    assert_equal(svo.enum, %w[a b], 'enum is right')
+    svo2 = ApiObjects::ServerVariableObject.new('var2', doc['srv3'].first.dig('variables', 'var2'))
+    assert_equal(svo2.enum, [], 'enum is empty')
+  end
 
-$context = 'ServerVariableObject.<=>'
-assert(svo <=> svo2, -1, 'svo < svo2')
-svo3 = ApiObjects::ServerVariableObject.new('var', doc['srv2'].first.dig('variables', 'var'))
-assert(svo3 <=> svo, 0, 'svo3 == svo')
-assert(svo <=> svo, 0, 'svo == svo')
-assert(svo2 <=> svo3, 1, 'svo3 < svo2')
+  def test_server_variable_object_compare
+    doc = YAML.safe_load(%(---
+srv1:
+- url: http://example.com/{var}
+  variables:
+    var:
+      default: "a"
+      enum: ["a", "b"]
+- url: http://example.com/{var2}
+  variables:
+    var2:
+      default: "c"
+      enum: ["c", "d"]
+srv2:
+- url: http://example.com/{var}
+  variables:
+    var:
+      default: "a"
+      enum: ["a", "b"]
+srv3:
+- url: http://example.com/{var2}
+  variables:
+    var2:
+      default: "c"
+))
+    svo = ApiObjects::ServerVariableObject.new('var', doc['srv1'].first.dig('variables', 'var'))
+    svo2 = ApiObjects::ServerVariableObject.new('var2', doc['srv3'].first.dig('variables', 'var2'))
+    assert_equal(svo <=> svo2, -1, 'svo < svo2')
+    svo3 = ApiObjects::ServerVariableObject.new('var', doc['srv2'].first.dig('variables', 'var'))
+    assert_equal(svo3 <=> svo, 0, 'svo3 == svo')
+    assert_equal(svo <=> svo, 0, 'svo == svo')
+    assert_equal(svo2 <=> svo3, 1, 'svo3 < svo2')
+  end
 
-$context = 'ServerObject'
-so = ApiObjects::ServerObject.new(doc['srv1'].first)
-assert(so.url, 'http://example.com/{var}', 'url ok')
-assert(so.variables.size, 1, 'has variable')
-assert(so.variables.first.name, 'var', 'variable name ok')
-assert(so.variables.first.default, 'a', 'variable default ok')
-assert(so.variables.first.enum, %w[a b], 'variable enum ok')
+  def test_server_object
+    doc = YAML.safe_load(%(---
+srv1:
+- url: http://example.com/{var}
+  variables:
+    var:
+      default: "a"
+      enum: ["a", "b"]
+- url: http://example.com/{var2}
+  variables:
+    var2:
+      default: "c"
+      enum: ["c", "d"]
+srv2:
+- url: http://example.com/{var}
+  variables:
+    var:
+      default: "a"
+      enum: ["a", "b"]
+srv3:
+- url: http://example.com/{var2}
+  variables:
+    var2:
+      default: "c"
+))
+    so = ApiObjects::ServerObject.new(doc['srv1'].first)
+    assert_equal(so.url, 'http://example.com/{var}', 'url ok')
+    assert_equal(so.variables.size, 1, 'has variable')
+    assert_equal(so.variables.first.name, 'var', 'variable name ok')
+    assert_equal(so.variables.first.default, 'a', 'variable default ok')
+    assert_equal(so.variables.first.enum, %w[a b], 'variable enum ok')
+  end
 
-$context = 'ServerObject.<=>'
-so2 = ApiObjects::ServerObject.new(doc['srv1'].last)
-assert(so2 <=> so, -1, 'so < so2')
-so3 = ApiObjects::ServerObject.new(doc['srv2'].first)
-assert(so3 <=> so, 0, 'so == so3')
-so4 = ApiObjects::ServerObject.new(doc['srv3'].first)
-assert(so2 <=> so4, 1, 'so4 > so2')
+  def test_server_object_compare
+    doc = YAML.safe_load(%(---
+srv1:
+- url: http://example.com/{var}
+  variables:
+    var:
+      default: "a"
+      enum: ["a", "b"]
+- url: http://example.com/{var2}
+  variables:
+    var2:
+      default: "c"
+      enum: ["c", "d"]
+srv2:
+- url: http://example.com/{var}
+  variables:
+    var:
+      default: "a"
+      enum: ["a", "b"]
+srv3:
+- url: http://example.com/{var2}
+  variables:
+    var2:
+      default: "c"
+))
+    so = ApiObjects::ServerObject.new(doc['srv1'].first)
+    so2 = ApiObjects::ServerObject.new(doc['srv1'].last)
+    assert_equal(so2 <=> so, -1, 'so < so2')
+    so3 = ApiObjects::ServerObject.new(doc['srv2'].first)
+    assert_equal(so3 <=> so, 0, 'so == so3')
+    so4 = ApiObjects::ServerObject.new(doc['srv3'].first)
+    assert_equal(so2 <=> so4, 1, 'so4 > so2')
+  end
 
-$context = 'ServerAlternatives'
-sa1 = ApiObjects::ServerAlternatives.new(doc['srv1'])
-assert(sa1.servers.size, 2, 'all servers present')
-assert(sa1.servers.first.url, 'http://example.com/{var2}', 'sorted')
+  def test_server_alternatives
+    doc = YAML.safe_load(%(---
+srv1:
+- url: http://example.com/{var}
+  variables:
+    var:
+      default: "a"
+      enum: ["a", "b"]
+- url: http://example.com/{var2}
+  variables:
+    var2:
+      default: "c"
+      enum: ["c", "d"]
+srv2:
+- url: http://example.com/{var}
+  variables:
+    var:
+      default: "a"
+      enum: ["a", "b"]
+srv3:
+- url: http://example.com/{var2}
+  variables:
+    var2:
+      default: "c"
+))
+    sa1 = ApiObjects::ServerAlternatives.new(doc['srv1'])
+    assert_equal(sa1.servers.size, 2, 'all servers present')
+    assert_equal(sa1.servers.first.url, 'http://example.com/{var2}', 'sorted')
+  end
 
-$context = 'ServerAlternatives.<=>'
-sa2 = ApiObjects::ServerAlternatives.new(doc['srv2'])
-sa3 = ApiObjects::ServerAlternatives.new(doc['srv3'])
-assert(sa1 <=> sa2, -1, 'sa1 < sa2')
-assert(sa2 <=> sa3, 1, 'sa2 > sa3')
+  def test_server_alternatives_compare
+    doc = YAML.safe_load(%(---
+srv1:
+- url: http://example.com/{var}
+  variables:
+    var:
+      default: "a"
+      enum: ["a", "b"]
+- url: http://example.com/{var2}
+  variables:
+    var2:
+      default: "c"
+      enum: ["c", "d"]
+srv2:
+- url: http://example.com/{var}
+  variables:
+    var:
+      default: "a"
+      enum: ["a", "b"]
+srv3:
+- url: http://example.com/{var2}
+  variables:
+    var2:
+      default: "c"
+))
+    sa1 = ApiObjects::ServerAlternatives.new(doc['srv1'])
+    sa2 = ApiObjects::ServerAlternatives.new(doc['srv2'])
+    sa3 = ApiObjects::ServerAlternatives.new(doc['srv3'])
+    assert_equal(sa1 <=> sa2, -1, 'sa1 < sa2')
+    assert_equal(sa2 <=> sa3, 1, 'sa2 > sa3')
+  end
 
-$context = 'SecurityScheme.<=>'
-akh = {
-  'type' => 'apiKey',
-  'in' => 'header',
-  'name' => 'apih'
-}
-akq = {
-  'type' => 'apiKey',
-  'in' => 'query',
-  'name' => 'apiq'
-}
-ss1 = ApiObjects::SecurityScheme.new('akh', akh)
-ss2 = ApiObjects::SecurityScheme.new('akq', akq)
-assert(ss1.name, 'akh', 'name copied')
-assert(ss1.scheme, akh, 'scheme copied')
-assert(ss1 <=> ss2, -1, 'ss1 < ss2')
-assert(ss2 <=> ss1, 1, 'ss2 > ss1')
-
-$context = 'SecurityRequirementObject'
-h = {
-  'type' => 'http',
-  'scheme' => 'Bearer'
-}
-ss3 = ApiObjects::SecurityScheme.new('http', h)
-oa = {
-  'type' => 'oauth2',
-  'flows' => {
-    'implicit' => {
-      'authorizationUrl' => 'https://www.skjfhaksfjdhf.com/oauth/authorize'
-    },
-    'password' => {
-      'tokenUrl' => 'https://www.skjfhaksfjdhf.com/oauth/token',
-      'scopes' => {}
-    },
-    'clientCredentials' => {
-      'tokenUrl' => 'https://www.skjfhaksfjdhf.com/oauth/token'
-    },
-    'authorizationCode' => {
-      'authorizationUrl' => 'https://www.skjfhaksfjdhf.com/oauth/authorize',
-      'tokenUrl' => 'https://www.skjfhaksfjdhf.com/oauth/token'
+  def test_security_scheme_compare
+    akh = {
+      'type' => 'apiKey',
+      'in' => 'header',
+      'name' => 'apih'
     }
-  }
-}
-ss4 = ApiObjects::SecurityScheme.new('oauth2', oa)
-oidc = {
-  'type' => 'openIdConnect',
-  'openIdConnectUrl' => 'https://www.skjfhaksfjdhf.com/.well-known/openid-configuration'
-}
-ss5 = ApiObjects::SecurityScheme.new('oidc', oidc)
-schemes = {
-  'akh' => ss1,
-  'akq' => ss2,
-  'http' => ss3,
-  'oauth2' => ss4,
-  'oidc' => ss5
-}
-sro1 = ApiObjects::SecurityRequirementObject.new({ 'akh' => [] }, schemes)
-assert(sro1.extras[:headers], { akh['name'] => [] }, 'Header parameter')
-assert(sro1.extras.key?(:query), false, 'no query')
-sro2 = ApiObjects::SecurityRequirementObject.new({ 'akq' => [] }, schemes)
-assert(sro2.extras[:query], { akq['name'] => [] }, 'query parameter')
-assert(sro2.extras.key?(:headers), false, 'no headers')
-sro3 = ApiObjects::SecurityRequirementObject.new({ 'http' => [] }, schemes)
-assert(sro3.extras[:headers], { 'authorization' => [] }, 'http authorization')
-assert(sro3.extras.key?(:query), false, 'no query')
-sro4 = ApiObjects::SecurityRequirementObject.new({ 'oauth2' => [ 'scope' ] }, schemes)
-assert(sro4.extras[:headers], { 'authorization' => [ 'scope' ] }, 'oauth2 authorization')
-assert(sro4.extras.key?(:query), false, 'no query')
-s = %w[scope scope2]
-sro5 = ApiObjects::SecurityRequirementObject.new({ 'oidc' => s }, schemes)
-assert(sro5.extras[:headers], { 'authorization' => s }, 'oidc authorization')
-assert(sro5.extras.key?(:query), false, 'no query')
-sro6 = ApiObjects::SecurityRequirementObject.new({ 'akq' => [], 'http' => s }, schemes)
-assert(sro6.extras[:query], { akq['name'] => [] }, 'query parameter too')
-assert(sro6.extras[:headers], { 'authorization' => s }, 'http authorization too')
+    akq = {
+      'type' => 'apiKey',
+      'in' => 'query',
+      'name' => 'apiq'
+    }
+    ss1 = ApiObjects::SecurityScheme.new('akh', akh)
+    ss2 = ApiObjects::SecurityScheme.new('akq', akq)
+    assert_equal(ss1.name, 'akh', 'name copied')
+    assert_equal(ss1.scheme, akh, 'scheme copied')
+    assert_equal(ss1 <=> ss2, -1, 'ss1 < ss2')
+    assert_equal(ss2 <=> ss1, 1, 'ss2 > ss1')
+  end
 
-$context = 'SecurityRequirementObject.<=>'
-assert(sro1 <=> sro6, -1, 'smaller first')
-assert(sro1 <=> sro2, -1, 'key order')
-sro7 = ApiObjects::SecurityRequirementObject.new({ 'akq' => [ 'scope' ], 'http' => s }, schemes)
-assert(sro7 <=> sro6, 1, 'scope order')
+  def test_security_requirement_object
+    akh = {
+      'type' => 'apiKey',
+      'in' => 'header',
+      'name' => 'apih'
+    }
+    akq = {
+      'type' => 'apiKey',
+      'in' => 'query',
+      'name' => 'apiq'
+    }
+    ss1 = ApiObjects::SecurityScheme.new('akh', akh)
+    ss2 = ApiObjects::SecurityScheme.new('akq', akq)
+    h = {
+      'type' => 'http',
+      'scheme' => 'Bearer'
+    }
+    ss3 = ApiObjects::SecurityScheme.new('http', h)
+    oa = {
+      'type' => 'oauth2',
+      'flows' => {
+        'implicit' => {
+          'authorizationUrl' => 'https://www.skjfhaksfjdhf.com/oauth/authorize'
+        },
+        'password' => {
+          'tokenUrl' => 'https://www.skjfhaksfjdhf.com/oauth/token',
+          'scopes' => {}
+        },
+        'clientCredentials' => {
+          'tokenUrl' => 'https://www.skjfhaksfjdhf.com/oauth/token'
+        },
+        'authorizationCode' => {
+          'authorizationUrl' => 'https://www.skjfhaksfjdhf.com/oauth/authorize',
+          'tokenUrl' => 'https://www.skjfhaksfjdhf.com/oauth/token'
+        }
+      }
+    }
+    ss4 = ApiObjects::SecurityScheme.new('oauth2', oa)
+    oidc = {
+      'type' => 'openIdConnect',
+      'openIdConnectUrl' => 'https://www.skjfhaksfjdhf.com/.well-known/openid-configuration'
+    }
+    ss5 = ApiObjects::SecurityScheme.new('oidc', oidc)
+    schemes = {
+      'akh' => ss1,
+      'akq' => ss2,
+      'http' => ss3,
+      'oauth2' => ss4,
+      'oidc' => ss5
+    }
+    sro1 = ApiObjects::SecurityRequirementObject.new({ 'akh' => [] }, schemes)
+    assert_equal(sro1.extras[:headers], { akh['name'] => [] }, 'Header parameter')
+    assert_equal(sro1.extras.key?(:query), false, 'no query')
+    sro2 = ApiObjects::SecurityRequirementObject.new({ 'akq' => [] }, schemes)
+    assert_equal(sro2.extras[:query], { akq['name'] => [] }, 'query parameter')
+    assert_equal(sro2.extras.key?(:headers), false, 'no headers')
+    sro3 = ApiObjects::SecurityRequirementObject.new({ 'http' => [] }, schemes)
+    assert_equal(sro3.extras[:headers], { 'authorization' => [] }, 'http authorization')
+    assert_equal(sro3.extras.key?(:query), false, 'no query')
+    sro4 = ApiObjects::SecurityRequirementObject.new({ 'oauth2' => [ 'scope' ] }, schemes)
+    assert_equal(sro4.extras[:headers], { 'authorization' => [ 'scope' ] }, 'oauth2 authorization')
+    assert_equal(sro4.extras.key?(:query), false, 'no query')
+    s = %w[scope scope2]
+    sro5 = ApiObjects::SecurityRequirementObject.new({ 'oidc' => s }, schemes)
+    assert_equal(sro5.extras[:headers], { 'authorization' => s }, 'oidc authorization')
+    assert_equal(sro5.extras.key?(:query), false, 'no query')
+    sro6 = ApiObjects::SecurityRequirementObject.new({ 'akq' => [], 'http' => s }, schemes)
+    assert_equal(sro6.extras[:query], { akq['name'] => [] }, 'query parameter too')
+    assert_equal(sro6.extras[:headers], { 'authorization' => s }, 'http authorization too')
+  end
 
-$context = 'SecurityAlternatives'
-sa1 = ApiObjects::SecurityAlternatives.new([sro1], schemes)
-assert(sa1.sros, [sro1], 'sros set')
-assert(sa1.schemes, schemes, 'schemes set')
+  def test_security_requirement_object_compare
+    akh = {
+      'type' => 'apiKey',
+      'in' => 'header',
+      'name' => 'apih'
+    }
+    akq = {
+      'type' => 'apiKey',
+      'in' => 'query',
+      'name' => 'apiq'
+    }
+    ss1 = ApiObjects::SecurityScheme.new('akh', akh)
+    ss2 = ApiObjects::SecurityScheme.new('akq', akq)
+    h = {
+      'type' => 'http',
+      'scheme' => 'Bearer'
+    }
+    ss3 = ApiObjects::SecurityScheme.new('http', h)
+    oa = {
+      'type' => 'oauth2',
+      'flows' => {
+        'implicit' => {
+          'authorizationUrl' => 'https://www.skjfhaksfjdhf.com/oauth/authorize'
+        },
+        'password' => {
+          'tokenUrl' => 'https://www.skjfhaksfjdhf.com/oauth/token',
+          'scopes' => {}
+        },
+        'clientCredentials' => {
+          'tokenUrl' => 'https://www.skjfhaksfjdhf.com/oauth/token'
+        },
+        'authorizationCode' => {
+          'authorizationUrl' => 'https://www.skjfhaksfjdhf.com/oauth/authorize',
+          'tokenUrl' => 'https://www.skjfhaksfjdhf.com/oauth/token'
+        }
+      }
+    }
+    ss4 = ApiObjects::SecurityScheme.new('oauth2', oa)
+    oidc = {
+      'type' => 'openIdConnect',
+      'openIdConnectUrl' => 'https://www.skjfhaksfjdhf.com/.well-known/openid-configuration'
+    }
+    ss5 = ApiObjects::SecurityScheme.new('oidc', oidc)
+    schemes = {
+      'akh' => ss1,
+      'akq' => ss2,
+      'http' => ss3,
+      'oauth2' => ss4,
+      'oidc' => ss5
+    }
+    sro1 = ApiObjects::SecurityRequirementObject.new({ 'akh' => [] }, schemes)
+    sro2 = ApiObjects::SecurityRequirementObject.new({ 'akq' => [] }, schemes)
+    s = %w[scope scope2]
+    sro6 = ApiObjects::SecurityRequirementObject.new({ 'akq' => [], 'http' => s }, schemes)
+    assert_equal(sro1 <=> sro6, -1, 'smaller first')
+    assert_equal(sro1 <=> sro2, -1, 'key order')
+    sro7 = ApiObjects::SecurityRequirementObject.new({ 'akq' => [ 'scope' ], 'http' => s }, schemes)
+    assert_equal(sro7 <=> sro6, 1, 'scope order')
+  end
 
-$context = 'SecurityAlternatives.<=>'
-sa2 = ApiObjects::SecurityAlternatives.new([sro6], schemes)
-sa3 = ApiObjects::SecurityAlternatives.new([sro1], schemes)
-assert(sa1 <=> sa2, -1, 'smaller first')
-assert(sa1 <=> sa3, 0, 'equal')
+  def test_security_alternatives
+    akh = {
+      'type' => 'apiKey',
+      'in' => 'header',
+      'name' => 'apih'
+    }
+    ss1 = ApiObjects::SecurityScheme.new('akh', akh)
+    akq = {
+      'type' => 'apiKey',
+      'in' => 'query',
+      'name' => 'apiq'
+    }
+    ss2 = ApiObjects::SecurityScheme.new('akq', akq)
+    h = {
+      'type' => 'http',
+      'scheme' => 'Bearer'
+    }
+    ss3 = ApiObjects::SecurityScheme.new('http', h)
+    schemes = {
+      'akh' => ss1,
+      'akq' => ss2,
+      'http' => ss3
+    }
+    sro1 = ApiObjects::SecurityRequirementObject.new({ 'akh' => [] }, schemes)
+    sa1 = ApiObjects::SecurityAlternatives.new([sro1], schemes)
+    assert_equal(sa1.sros, [sro1], 'sros set')
+    assert_equal(sa1.schemes, schemes, 'schemes set')
+  end
 
-$context = 'ValueRetainer'
-ret = ApiObjects::ValueRetainer.new('trigger')
-doc = YAML.safe_load(%(---
+  def test_security_alternatives_compare
+    akh = {
+      'type' => 'apiKey',
+      'in' => 'header',
+      'name' => 'apih'
+    }
+    ss1 = ApiObjects::SecurityScheme.new('akh', akh)
+    akq = {
+      'type' => 'apiKey',
+      'in' => 'query',
+      'name' => 'apiq'
+    }
+    ss2 = ApiObjects::SecurityScheme.new('akq', akq)
+    h = {
+      'type' => 'http',
+      'scheme' => 'Bearer'
+    }
+    ss3 = ApiObjects::SecurityScheme.new('http', h)
+    schemes = {
+      'akh' => ss1,
+      'akq' => ss2,
+      'http' => ss3
+    }
+    sro1 = ApiObjects::SecurityRequirementObject.new({ 'akh' => [] }, schemes)
+    s = %w[scope scope2]
+    sro6 = ApiObjects::SecurityRequirementObject.new({ 'akq' => [], 'http' => s }, schemes)
+    sa1 = ApiObjects::SecurityAlternatives.new([sro1], schemes)
+    sa2 = ApiObjects::SecurityAlternatives.new([sro6], schemes)
+    sa3 = ApiObjects::SecurityAlternatives.new([sro1], schemes)
+    assert_equal(sa1 <=> sa2, -1, 'smaller first')
+    assert_equal(sa1 <=> sa3, 0, 'equal')
+  end
+
+  def test_value_retainer
+    ret = ApiObjects::ValueRetainer.new('trigger')
+    doc = YAML.safe_load(%(---
 top:
   parent:
     trigger:
@@ -428,8 +693,8 @@ top:
   same:
     other: value
 ))
-ret.process(doc)
-expected = YAML.safe_load(%(---
+    ret.process(doc)
+    expected = YAML.safe_load(%(---
 top:
   parent:
     trigger:
@@ -448,14 +713,15 @@ top:
   same:
     other: value
 ))
-assert(ApiObjects.same(doc, expected), true, 'triggers remain')
+    assert_equal(ApiObjects.same(doc, expected), true, 'triggers remain')
+  end
 
-$context = 'ValueReplacer'
-path = 'testing'
-prefix = 'Prefix'
-cmp = ApiObjects::Components.new(path, prefix)
-rep = ApiObjects::ValueReplacer.new('trigger', cmp)
-doc = YAML.safe_load(%(---
+  def test_value_replacer
+    path = 'testing'
+    prefix = 'Prefix'
+    cmp = ApiObjects::Components.new(path, prefix)
+    rep = ApiObjects::ValueReplacer.new('trigger', cmp)
+    doc = YAML.safe_load(%(---
 top:
   indifferent:
     trigger:
@@ -472,20 +738,21 @@ testing:
     key: value
     key2: value2
 ))
-cmp.items = doc['testing']
-rep.replace(doc['top'])
-assert(doc.dig('top', 'indifferent', 'trigger', '$ref'), 'testing/Prefix0x', 'replaced hash')
-assert(doc.dig('top', 'something', 'trigger').first['$ref'], 'testing/Prefix0x', 'replaced in array')
-assert(doc.dig('top', 'something', 'trigger')[1]['$ref'], 'testing/Prefix1x', 'replaced 2nd in array')
-assert(doc.dig('top', 'something', 'trigger')[2]['$ref'], 'testing/Prefix0x', 'kept 3rd in array')
-assert(cmp.items.size, 2, 'added one item')
+    cmp.items = doc['testing']
+    rep.replace(doc['top'])
+    assert_equal(doc.dig('top', 'indifferent', 'trigger', '$ref'), 'testing/Prefix0x', 'replaced hash')
+    assert_equal(doc.dig('top', 'something', 'trigger').first['$ref'], 'testing/Prefix0x', 'replaced in array')
+    assert_equal(doc.dig('top', 'something', 'trigger')[1]['$ref'], 'testing/Prefix1x', 'replaced 2nd in array')
+    assert_equal(doc.dig('top', 'something', 'trigger')[2]['$ref'], 'testing/Prefix0x', 'kept 3rd in array')
+    assert_equal(cmp.items.size, 2, 'added one item')
+  end
 
-$context = 'ValueSubValueReplacer'
-path = 'testing'
-prefix = 'Prefix'
-cmp = ApiObjects::Components.new(path, prefix)
-rep = ApiObjects::ValueSubValueReplacer.new('trigger', cmp)
-doc = YAML.safe_load(%(---
+  def test_value_sub_value_replacer
+    path = 'testing'
+    prefix = 'Prefix'
+    cmp = ApiObjects::Components.new(path, prefix)
+    rep = ApiObjects::ValueSubValueReplacer.new('trigger', cmp)
+    doc = YAML.safe_load(%(---
 top:
   indifferent:
     trigger:
@@ -510,16 +777,16 @@ testing:
   Prefix0x:
     key: value
 ))
-cmp.items = doc['testing']
-rep.replace(doc['top'])
-assert(doc.dig('top', 'indifferent', 'trigger', 'something', '$ref'), 'testing/Prefix1x', 'replaced hash')
-assert(doc.dig('top', 'indifferent', 'trigger', 'else', '$ref'), 'testing/Prefix0x', 'replaced hash')
-assert(doc.dig('top', 'indifferent', 'trigger', 'key'), 'value', 'non-hash kept')
-assert(doc.dig('top', 'something', 'arrayvalue')[0]['key2'], 'value2', 'non-hash not replaced in array')
-assert(doc.dig('top', 'something', 'arrayvalue')[1]['other'], 'value', 'non-hash not replaced in array')
-assert(doc.dig('top', 'something', 'arrayvalue')[2].dig('trigger', 'key'), 'value', 'non-hash not replaced in array')
-assert(doc.dig('top', 'something', 'arrayvalue')[2].dig('trigger', 'object', '$ref'), 'testing/Prefix1x', 'replaced in array')
-assert(doc.dig('top', 'something', 'arrayvalue')[3].dig('trigger', 'middle', '$ref'), 'testing/Prefix0x', 'kept ref in array')
-assert(cmp.items.size, 2, 'added 1')
-
-exit $unit_test
+    cmp.items = doc['testing']
+    rep.replace(doc['top'])
+    assert_equal(doc.dig('top', 'indifferent', 'trigger', 'something', '$ref'), 'testing/Prefix1x', 'replaced hash')
+    assert_equal(doc.dig('top', 'indifferent', 'trigger', 'else', '$ref'), 'testing/Prefix0x', 'replaced hash')
+    assert_equal(doc.dig('top', 'indifferent', 'trigger', 'key'), 'value', 'non-hash kept')
+    assert_equal(doc.dig('top', 'something', 'arrayvalue')[0]['key2'], 'value2', 'non-hash not replaced in array')
+    assert_equal(doc.dig('top', 'something', 'arrayvalue')[1]['other'], 'value', 'non-hash not replaced in array')
+    assert_equal(doc.dig('top', 'something', 'arrayvalue')[2].dig('trigger', 'key'), 'value', 'non-hash not replaced in array')
+    assert_equal(doc.dig('top', 'something', 'arrayvalue')[2].dig('trigger', 'object', '$ref'), 'testing/Prefix1x', 'replaced in array')
+    assert_equal(doc.dig('top', 'something', 'arrayvalue')[3].dig('trigger', 'middle', '$ref'), 'testing/Prefix0x', 'kept ref in array')
+    assert_equal(cmp.items.size, 2, 'added 1')
+  end
+end

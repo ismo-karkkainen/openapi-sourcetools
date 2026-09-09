@@ -1,36 +1,34 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright 2024-2025 Ismo Kärkkäinen
+# Copyright 2024-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
-require_relative '../shared/unittest'
+require 'test/unit'
 require_relative '../lib/openapi/sourcetools/apiobjects'
-require 'yaml'
-
-path = '#/components/parameters'
-
-$unit_test = 0
 load '../bin/openapi-addparameters'
+require 'yaml'
+include Test::Unit::Assertions
 include OpenAPISourceTools
 
-$context = 'replace_parameter'
-c = ApiObjects::Components.new(path, 'Parameter')
-a = 'not hash'
-assert(replace_parameter(a, c), a, 'Same returned when not a hash')
-a = { '$ref' => 3, b: 3 }
-b = replace_parameter(a, c)
-assert(b.key?(:b), true, 'Output has b')
-assert(a, b, 'Same returned when has ref')
-a = { b: 3 }
-b = replace_parameter(a, c)
-assert(b.key?('$ref'), true, 'Ref returned')
-assert(b.size, 1, 'Only ref')
-assert(c.items.size, 1, 'Ref in components')
+class AddParametersTest < Test::Unit::TestCase
+  def test_replace_parameter
+    c = ApiObjects::Components.new('#/components/parameters', 'Parameter')
+    a = 'not hash'
+    assert_equal(replace_parameter(a, c), a, 'Same returned when not a hash')
+    a = { '$ref' => 3, b: 3 }
+    b = replace_parameter(a, c)
+    assert_equal(b.key?(:b), true, 'Output has b')
+    assert_equal(a, b, 'Same returned when has ref')
+    a = { b: 3 }
+    b = replace_parameter(a, c)
+    assert_equal(b.key?('$ref'), true, 'Ref returned')
+    assert_equal(b.size, 1, 'Only ref')
+    assert_equal(c.items.size, 1, 'Ref in components')
+  end
 
-$context = 'replace_parameters'
-def get_doc
-  YAML.safe_load(%(
+  def get_doc
+    YAML.safe_load(%(
 ---
 paths:
   something:
@@ -76,56 +74,60 @@ components:
       schema:
         "$ref": "#/components/schemas/TopName"
 ))
-end
-obj = get_doc.dig('paths', 'something')
-c = ApiObjects::Components.new(path, 'Parameter')
-c.items = get_doc.dig('components', 'parameters')
-replace_parameters(obj, c)
-r = c.items
-assert(obj.dig('get', 'parameters').first.key?('$ref'), true, 'Ref1 made')
-assert(obj.dig('get', 'parameters').last.key?('$ref'), true, 'Ref2 made')
-assert(obj.dig('get', 'parameters').last['$ref'],
-  obj.dig('parameters').first['$ref'], 'Same ref')
-assert(obj.dig('get', 'parameters').first['$ref'],
-  obj.dig('put', 'parameters').first['$ref'], 'Ref3 same as ref1')
-assert(obj.dig('parameters').first['$ref'],
-  get_doc.dig('paths', 'something', 'parameters').first['$ref'], 'Ref remains')
-obj = get_doc.dig('paths', 'otherthing')
-replace_parameters(obj, c)
-assert(obj.dig('method', 'parameters').first.key?('$ref'), true, 'Ref added')
+  end
 
-$context = 'ref_name'
-assert(ref_name('#/components/parameters/Name'), 'Name', 'Name found')
-assert(ref_name('#/components/Name'), 'Name', 'Name still found')
-assert(ref_name('#/Name'), 'Name', 'Prefix does not matter')
-assert(ref_name('Name'), 'Name', 'No slash anywhere')
+  def test_replace_parameters
+    obj = get_doc.dig('paths', 'something')
+    c = ApiObjects::Components.new('#/components/parameters', 'Parameter')
+    c.items = get_doc.dig('components', 'parameters')
+    replace_parameters(obj, c)
+    r = c.items
+    assert_equal(obj.dig('get', 'parameters').first.key?('$ref'), true, 'Ref1 made')
+    assert_equal(obj.dig('get', 'parameters').last.key?('$ref'), true, 'Ref2 made')
+    assert_equal(obj.dig('get', 'parameters').last['$ref'],
+      obj.dig('parameters').first['$ref'], 'Same ref')
+    assert_equal(obj.dig('get', 'parameters').first['$ref'],
+      obj.dig('put', 'parameters').first['$ref'], 'Ref3 same as ref1')
+    assert_equal(obj.dig('parameters').first['$ref'],
+      get_doc.dig('paths', 'something', 'parameters').first['$ref'], 'Ref remains')
+    obj = get_doc.dig('paths', 'otherthing')
+    replace_parameters(obj, c)
+    assert_equal(obj.dig('method', 'parameters').first.key?('$ref'), true, 'Ref added')
+  end
 
-$context = 'nameloc2ref'
-refd = {
-  'Query' => { 'in' => 'query', 'name' => 'aaa' },
-  'Header' => { 'in' => 'header', 'name' => 'bbb' },
-  'Path' => { 'in' => 'path', 'name' => 'ccc' },
-  'Cookie' => { 'in' => 'cookie', 'name' => 'ddd' }
-}
-nl2r = nameloc2ref([], refd)
-assert(nl2r.empty?, true, 'no params')
-p = { '$ref' => '#/components/parameters/Header' }
-nl2r = nameloc2ref([ p ], refd)
-assert(nl2r.key?('bbb header'), true, 'name and location')
-assert(nl2r['bbb header'], p, 'original reference')
-p2 = { '$ref' => '#/something/Path' }
-p3 = { '$ref' => '#/Query' }
-p4 = { '$ref' => 'Cookie' }
-nl2r = nameloc2ref([ p, p2, p3, p4 ], refd)
-[ 'aaa query', 'bbb header', 'ccc path', 'ddd cookie' ].each do |key|
-  assert(nl2r.key?(key), true, "Key #{key} found")
-  r = nl2r[key]
-  assert(r.key?('$ref'), true, "Key #{key} has a ref")
-end
+  def test_ref_name
+    assert_equal(ref_name('#/components/parameters/Name'), 'Name', 'Name found')
+    assert_equal(ref_name('#/components/Name'), 'Name', 'Name still found')
+    assert_equal(ref_name('#/Name'), 'Name', 'Prefix does not matter')
+    assert_equal(ref_name('Name'), 'Name', 'No slash anywhere')
+  end
 
-$context = 'add_operations_parameters'
-def get_doc2
-  YAML.safe_load(%(
+  def test_nameloc2ref
+    refd = {
+      'Query' => { 'in' => 'query', 'name' => 'aaa' },
+      'Header' => { 'in' => 'header', 'name' => 'bbb' },
+      'Path' => { 'in' => 'path', 'name' => 'ccc' },
+      'Cookie' => { 'in' => 'cookie', 'name' => 'ddd' }
+    }
+    nl2r = nameloc2ref([], refd)
+    assert_equal(nl2r.empty?, true, 'no params')
+    p = { '$ref' => '#/components/parameters/Header' }
+    nl2r = nameloc2ref([ p ], refd)
+    assert_equal(nl2r.key?('bbb header'), true, 'name and location')
+    assert_equal(nl2r['bbb header'], p, 'original reference')
+    p2 = { '$ref' => '#/something/Path' }
+    p3 = { '$ref' => '#/Query' }
+    p4 = { '$ref' => 'Cookie' }
+    nl2r = nameloc2ref([ p, p2, p3, p4 ], refd)
+    [ 'aaa query', 'bbb header', 'ccc path', 'ddd cookie' ].each do |key|
+      assert_equal(nl2r.key?(key), true, "Key #{key} found")
+      r = nl2r[key]
+      assert_equal(r.key?('$ref'), true, "Key #{key} has a ref")
+    end
+  end
+
+  def get_doc2
+    YAML.safe_load(%(
 ---
 paths:
   something:
@@ -178,31 +180,33 @@ components:
       schema:
         "$ref": "#/components/schemas/TopName"
 ))
-end
-doc = get_doc2
-add_operations_parameters(doc['paths'], doc.dig('components', 'parameters'))
-oo = doc.dig('paths', 'something', 'get')
-assert(oo.key?('parameters'), true, 'has parameters')
-assert(oo['parameters'].size, 3, 'has three parameters')
-%w[Something1 Something2 Something3].each do |name|
-  assert(oo['parameters'].index { |p| p['$ref'] == "#/components/parameters/#{name}" }.nil?, false, "#{name} is present")
-end
-oo = doc.dig('paths', 'something', 'put')
-assert(oo.key?('parameters'), true, 'has parameters')
-assert(oo['parameters'].size, 2, 'has two parameters')
-%w[TopName Something1].each do |name|
-  assert(oo['parameters'].index { |p| p['$ref'] == "#/components/parameters/#{name}" }.nil?, false, "#{name} is present")
-end
-oo = doc.dig('paths', 'something', 'method')
-assert(oo.key?('parameters'), false, 'no parameters')
-oo = doc.dig('paths', 'otherthing', 'method')
-assert(oo.key?('parameters'), true, 'has parameters')
-assert(oo['parameters'].size, 1, 'has one parameter')
-orig = get_doc2
-assert(oo['parameters'].first, orig.dig('paths', 'otherthing', 'method', 'parameters').first, 'has same parameter')
-ps = doc.dig('paths', 'something', 'parameters')
-assert(ps.is_a?(Array), true, 'parameters is still an array')
-assert(ps.size, 1, 'parameters size is 1')
-assert(ps.first, orig.dig('paths', 'something', 'parameters').first, 'same item')
+  end
 
-exit $unit_test
+  def test_add_operations_parameters
+    doc = get_doc2
+    add_operations_parameters(doc['paths'], doc.dig('components', 'parameters'))
+    oo = doc.dig('paths', 'something', 'get')
+    assert_equal(oo.key?('parameters'), true, 'has parameters')
+    assert_equal(oo['parameters'].size, 3, 'has three parameters')
+    %w[Something1 Something2 Something3].each do |name|
+      assert_equal(oo['parameters'].index { |p| p['$ref'] == "#/components/parameters/#{name}" }.nil?, false, "#{name} is present")
+    end
+    oo = doc.dig('paths', 'something', 'put')
+    assert_equal(oo.key?('parameters'), true, 'has parameters')
+    assert_equal(oo['parameters'].size, 2, 'has two parameters')
+    %w[TopName Something1].each do |name|
+      assert_equal(oo['parameters'].index { |p| p['$ref'] == "#/components/parameters/#{name}" }.nil?, false, "#{name} is present")
+    end
+    oo = doc.dig('paths', 'something', 'method')
+    assert_equal(oo.key?('parameters'), false, 'no parameters')
+    oo = doc.dig('paths', 'otherthing', 'method')
+    assert_equal(oo.key?('parameters'), true, 'has parameters')
+    assert_equal(oo['parameters'].size, 1, 'has one parameter')
+    orig = get_doc2
+    assert_equal(oo['parameters'].first, orig.dig('paths', 'otherthing', 'method', 'parameters').first, 'has same parameter')
+    ps = doc.dig('paths', 'something', 'parameters')
+    assert_equal(ps.is_a?(Array), true, 'parameters is still an array')
+    assert_equal(ps.size, 1, 'parameters size is 1')
+    assert_equal(ps.first, orig.dig('paths', 'something', 'parameters').first, 'same item')
+  end
+end

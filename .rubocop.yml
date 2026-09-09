@@ -7,6 +7,8 @@ Layout/EmptyLinesAroundAttributeAccessor:
   Enabled: false
 Layout/EmptyLines:
   Enabled: false
+Layout/FirstHashElementIndentation:
+  Enabled: false
 Layout/HeredocIndentation:
   Enabled: false
 Layout/LineLength:
@@ -22,6 +24,8 @@ Metrics/BlockLength:
   Enabled: false
 Metrics/BlockNesting:
   Enabled: false
+Metrics/ClassLength:
+  Enabled: false
 Metrics/CyclomaticComplexity:
   Enabled: false
 Metrics/MethodLength:
@@ -36,6 +40,8 @@ Naming/HeredocDelimiterNaming:
 
 Style/AccessorGrouping:
   Enabled: false
+Style/ConditionalAssignment:
+  Enabled: false
 Style/RedundantPercentQ:
   Enabled: false
 Style/StderrPuts:
@@ -43,6 +49,8 @@ Style/StderrPuts:
 Style/TernaryParentheses:
   Enabled: false
 Style/IfUnlessModifier:
+  Enabled: false
+Style/MixinUsage:
   Enabled: false
 
 Lint/AmbiguousOperatorPrecedence:

@@ -1,0 +1,29 @@
+---
+# Test nested structure ordering
+info:
+  version: 1.0.0
+  title: Nested API
+  description: Testing nested structures
+  contact:
+    email: test@example.com
+    name: Test Team
+    url: https://example.com
+  license:
+    url: https://opensource.org/licenses/MIT
+    name: MIT
+paths:
+  /users:
+    get:
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: {}
+                  name: {}
+      description: Get users
+      operationId: getUsers
+      parameters: []

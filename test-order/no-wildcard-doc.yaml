@@ -1,0 +1,7 @@
+---
+# Test order without wildcard - unmatched keys should go last
+first: 1
+second: 2
+unmatched1: should be second to last
+unmatched2: should be last
+third: 3

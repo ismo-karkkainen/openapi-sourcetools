@@ -1,35 +1,19 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright 2024-2025 Ismo Kärkkäinen
+# Copyright 2024-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
-require_relative '../shared/unittest'
+require 'test/unit'
 require_relative '../lib/openapi/sourcetools/apiobjects'
-require 'yaml'
-
-path = '#/components/parameters'
-
-$unit_test = 0
 load '../bin/openapi-addsecurityschemes'
+require 'yaml'
 include OpenAPISourceTools
+include Test::Unit::Assertions
 
-$context = 'add_combinations'
-combos = Set.new
-sec = { 'one' => 'value' }
-add_combinations(combos, [ sec ])
-assert(combos.size, 1, 'One combination added')
-assert(combos.to_a.first, [ 'one' ], 'array of one')
-sec = { 'two' => 'two', 'three' => 1 }
-add_combinations(combos, [ sec ])
-assert(combos.include?([ 'three', 'two' ]), true, 'has sorted key array')
-assert(combos.size, 2, 'has two members')
-add_combinations(combos, [ {} ])
-assert(combos.size, 2, 'no empty array added')
-
-$context = 'gather_security'
-def get_doc
-  YAML.safe_load(%(
+class AddSecuritySchemesTest < Test::Unit::TestCase
+  def get_doc
+    YAML.safe_load(%(
 ---
 security:
 - token: []
@@ -98,57 +82,82 @@ components:
     different:
       type: mutualTLS
 ))
-end
-doc = get_doc
-s, oos, combos = gather_security(doc)
-assert(s, doc['security'], 'security present')
-assert(oos.size, 4, 'all operation objects')
-%w[getSomething postSomething putSomething methodOtherthing].each do |oid|
-  assert(oos.index { |oo| oo['operationId'] == oid }.nil?, false, "operation ID #{oid}")
-end
-assert(combos.size, 4, 'all combinations')
-[ %w[token], %w[other some], %w[different], %w[missing] ].each do |key|
-  assert(combos.include?(key), true, "#{key} present")
-end
+  end
 
-$context = 'check_security'
-assert(check_security(doc, combos), false, 'missing found')
-doc = get_doc
-doc['security'].pop
-top_level_security, oos, combos = gather_security(doc)
-assert(check_security(doc, combos), true, 'nothing missing')
+  def test_add_combinations
+    combos = Set.new
+    sec = { 'one' => 'value' }
+    add_combinations(combos, [ sec ])
+    assert_equal(combos.size, 1, 'One combination added')
+    assert_equal(combos.to_a.first, [ 'one' ], 'array of one')
+    sec = { 'two' => 'two', 'three' => 1 }
+    add_combinations(combos, [ sec ])
+    assert_equal(combos.include?([ 'three', 'two' ]), true, 'has sorted key array')
+    assert_equal(combos.size, 2, 'has two members')
+    add_combinations(combos, [ {} ])
+    assert_equal(combos.size, 2, 'no empty array added')
+  end
 
-$context = 'namelist2security'
-assert(namelist2security({}), '', 'empty hash, empty string')
-assert(namelist2security({ 'only' => [ 0 ] }), 'only', 'one key')
-assert(namelist2security({ 'last' => [], 'first' => [ 0 ] }), 'first last', 'sorted names')
+  def test_gather_security
+    doc = get_doc
+    s, oos, combos = gather_security(doc)
+    assert_equal(s, doc['security'], 'security present')
+    assert_equal(oos.size, 4, 'all operation objects')
+    %w[getSomething postSomething putSomething methodOtherthing].each do |oid|
+      assert_equal(oos.index { |oo| oo['operationId'] == oid }.nil?, false, "operation ID #{oid}")
+    end
+    assert_equal(combos.size, 4, 'all combinations')
+    [ %w[token], %w[other some], %w[different], %w[missing] ].each do |key|
+      assert_equal(combos.include?(key), true, "#{key} present")
+    end
+  end
 
-$context = 'security2hash'
-assert(security2hash([]), {}, 'empty array, empty hash')
-only = { 'only' => [ 0 ] }
-assert(security2hash([ only ]), { 'only' => only }, 'one key to hash')
-first_last = { 'last' => [], 'first' => [ 0 ] }
-assert(security2hash([ first_last ]), { 'first last' => first_last }, 'combined name')
-one = { 'one' => [] }
-two = { 'two' => [] }
-assert(security2hash([ one, two ]), { 'one' => one, 'two' => two }, 'two items')
+  def test_check_security
+    doc = get_doc
+    _top_level_security, _oos, combos = gather_security(doc)
+    assert_equal(check_security(doc, combos), false, 'missing found')
+    doc = get_doc
+    doc['security'].pop
+    _top_level_security, _oos, combos = gather_security(doc)
+    assert_equal(check_security(doc, combos), true, 'nothing missing')
+  end
 
-$context = 'add_security_to_operations'
-add_security_to_operations(oos, top_level_security)
-expectations = {
-  'getSomething' => [ [] ],
-  'postSomething' => [],
-  'putSomething' => [ %w[other some], %w[token] ],
-  'methodOtherthing' => [ %w[different] ]
-}
-oos.each do |oo|
-  sec = oo['security']
-  assert(sec.nil?, false, 'has security')
-  expected = expectations[oo['operationId']]
-  assert(sec.size, expected.size, 'expected number of items')
-  expected.size.times do |idx|
-    assert(sec[idx].keys.sort!, expected[idx], 'same keys')
+  def test_namelist2security
+    assert_equal(namelist2security({}), '', 'empty hash, empty string')
+    assert_equal(namelist2security({ 'only' => [ 0 ] }), 'only', 'one key')
+    assert_equal(namelist2security({ 'last' => [], 'first' => [ 0 ] }), 'first last', 'sorted names')
+  end
+
+  def test_security2hash
+    assert_equal(security2hash([]), {}, 'empty array, empty hash')
+    only = { 'only' => [ 0 ] }
+    assert_equal(security2hash([ only ]), { 'only' => only }, 'one key to hash')
+    first_last = { 'last' => [], 'first' => [ 0 ] }
+    assert_equal(security2hash([ first_last ]), { 'first last' => first_last }, 'combined name')
+    one = { 'one' => [] }
+    two = { 'two' => [] }
+    assert_equal(security2hash([ one, two ]), { 'one' => one, 'two' => two }, 'two items')
+  end
+
+  def test_add_security_to_operations
+    doc = get_doc
+    doc['security'].pop
+    top_level_security, oos, _combos = gather_security(doc)
+    add_security_to_operations(oos, top_level_security)
+    expectations = {
+      'getSomething' => [ [] ],
+      'postSomething' => [],
+      'putSomething' => [ %w[other some], %w[token] ],
+      'methodOtherthing' => [ %w[different] ]
+    }
+    oos.each do |oo|
+      sec = oo['security']
+      assert_equal(sec.nil?, false, 'has security')
+      expected = expectations[oo['operationId']]
+      assert_equal(sec.size, expected.size, 'expected number of items')
+      expected.size.times do |idx|
+        assert_equal(sec[idx].keys.sort!, expected[idx], 'same keys')
+      end
+    end
   end
 end
-
-exit $unit_test

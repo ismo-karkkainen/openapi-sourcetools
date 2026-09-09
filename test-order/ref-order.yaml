@@ -1,0 +1,40 @@
+---
+x-order:
+- paths
+- components
+paths:
+  '*':
+    x-order:
+    - parameters
+    - '*'
+    parameters:
+      x-order:
+      - '*'
+      '*':
+        x-order:
+        - $ref
+        - name
+        - in
+        - schema
+    '*':
+      x-order:
+      - responses
+      responses:
+        x-order:
+        - '*'
+        '*':
+          x-order:
+          - $ref
+          - description
+components:
+  x-order:
+  - parameters
+  parameters:
+    x-order:
+    - '*'
+    '*':
+      x-order:
+      - name
+      - in
+      - required
+      - schema

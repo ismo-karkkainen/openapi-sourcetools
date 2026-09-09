@@ -1,0 +1,7 @@
+---
+x-order:
+- name
+- description
+- re:^x
+- '*'
+- re:example[s]?$

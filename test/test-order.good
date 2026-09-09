@@ -1,0 +1,94 @@
+####COMMAND Invalid output file
+####CODE 3
+####OUT
+####ERR
+No such file or directory @ rb_sysopen - /in/valid
+Failed to write output: /in/valid
+####COMMAND Invalid input file
+####CODE 2
+####OUT
+####ERR
+Could not load /in/valid
+####COMMAND Invalid order file
+####CODE 4
+####OUT
+####ERR
+Could not load /in/valid
+####COMMAND Invalid format
+####CODE 1
+####OUT
+####ERR
+Unknown format: invalid
+####COMMAND Output default order
+####CODE 0
+####OUT
+---
+openapi-order-metadata:
+  key: "x-order"
+  regexp: "re:"
+# Generic orders for any location of a key.
+'**':
+  servers:
+    x-order: &ServerObject_order
+    - url
+    - name
+    - description
+    - variables
+    '*':
+      x-order: &ServerObject
+      - name
+      - description
+      variables:
+        x-order:
+        - '*'
+        '*':
+          x-order: &ServerVariableObject
+          - description
+          - enum
+          - default
+  server: *ServerObject
+  parameters:
+    x-order: &ParameterObject_order
+    - name
+    - in
+    '*': &ParameterObject
+      x-order:
+      - '$ref'
+      - name
+      - in
+      - required
+      - deprecated
+      - description
+      - content
+      - schema
+      - '*'
+      - re:^example[s]?$
+  schema: &Schema
+    x-order:
+    - '$ref'
+    - title
+    - description
+    - deprecated
+    - type
+    - format
+    - enum
+    - const
+    - default
+    - readOnly
+    - writeOnly
+    # Numeric types.
+    - minimum
+    - exclusiveMinimum
+    - exclusiveMaximum
+    - maximum
+    - multipleOf
+####ERR
+####COMMAND Help
+####CODE 0
+####OUT
+Usage: openapi-order [options]
+
+Options:
+  -i, --input FILE     Read API spec from FILE, not stdin.
+  -o, --output FILE    Output to FILE, not stdout.
+####ERR

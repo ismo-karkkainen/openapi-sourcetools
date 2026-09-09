@@ -1,0 +1,516 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# By Claude Code. With human edits.
+
+require 'test/unit'
+require_relative '../lib/openapi/sourcetools/order'
+include Test::Unit::Assertions
+include OpenAPISourceTools
+
+class ArrayItemCompareTest < Test::Unit::TestCase
+  def test_equal_values
+    a = { values: [1, 2, 3] }
+    b = { values: [1, 2, 3] }
+    assert_equal(0, Ordering.array_item_compare(a, b), 'identical values')
+  end
+
+  def test_less_than
+    a = { values: [1, 2, 3] }
+    b = { values: [1, 3, 3] }
+    assert_equal(-1, Ordering.array_item_compare(a, b), 'a < b at index 1')
+  end
+
+  def test_greater_than
+    a = { values: [1, 4, 3] }
+    b = { values: [1, 2, 3] }
+    assert_equal(1, Ordering.array_item_compare(a, b), 'a > b at index 1')
+  end
+
+  def test_nil_a_non_nil_b
+    a = { values: [nil, 2] }
+    b = { values: [1, 2] }
+    assert_equal(1, Ordering.array_item_compare(a, b), 'nil a pushes to end')
+  end
+
+  def test_non_nil_a_nil_b
+    a = { values: [1, 2] }
+    b = { values: [nil, 2] }
+    assert_equal(-1, Ordering.array_item_compare(a, b), 'nil b pushes to end')
+  end
+
+  def test_both_nil
+    a = { values: [nil, 2] }
+    b = { values: [nil, 3] }
+    assert_equal(-1, Ordering.array_item_compare(a, b), 'both nil, compare next')
+  end
+
+  def test_string_values
+    a = { values: ['apple', 'banana'] }
+    b = { values: ['apple', 'cherry'] }
+    assert_equal(-1, Ordering.array_item_compare(a, b), 'string comparison')
+  end
+
+  def test_empty_values
+    a = { values: [] }
+    b = { values: [] }
+    assert_equal(0, Ordering.array_item_compare(a, b), 'empty arrays equal')
+  end
+
+  def test_single_value
+    a = { values: [5] }
+    b = { values: [3] }
+    assert_equal(1, Ordering.array_item_compare(a, b), 'single value comparison')
+  end
+end
+
+class KeyPatternTest < Test::Unit::TestCase
+  def test_initialize
+    pat = Regexp.new('^foo$')
+    kp = Ordering::KeyPattern.new(pat, 0, 0)
+    assert_equal(pat, kp.pattern, 'pattern stored')
+    assert_equal(0, kp.index, 'index stored')
+    assert_equal(0, kp.priority, 'priority stored')
+  end
+
+  def test_match_succeeds
+    kp = Ordering::KeyPattern.new(Regexp.new('^foo$'), 0, 0)
+    assert_true(kp.match?('foo'), 'matches foo')
+  end
+
+  def test_match_fails
+    kp = Ordering::KeyPattern.new(Regexp.new('^foo$'), 0, 0)
+    assert_false(kp.match?('bar'), 'does not match bar')
+  end
+
+  def test_any_false_when_index_equals_priority
+    kp = Ordering::KeyPattern.new(Regexp.new('x'), 3, 3)
+    assert_false(kp.any?, 'not any when index == priority')
+  end
+
+  def test_any_true_when_index_differs_from_priority
+    kp = Ordering::KeyPattern.new(Regexp.new('x'), 1, 5)
+    assert_equal(true, kp.any?, 'any when index != priority')
+  end
+end
+
+class KeyPathInitializeTest < Test::Unit::TestCase
+  def test_plain_strings
+    kp = Ordering::KeyPath.new(%w[foo bar], 're:')
+    assert_equal(2, kp.items.size, 'two items')
+    assert_true(kp.items[0].match?('foo'), 'first matches foo')
+    assert_false(kp.items[0].match?('baz'), 'first rejects baz')
+    assert_true(kp.items[1].match?('bar'), 'second matches bar')
+    assert_false(kp.multiple, 'no multiple')
+    assert_equal(2, kp.first_multiple, 'first_multiple at end')
+  end
+
+  def test_single_star_becomes_any
+    kp = Ordering::KeyPath.new(%w[foo * bar], 're:')
+    assert_equal(3, kp.items.size, 'three items')
+    assert_true(kp.items[1].match?('anything'), '* matches anything')
+    assert_false(kp.multiple, 'no multiple')
+  end
+
+  def test_double_star_becomes_multi
+    kp = Ordering::KeyPath.new(%w[foo ** bar], 're:')
+    assert_equal(3, kp.items.size, 'three items')
+    assert_equal(:multi, kp.items[1], '** becomes :multi')
+    assert_equal(true, kp.multiple, 'has multiple')
+    assert_equal(1, kp.first_multiple, 'first_multiple at index 1')
+  end
+
+  def test_regexp_prefix
+    kp = Ordering::KeyPath.new(['re:^a.*z$'], 're:')
+    assert_equal(1, kp.items.size, 'one item')
+    assert_true(kp.items[0].match?('abcz'), 'regexp matches')
+    assert_false(kp.items[0].match?('bz'), 'regexp rejects')
+  end
+
+  def test_star_after_multi_reorders
+    kp = Ordering::KeyPath.new(%w[** *], 're:')
+    assert_equal(2, kp.items.size, 'two items')
+    assert_equal(Ordering::ANY, kp.items[0], 'first is ANY (from :one)')
+    assert_equal(:multi, kp.items[1], 'second is :multi')
+  end
+
+  def test_multi_after_multi_reorders
+    kp = Ordering::KeyPath.new(%w[** **], 're:')
+    assert_equal(2, kp.items.size, 'two items')
+    assert_equal(Ordering::ANY, kp.items[0], 'first is ANY (from :one)')
+    assert_equal(:multi, kp.items[1], 'second is :multi')
+  end
+
+  def test_special_characters_escaped
+    kp = Ordering::KeyPath.new(['foo.bar'], 're:')
+    assert_false(kp.items[0].match?('fooXbar'), 'dot is escaped')
+    assert_true(kp.items[0].match?('foo.bar'), 'literal dot matches')
+  end
+end
+
+class KeyPathMatchTest < Test::Unit::TestCase
+  def test_exact_match_two_keys
+    kp = Ordering::KeyPath.new(%w[foo bar], 're:')
+    assert_equal(true, kp.match?(%w[foo bar]), 'exact match')
+  end
+
+  def test_exact_match_rejects_wrong_key
+    kp = Ordering::KeyPath.new(%w[foo bar], 're:')
+    assert_false(kp.match?(%w[foo baz]), 'wrong last key')
+    assert_false(kp.match?(%w[baz bar]), 'wrong first key')
+  end
+
+  def test_path_too_short
+    kp = Ordering::KeyPath.new(%w[foo bar baz], 're:')
+    assert_false(kp.match?(%w[foo]), 'too short')
+  end
+
+  def test_path_too_long_without_multiple
+    kp = Ordering::KeyPath.new(%w[foo bar], 're:')
+    assert_false(kp.match?(%w[foo x bar]), 'too long no multiple')
+  end
+
+  def test_wildcard_match
+    kp = Ordering::KeyPath.new(%w[foo * bar], 're:')
+    assert_equal(true, kp.match?(%w[foo anything bar]), 'wildcard matches')
+    assert_false(kp.match?(%w[foo anything else bar]), 'wildcard too long')
+  end
+
+  def test_multi_match_one_extra
+    kp = Ordering::KeyPath.new(%w[foo ** bar], 're:')
+    assert_equal(true, kp.match?(%w[foo x bar]), 'multi matches one')
+  end
+
+  def test_multi_match_several_extra
+    kp = Ordering::KeyPath.new(%w[foo ** bar], 're:')
+    assert_equal(true, kp.match?(%w[foo a b c bar]), 'multi matches several')
+  end
+
+  def test_multi_at_start
+    kp = Ordering::KeyPath.new(%w[** bar], 're:')
+    assert_equal(true, kp.match?(%w[anything bar]), 'multi at start one key')
+    assert_equal(true, kp.match?(%w[a b bar]), 'multi at start two keys')
+  end
+
+  def test_multi_at_end
+    kp = Ordering::KeyPath.new(%w[foo **], 're:')
+    assert_equal(true, kp.match?(%w[foo anything]), 'multi at end one key')
+    assert_equal(true, kp.match?(%w[foo a b]), 'multi at end two keys')
+  end
+
+  def test_three_items_exact
+    kp = Ordering::KeyPath.new(%w[a b c], 're:')
+    assert_equal(true, kp.match?(%w[a b c]), 'three exact')
+    assert_false(kp.match?(%w[a x c]), 'middle mismatch')
+  end
+
+  def test_regexp_in_path
+    kp = Ordering::KeyPath.new(['re:^f', 'bar'], 're:')
+    assert_equal(true, kp.match?(%w[foo bar]), 'regexp prefix match')
+    assert_false(kp.match?(%w[goo bar]), 'regexp prefix reject')
+  end
+
+  def test_single_item_path
+    kp = Ordering::KeyPath.new(%w[foo], 're:')
+    assert_false(kp.match?(%w[foo bar]), 'single pattern two keys')
+    assert_false(kp.match?([]), 'empty path')
+  end
+
+  def test_empty_items_empty_path
+    kp = Ordering::KeyPath.new([], 're:')
+    assert_equal(true, kp.match?([]), 'both empty matches')
+    assert_false(kp.match?(%w[foo]), 'empty items rejects non-empty path')
+  end
+end
+
+class KeyPathCompareTest < Test::Unit::TestCase
+  def test_shorter_is_less
+    a = Ordering::KeyPath.new(%w[a b], 're:')
+    b = Ordering::KeyPath.new(%w[a b c], 're:')
+    assert_equal(-1, a <=> b, 'shorter < longer')
+    assert_equal(1, b <=> a, 'longer > shorter')
+  end
+
+  def test_same_length_more_multi_is_less
+    a = Ordering::KeyPath.new(%w[** b], 're:')
+    b = Ordering::KeyPath.new(%w[a b], 're:')
+    assert_equal(-1, a <=> b, 'more multi comes first')
+    assert_equal(1, b <=> a, 'less multi comes later')
+  end
+
+  def test_equal
+    a = Ordering::KeyPath.new(%w[a b], 're:')
+    b = Ordering::KeyPath.new(%w[x y], 're:')
+    assert_equal(0, a <=> b, 'same size same multi count')
+  end
+end
+
+class KeyPathMatchingItemIndexesTest < Test::Unit::TestCase
+  def test_skip_non_multis
+    kp = Ordering::KeyPath.new(%w[a * ** d], 're:')
+    idxs = kp.matching_item_indexes('a', 0)
+    assert(idxs.include?(0), 'index 0 matches a')
+    idxs2 = kp.matching_item_indexes('x', 2)
+    assert(idxs2.include?(2), ':multi matches anything')
+  end
+
+  def test_multi_always_matches
+    kp = Ordering::KeyPath.new(%w[** foo], 're:')
+    idxs = kp.matching_item_indexes('anything', 0)
+    assert(idxs.include?(0), ':multi matches any key')
+  end
+end
+
+class OrderOrderableTest < Test::Unit::TestCase
+  def test_hash_orderable
+    assert_equal(true, Ordering::Order.orderable?({}), 'hash is orderable')
+  end
+
+  def test_array_orderable
+    assert_equal(true, Ordering::Order.orderable?([]), 'array is orderable')
+  end
+
+  def test_string_not_orderable
+    assert_false(Ordering::Order.orderable?('foo'), 'string not orderable')
+  end
+
+  def test_number_not_orderable
+    assert_false(Ordering::Order.orderable?(42), 'number not orderable')
+  end
+
+  def test_nil_not_orderable
+    assert_false(Ordering::Order.orderable?(nil), 'nil not orderable')
+  end
+end
+
+class OrderInitializeTest < Test::Unit::TestCase
+  def test_plain_keys
+    o = Ordering::Order.new(%w[alpha beta], 're:')
+    assert_equal(3, o.patterns.size, 'two keys + catch-all')
+    assert_true(o.patterns[0].match?('alpha'), 'first matches alpha')
+    assert_true(o.patterns[1].match?('beta'), 'second matches beta')
+    assert_true(o.patterns[2].match?('gamma'), 'catch-all matches anything')
+  end
+
+  def test_with_asterisk
+    o = Ordering::Order.new(%w[alpha * beta], 're:')
+    assert_equal(3, o.patterns.size, 'three patterns, no extra catch-all')
+    assert_equal(true, o.patterns[1].any?, 'asterisk pattern is any')
+  end
+
+  def test_duplicate_asterisk_uses_first
+    o = Ordering::Order.new(%w[alpha * beta *], 're:')
+    assert_equal(3, o.patterns.size, 'duplicate * ignored')
+  end
+
+  def test_regexp_prefix_key
+    o = Ordering::Order.new(['re:^x.*$', 'foo'], 're:')
+    assert_equal(3, o.patterns.size, 'regexp + plain + catch-all')
+    assert_true(o.patterns[0].match?('xyz'), 'regexp pattern matches')
+    assert_false(o.patterns[0].match?('abc'), 'regexp pattern rejects')
+  end
+
+  def test_no_asterisk_adds_catchall
+    o = Ordering::Order.new(%w[a b], 're:')
+    last = o.patterns.last
+    assert_equal(true, last.any?, 'catch-all is any')
+    assert_true(last.match?('whatever'), 'catch-all matches')
+  end
+end
+
+class OrderApplyHashTest < Test::Unit::TestCase
+  def test_basic_ordering
+    o = Ordering::Order.new(%w[b a], 're:')
+    h = { 'a' => 1, 'b' => 2, 'c' => 3 }
+    result = o.apply_hash(h)
+    assert_equal(true, result, 'returns true')
+    assert_equal(%w[b a c], h.keys, 'keys ordered: b first, a second, c in catch-all')
+  end
+
+  def test_with_number
+    o = Ordering::Order.new(%w[b a], 're:')
+    h = { 'a' => 1, 'b' => 2, 5 => 3 }
+    result = o.apply_hash(h)
+    assert_equal(true, result, 'returns true')
+    assert_equal(['b', 'a', 5], h.keys, 'keys ordered: b first, a second, 5 in catch-all')
+  end
+
+  def test_with_number_in_order
+    o = Ordering::Order.new(%w[b 5 a], 're:')
+    h = { 'a' => 1, 'b' => 2, 5 => 3 }
+    result = o.apply_hash(h)
+    assert_equal(true, result, 'returns true')
+    assert_equal(['b', 5, 'a'], h.keys, 'keys ordered: b first, 5 second, a third')
+  end
+
+  def test_unknown_keys_sorted_alphabetically
+    o = Ordering::Order.new(%w[z], 're:')
+    h = { 'c' => 3, 'a' => 1, 'b' => 2, 'z' => 26 }
+    o.apply_hash(h)
+    assert_equal(%w[z a b c], h.keys, 'z first, rest sorted')
+  end
+
+  def test_empty_hash
+    o = Ordering::Order.new(%w[a], 're:')
+    h = {}
+    result = o.apply_hash(h)
+    assert_equal(true, result, 'returns true for empty')
+    assert_equal({}, h, 'still empty')
+  end
+
+  def test_all_matching_keys
+    o = Ordering::Order.new(%w[c b a], 're:')
+    h = { 'a' => 1, 'b' => 2, 'c' => 3 }
+    o.apply_hash(h)
+    assert_equal(%w[c b a], h.keys, 'all keys reordered')
+  end
+
+  def test_regexp_pattern_ordering
+    o = Ordering::Order.new(['re:^x', 'a'], 're:')
+    h = { 'a' => 1, 'xb' => 2, 'xa' => 3, 'z' => 4 }
+    o.apply_hash(h)
+    assert_equal('xa', h.keys[0], 'regexp group first, sorted')
+    assert_equal('xb', h.keys[1], 'regexp group second')
+    assert_equal('a', h.keys[2], 'exact match next')
+  end
+
+  def test_values_preserved
+    o = Ordering::Order.new(%w[b a], 're:')
+    h = { 'a' => 'alpha', 'b' => 'beta' }
+    o.apply_hash(h)
+    assert_equal('beta', h['b'], 'value preserved')
+    assert_equal('alpha', h['a'], 'value preserved')
+  end
+end
+
+class OrderApplyArrayTest < Test::Unit::TestCase
+  def test_sort_by_first_key
+    o = Ordering::Order.new(%w[name], 're:')
+    arr = [
+      { 'name' => 'charlie' },
+      { 'name' => 'alice' },
+      { 'name' => 'bob' }
+    ]
+    result = o.apply_array(arr)
+    assert_equal(true, result, 'returns true')
+    assert_equal('alice', arr[0]['name'], 'sorted first')
+    assert_equal('bob', arr[1]['name'], 'sorted second')
+    assert_equal('charlie', arr[2]['name'], 'sorted third')
+  end
+
+  def test_sort_by_multiple_keys
+    o = Ordering::Order.new(%w[group name], 're:')
+    arr = [
+      { 'group' => 'b', 'name' => 'alice' },
+      { 'group' => 'a', 'name' => 'bob' },
+      { 'group' => 'a', 'name' => 'alice' }
+    ]
+    o.apply_array(arr)
+    assert_equal('a', arr[0]['group'], 'group a first')
+    assert_equal('alice', arr[0]['name'], 'alice in group a')
+    assert_equal('a', arr[1]['group'], 'group a second')
+    assert_equal('bob', arr[1]['name'], 'bob in group a')
+    assert_equal('b', arr[2]['group'], 'group b last')
+  end
+
+  def test_non_hash_items_preserved
+    o = Ordering::Order.new(%w[name], 're:')
+    arr = [
+      { 'name' => 'bob' },
+      'string_item',
+      { 'name' => 'alice' }
+    ]
+    o.apply_array(arr)
+    assert_equal('alice', arr[0]['name'], 'alice sorted first')
+    assert_equal('bob', arr[1]['name'], 'bob sorted second')
+    assert_equal('string_item', arr[2], 'non-hash at end (nil values)')
+  end
+
+  def test_hash_and_array_values_treated_as_nil
+    o = Ordering::Order.new(%w[val], 're:')
+    arr = [
+      { 'val' => [1, 2] },
+      { 'val' => 'alpha' },
+      { 'val' => { 'k' => 'v' } }
+    ]
+    o.apply_array(arr)
+    assert_equal('alpha', arr[0]['val'], 'string value sorts first')
+  end
+
+  def test_empty_array
+    o = Ordering::Order.new(%w[x], 're:')
+    arr = []
+    result = o.apply_array(arr)
+    assert_equal(true, result, 'returns true')
+    assert_equal([], arr, 'still empty')
+  end
+
+  def test_single_element
+    o = Ordering::Order.new(%w[x], 're:')
+    arr = [{ 'x' => 1 }]
+    o.apply_array(arr)
+    assert_equal(1, arr[0]['x'], 'single element unchanged')
+  end
+end
+
+class OrderApplyTest < Test::Unit::TestCase
+  def test_apply_dispatches_to_hash
+    o = Ordering::Order.new(%w[b a], 're:')
+    h = { 'a' => 1, 'b' => 2 }
+    result = o.apply(h)
+    assert_equal(true, result, 'hash returns true')
+    assert_equal(%w[b a], h.keys, 'hash ordered')
+  end
+
+  def test_apply_dispatches_to_array
+    o = Ordering::Order.new(%w[name], 're:')
+    arr = [{ 'name' => 'b' }, { 'name' => 'a' }]
+    result = o.apply(arr)
+    assert_equal(true, result, 'array returns true')
+    assert_equal('a', arr[0]['name'], 'array sorted')
+  end
+
+  def test_apply_returns_false_for_other
+    o = Ordering::Order.new(%w[a], 're:')
+    assert_false(o.apply('string'), 'string returns false')
+    assert_false(o.apply(42), 'number returns false')
+    assert_false(o.apply(nil), 'nil returns false')
+  end
+end
+
+class KeyPathOrderTest < Test::Unit::TestCase
+  def test_initialize
+    path = Ordering::KeyPath.new(%w[a b], 're:')
+    order = Ordering::Order.new(%w[x], 're:')
+    kpo = Ordering::KeyPathOrder.new(path, order)
+    assert_equal(path, kpo.path, 'path stored')
+    assert_equal(order, kpo.order, 'order stored')
+  end
+
+  def test_comparison_delegates_to_path
+    p1 = Ordering::KeyPath.new(%w[a b], 're:')
+    p2 = Ordering::KeyPath.new(%w[a b c], 're:')
+    o = Ordering::Order.new(%w[x], 're:')
+    kpo1 = Ordering::KeyPathOrder.new(p1, o)
+    kpo2 = Ordering::KeyPathOrder.new(p2, o)
+    assert_equal(-1, kpo1 <=> kpo2, 'shorter path is less')
+    assert_equal(1, kpo2 <=> kpo1, 'longer path is greater')
+  end
+
+  def test_equal_paths
+    p1 = Ordering::KeyPath.new(%w[a b], 're:')
+    p2 = Ordering::KeyPath.new(%w[x y], 're:')
+    o = Ordering::Order.new(%w[x], 're:')
+    kpo1 = Ordering::KeyPathOrder.new(p1, o)
+    kpo2 = Ordering::KeyPathOrder.new(p2, o)
+    assert_equal(0, kpo1 <=> kpo2, 'same size paths are equal')
+  end
+end
+
+class OrderingANYTest < Test::Unit::TestCase
+  def test_any_matches_anything
+    assert_true(Ordering::ANY.match?('anything'), 'ANY matches')
+    assert_true(Ordering::ANY.match?(''), 'ANY matches empty')
+    assert_true(Ordering::ANY.match?('foo.bar'), 'ANY matches dots')
+  end
+end

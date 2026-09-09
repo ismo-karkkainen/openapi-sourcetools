@@ -1,0 +1,8 @@
+---
+x-order:
+- name
+- description
+- schema
+- re:^x-
+- '*'
+- re:example[s]?$

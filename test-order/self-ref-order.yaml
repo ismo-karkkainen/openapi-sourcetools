@@ -1,0 +1,7 @@
+---
+x-order:
+- openapi
+- '$self'
+- info
+- '*'
+- paths

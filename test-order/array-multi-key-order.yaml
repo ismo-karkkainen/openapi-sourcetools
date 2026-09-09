@@ -1,0 +1,6 @@
+---
+items:
+  x-order:
+  - category
+  - priority
+  - name

@@ -15,4 +15,4 @@ do
     cat e
     rm -f o e
 done
-) > $(basename $0 .sh).res
+) | grep -v -e '^Finished in' > $(basename $0 .sh).res

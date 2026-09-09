@@ -1,32 +1,32 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright 2024-2025 Ismo Kärkkäinen
+# Copyright 2024-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
-require_relative '../shared/unittest'
-
-$unit_test = 0
+require 'test/unit'
 require_relative '../lib/openapi/sourcetools/docs'
+include Test::Unit::Assertions
 
-$context = 'add'
-d = OpenAPISourceTools::Docs.new
-assert(d.add('name', 'content'), true, 'Added name')
-begin
-  assert(d.name, 'content', 'Stored ok')
-rescue Exception => e
-  assert(true, false, "Exception thrown #{e}")
+class DocsTest < Test::Unit::TestCase
+  def test_add
+    d = OpenAPISourceTools::Docs.new
+    assert_equal(d.add('name', 'content'), true, 'Added name')
+    begin
+      assert_equal(d.name, 'content', 'Stored ok')
+    rescue Exception => e
+      assert_equal(true, false, "Exception thrown #{e}")
+    end
+    assert_equal(d.add('name', 'sdhfaksdjhfskj'), false, 'Not added')
+    begin
+      assert_equal(d.name, 'content', 'Stored still ok')
+    rescue Exception => e
+      assert_equal(true, false, "Exception thrown #{e}")
+    end
+    begin
+      d.unset = 'value'
+    rescue Exception => e
+      assert_equal(true, true, "Unset name")
+    end
+  end
 end
-assert(d.add('name', 'sdhfaksdjhfskj'), false, 'Not added')
-begin
-  assert(d.name, 'content', 'Stored still ok')
-rescue Exception => e
-  assert(true, false, "Exception thrown #{e}")
-end
-begin
-  d.unset = 'value'
-rescue Exception => e
-  assert(true, true, "Unset name")
-end
-
-exit $unit_test

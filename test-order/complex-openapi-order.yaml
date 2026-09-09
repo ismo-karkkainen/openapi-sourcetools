@@ -1,0 +1,101 @@
+---
+x-order:
+- openapi
+- info
+- servers
+- tags
+- paths
+- webhooks
+- components
+info:
+  x-order:
+  - title
+  - version
+  - description
+  - contact
+  - license
+  contact:
+    x-order:
+    - name
+    - email
+  license:
+    x-order:
+    - name
+servers:
+  x-order:
+  - name
+  - description
+  - url
+tags:
+  x-order:
+  - name
+  - summary
+  - description
+paths:
+  '*':
+    x-order:
+    - parameters
+    - '*'
+    parameters:
+      x-order:
+      - '*'
+      '*':
+        x-order:
+        - $ref
+        - name
+        - in
+        - description
+        - schema
+    '*':
+      x-order:
+      - summary
+      - description
+      - operationId
+      - requestBody
+      - responses
+      requestBody:
+        x-order:
+        - description
+        - required
+        - content
+        content:
+          x-order:
+          - '*'
+          '*':
+            x-order:
+            - schema
+            - examples
+      responses:
+        x-order:
+        - '*'
+        '*':
+          x-order:
+          - description
+components:
+  x-order:
+  - schemas
+  - parameters
+  schemas:
+    x-order:
+    - '*'
+    '*':
+      x-order:
+      - description
+      - type
+      - required
+      - properties
+      properties:
+        x-order:
+        - '*'
+      required:
+        x-order:
+        - '*'
+  parameters:
+    x-order:
+    - '*'
+    '*':
+      x-order:
+      - name
+      - in
+      - description
+      - schema

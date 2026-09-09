@@ -1,0 +1,14 @@
+---
+# Test deeply nested structures
+level1:
+  z_last: value
+  a_first: value
+  level2:
+    z_last: value
+    a_first: value
+    level3:
+      z_last: value
+      a_first: value
+      level4:
+        z_last: value
+        a_first: value

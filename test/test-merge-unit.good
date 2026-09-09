@@ -1,29 +1,5 @@
 ####COMMAND Unit tests
 ####CODE 0
 ####OUT
-ok: raise_se: exception and message
-ok: too_deep: empty
-ok: too_deep: just root
-ok: too_deep: too deep
-ok: too_deep: not deep
-ok: too_deep: border case
-ok: add_missing: added to empty
-ok: add_missing: only one item
-ok: add_missing: still only one item
-ok: add_missing: no key, not added
-ok: add_missing: existing unchanged
-ok: add_missing: no key in existing, added
-ok: add_missing: new item added
-ok: add_missing: same key, not added
-ok: add_missing: existing unchanged
-ok: add_missing: existing unchanged
-ok: gather_refs: 3 references
-ok: gather_refs: anchor in
-ok: gather_refs: arr in
-ok: gather_refs: normal in
-ok: has_refd_anchor: Refd
-ok: has_refd_anchor: Unrefd
-ok: has_refd_anchor: InArray
-ok: has_refd_anchor: Invalid
-ok: has_refd_anchor: Missing
+5 tests, 25 assertions, 0 failures, 0 errors, 0 pendings, 0 omissions, 0 notifications
 ####ERR

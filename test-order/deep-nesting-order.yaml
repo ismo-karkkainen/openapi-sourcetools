@@ -1,0 +1,20 @@
+---
+level1:
+  x-order:
+  - a_first
+  - level2
+  - z_last
+  level2:
+    x-order:
+    - a_first
+    - level3
+    - z_last
+    level3:
+      x-order:
+      - a_first
+      - level4
+      - z_last
+      level4:
+        x-order:
+        - a_first
+        - z_last

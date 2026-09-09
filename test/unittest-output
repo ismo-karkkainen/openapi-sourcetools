@@ -1,90 +1,108 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright 2024-2025 Ismo Kärkkäinen
+# Copyright 2024-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
-require_relative '../shared/unittest'
+require 'test/unit'
 require 'json'
 require 'yaml'
-
-$unit_test = 0
 require_relative '../lib/openapi/sourcetools/output'
+include Test::Unit::Assertions
 
-$context = 'OutputConfiguration'
-c = OpenAPISourceTools::OutputConfiguration.new
-assert(c.indent_character, ' ', 'default indent character')
-assert(c.indent_step, 4, 'default indent step')
-assert(c.tab, "\t", 'default tab')
-assert(c.tab_replaces_count, 0, 'default tab replace count')
-opts = {
-  'indent_character' => 'x',
-  'indent_step' => 3,
-  'tab' => 'Y',
-  'tab_replaces_count' => 2,
-  'silently_ignored' => 'unused value',
-  also_silently_ignored: 7
-}
-c = OpenAPISourceTools::OutputConfiguration.new(opts)
-assert(c.indent_character, opts['indent_character'], 'indent character copied')
-assert(c.indent_step, opts['indent_step'], 'indent step copied')
-assert(c.tab, opts['tab'], 'tab copied')
-assert(c.tab_replaces_count, opts['tab_replaces_count'], 'tab replace count copied')
+class OutputTest < Test::Unit::TestCase
+  def test_output_configuration
+    c = OpenAPISourceTools::OutputConfiguration.new
+    assert_equal(c.indent_character, ' ', 'default indent character')
+    assert_equal(c.indent_step, 4, 'default indent step')
+    assert_equal(c.tab, "\t", 'default tab')
+    assert_equal(c.tab_replaces_count, 0, 'default tab replace count')
+    opts = {
+      'indent_character' => 'x',
+      'indent_step' => 3,
+      'tab' => 'Y',
+      'tab_replaces_count' => 2,
+      'silently_ignored' => 'unused value',
+      also_silently_ignored: 7
+    }
+    c = OpenAPISourceTools::OutputConfiguration.new(opts)
+    assert_equal(c.indent_character, opts['indent_character'], 'indent character copied')
+    assert_equal(c.indent_step, opts['indent_step'], 'indent step copied')
+    assert_equal(c.tab, opts['tab'], 'tab copied')
+    assert_equal(c.tab_replaces_count, opts['tab_replaces_count'], 'tab replace count copied')
+  end
 
-$context = 'join'
-o = OpenAPISourceTools::Output.new
-assert(o.last_indent, 0, 'last indent starts from 0')
-src = [ 1, 'a', 2, 'b', 'c', -1, 'd', -100, 'e', true, 'f', nil, false, "g\nh", true, true, "i\nj" ]
-s = o.join(src)
-lines = s.lines(chomp: true)
-assert(lines.size, 10, 'correct number of lines')
-assert(lines[0], ' a', 'indented 1')
-assert(lines[1], '   b', 'indented 3')
-assert(lines[2], '   c', 'indented 3 again')
-assert(lines[3], '  d', 'indented 1 less')
-assert(lines[4], 'e', 'not indented')
-assert(lines[5], '    f', 'indented by step')
-assert(lines[6], 'g', 'indented step less')
-assert(lines[7], 'h', 'indented same as previous')
-assert(lines[8], '        i', 'indented two steps more')
-assert(lines[9], '        j', 'indented same')
-assert(o.last_indent, 8, 'last indent set')
+  def test_join
+    o = OpenAPISourceTools::Output.new
+    assert_equal(o.last_indent, 0, 'last indent starts from 0')
+    src = [ 1, 'a', 2, 'b', 'c', -1, 'd', -100, 'e', true, 'f', nil, false, "g\nh", true, true, "i\nj" ]
+    s = o.join(src)
+    lines = s.lines(chomp: true)
+    assert_equal(lines.size, 10, 'correct number of lines')
+    assert_equal(lines[0], ' a', 'indented 1')
+    assert_equal(lines[1], '   b', 'indented 3')
+    assert_equal(lines[2], '   c', 'indented 3 again')
+    assert_equal(lines[3], '  d', 'indented 1 less')
+    assert_equal(lines[4], 'e', 'not indented')
+    assert_equal(lines[5], '    f', 'indented by step')
+    assert_equal(lines[6], 'g', 'indented step less')
+    assert_equal(lines[7], 'h', 'indented same as previous')
+    assert_equal(lines[8], '        i', 'indented two steps more')
+    assert_equal(lines[9], '        j', 'indented same')
+    assert_equal(o.last_indent, 8, 'last indent set')
 
-opts = {
-  'indent_character' => 'xx',
-  'indent_step' => 3,
-  'tab' => 'Y',
-  'tab_replaces_count' => 2
-}
-c = OpenAPISourceTools::OutputConfiguration.new(opts)
-o = OpenAPISourceTools::Output.new
-o.config = c
-src = [ 'a', 1, 'b', true, 'c', -2, {}, 3, 'd', -100 ]
-s = o.join(src)
-lines = s.lines(chomp: true)
-assert(lines.size, 5, '5 lines')
-assert(lines[0], 'a', 'not indented')
-assert(lines[1], 'xxb', 'indented 1')
-assert(lines[2], 'YYc', 'indented 4 and replaced')
-assert(lines[3], 'Y{}', 'indented 2 and replaced')
-assert(lines[4], 'YYxxd', 'indented 5, replaced 2')
-assert(o.last_indent, 0, 'last indent 0 after -100')
+    opts = {
+      'indent_character' => 'xx',
+      'indent_step' => 3,
+      'tab' => 'Y',
+      'tab_replaces_count' => 2
+    }
+    c = OpenAPISourceTools::OutputConfiguration.new(opts)
+    o = OpenAPISourceTools::Output.new
+    o.config = c
+    src = [ 'a', 1, 'b', true, 'c', -2, {}, 3, 'd', -100 ]
+    s = o.join(src)
+    lines = s.lines(chomp: true)
+    assert_equal(lines.size, 5, '5 lines')
+    assert_equal(lines[0], 'a', 'not indented')
+    assert_equal(lines[1], 'xxb', 'indented 1')
+    assert_equal(lines[2], 'YYc', 'indented 4 and replaced')
+    assert_equal(lines[3], 'Y{}', 'indented 2 and replaced')
+    assert_equal(lines[4], 'YYxxd', 'indented 5, replaced 2')
+    assert_equal(o.last_indent, 0, 'last indent 0 after -100')
+  end
 
-$context = 'config='
-begin
-  o.config = []
-  assert(true, false, 'no exception')
-rescue ArgumentError
-  assert(true, true, 'wrong config type')
+  def test_config_equals
+    o = OpenAPISourceTools::Output.new
+    opts = {
+      'indent_character' => 'xx',
+      'indent_step' => 3,
+      'tab' => 'Y',
+      'tab_replaces_count' => 2
+    }
+    c = OpenAPISourceTools::OutputConfiguration.new(opts)
+    begin
+      o.config = []
+      assert_equal(true, false, 'no exception')
+    rescue ArgumentError
+      assert_equal(true, true, 'wrong config type')
+    end
+    o.config = c
+    assert_equal(o.config, c, 'config set')
+  end
+
+  def test_json
+    o = OpenAPISourceTools::Output.new
+    c = OpenAPISourceTools::OutputConfiguration.new
+    o.config = c
+    obj = { 'a' => 1, 'b' => [ 'something' ] }
+    assert_equal(o.json(obj), JSON.generate(obj), 'JSON simple output')
+    assert_equal(o.pretty_json(obj), JSON.generate(obj, o.config.prettified_json), 'JSON pretty output')
+  end
+
+  def test_yaml
+    o = OpenAPISourceTools::Output.new
+    obj = { 'a' => 1, 'b' => [ 'something' ] }
+    assert_equal(o.yaml(obj), YAML.dump(obj), 'YAML output')
+  end
 end
-assert(o.config, c, 'config not changed')
-
-$context = 'json'
-obj = { 'a' => 1, 'b' => [ 'something' ] }
-assert(o.json(obj), JSON.generate(obj), 'JSON simple output')
-assert(o.pretty_json(obj), JSON.generate(obj, o.config.prettified_json), 'JSON pretty output')
-
-$context = 'yaml'
-assert(o.yaml(obj), YAML.dump(obj), 'YAML output')
-
-exit $unit_test

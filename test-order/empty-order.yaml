@@ -1,0 +1,12 @@
+---
+x-order:
+- emptyHash
+- emptyArray
+- hashWithEmpty
+- arrayWithEmpty
+hashWithEmpty:
+  x-order:
+  - nested
+arrayWithEmpty:
+  x-order:
+  - name

@@ -1,0 +1,48 @@
+---
+x-order:
+- info
+- paths
+info:
+  x-order:
+  - title
+  - version
+  - description
+  - contact
+  - license
+  contact:
+    x-order:
+    - name
+    - email
+    - url
+  license:
+    x-order:
+    - name
+    - url
+paths:
+  '*':
+    '*':
+      x-order:
+      - operationId
+      - description
+      - parameters
+      - responses
+      responses:
+        x-order:
+        - '*'
+        '*':
+          x-order:
+          - description
+          - content
+          content:
+            x-order:
+            - '*'
+            '*':
+              x-order:
+              - schema
+              schema:
+                x-order:
+                - type
+                - properties
+                properties:
+                  x-order:
+                  - '*'

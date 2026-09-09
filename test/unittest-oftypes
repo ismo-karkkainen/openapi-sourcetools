@@ -1,23 +1,24 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright 2024-2025 Ismo Kärkkäinen
+# Copyright 2024-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
-require_relative '../shared/unittest'
+require 'test/unit'
 require 'yaml'
+include Test::Unit::Assertions
 
-$unit_test = 0
 load '../bin/openapi-oftypes'
 
-$context = 'name_string'
-assert(name_string(''), '', 'Nothing')
-assert(name_string('a'), 'a', 'Single')
-assert(name_string('a/b/c'), 'c', 'Deep')
+class OfTypesTest < Test::Unit::TestCase
+  def test_name_string
+    assert_equal(name_string(''), '', 'Nothing')
+    assert_equal(name_string('a'), 'a', 'Single')
+    assert_equal(name_string('a/b/c'), 'c', 'Deep')
+  end
 
-$context = 'merge'
-def schemas
-  YAML.safe_load(%(---
+  def schemas
+    YAML.safe_load(%(---
 String:
   type: string
 String2:
@@ -78,48 +79,53 @@ D:
     d:
       $ref: "#/components/schemas/NotObject"
 ))
+  end
+
+  def test_merge
+    s = schemas
+    combo = {}
+    item0 = s['AB']
+    assert_equal(merge(combo, item0), true, 'Merge to empty')
+    item = s['BC']
+    assert_equal(merge(combo, item), true, 'Merge')
+    assert_equal(combo['properties'].size, 3, 'All properties')
+    assert_equal(combo['required'], ['a', 'b'], 'Added b to required')
+    assert_equal(combo.dig('properties', 'b', '$ref'), '#/components/schemas/Number', 'Still Number type')
+    assert_equal(combo.dig('properties', 'c', '$ref'), '#/components/schemas/Number', 'c is Number type')
+    combo = {}
+    merge(combo, s['AB'])
+    assert_equal(merge(combo, s['BC2']), false, 'Type conflict')
+  end
+
+  def ref(name)
+    { '$ref' => name }
+  end
+
+  def test_all_of
+    s = schemas
+    m = all_of([ ref('AB'), ref('BC') ], s, 'A')
+    assert_equal(m.is_a?(Hash), true, 'Merged type')
+    assert_equal(m.size, 3, 'New property')
+    assert_equal(m['required'], ['a', 'b'], 'Added b to required')
+    assert_equal(m.dig('properties', 'b', '$ref'), '#/components/schemas/Number', 'Still Number type')
+    assert_equal(m.dig('properties', 'c', '$ref'), '#/components/schemas/Number', 'c is Number type')
+    m = all_of([ ref('AB'), ref('BC'), ref('BC2') ], s, 'A')
+    assert_equal(m, false, 'Type conflict')
+    m = all_of([ ref('BC3') ], s, 'A')
+    assert_equal(m.is_a?(Hash), true, 'Missing schema not detected')
+    m = all_of([ ref('NotObject') ], s, 'A')
+    assert_equal(m, false, 'Not an object')
+  end
+
+  def test_distinguishable
+    s = schemas
+    assert_equal(distinguishable(s['AB'], s['BC'], s), true, 'Different required fields')
+    assert_equal(distinguishable(s['AB'], s['AB'], s), false, 'Identical')
+    assert_equal(distinguishable(s['AB'], s['AC'], s), false, 'Difference in optional field')
+    assert_equal(distinguishable(s['String'], s['Number'], s), true, 'Difference in type')
+    assert_equal(distinguishable(s['String'], s['String2'], s), true, 'Difference in fields')
+  end
+
+  def test_one_of
+  end
 end
-s = schemas
-combo = {}
-item0 = s['AB']
-assert(merge(combo, item0), true, 'Merge to empty')
-item = s['BC']
-assert(merge(combo, item), true, 'Merge')
-assert(combo['properties'].size, 3, 'All properties')
-assert(combo['required'], ['a', 'b'], 'Added b to required')
-assert(combo.dig('properties', 'b', '$ref'), '#/components/schemas/Number', 'Still Number type')
-assert(combo.dig('properties', 'c', '$ref'), '#/components/schemas/Number', 'c is Number type')
-combo = {}
-merge(combo, s['AB'])
-assert(merge(combo, s['BC2']), false, 'Type conflict')
-
-$context = 'all_of'
-def ref(name)
-  { '$ref' => name }
-end
-s = schemas
-m = all_of([ ref('AB'), ref('BC') ], s, 'A')
-assert(m.is_a?(Hash), true, 'Merged type')
-assert(m.size, 3, 'New property')
-assert(m['required'], ['a', 'b'], 'Added b to required')
-assert(m.dig('properties', 'b', '$ref'), '#/components/schemas/Number', 'Still Number type')
-assert(m.dig('properties', 'c', '$ref'), '#/components/schemas/Number', 'c is Number type')
-m = all_of([ ref('AB'), ref('BC'), ref('BC2') ], s, 'A')
-assert(m, false, 'Type conflict')
-m = all_of([ ref('BC3') ], s, 'A')
-assert(m.is_a?(Hash), true, 'Missing schema not detected')
-m = all_of([ ref('NotObject') ], s, 'A')
-assert(m, false, 'Not an object')
-
-$context = 'distinguishable'
-s = schemas
-assert(distinguishable(s['AB'], s['BC'], s), true, 'Different required fields')
-assert(distinguishable(s['AB'], s['AB'], s), false, 'Identical')
-assert(distinguishable(s['AB'], s['AC'], s), false, 'Difference in optional field')
-assert(distinguishable(s['String'], s['Number'], s), true, 'Difference in type')
-assert(distinguishable(s['String'], s['String2'], s), true, 'Difference in fields')
-
-$context = 'one_of'
-
-
-exit $unit_test

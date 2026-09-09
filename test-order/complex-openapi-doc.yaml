@@ -1,0 +1,69 @@
+---
+# Test complex OpenAPI structure with multiple features
+webhooks: {}
+tags:
+- description: User operations
+  name: users
+  summary: Users
+- name: admin
+  description: Admin operations
+components:
+  schemas:
+    User:
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        id:
+          type: string
+      required:
+      - id
+      - name
+      type: object
+      description: User model
+  parameters:
+    Limit:
+      schema:
+        type: integer
+      name: limit
+      description: Pagination limit
+      in: query
+paths:
+  /users:
+    parameters:
+    - $ref: '#/components/parameters/Limit'
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+            examples:
+              user1:
+                value:
+                  name: John
+        required: true
+        description: User to create
+      responses:
+        "201":
+          description: Created
+      operationId: createUser
+      description: Create a user
+      summary: Create user
+info:
+  contact:
+    email: api@example.com
+    name: API Team
+  description: Complex API
+  license:
+    name: Apache 2.0
+  title: Complex API
+  version: 2.0.0
+openapi: 3.1.0
+servers:
+- description: Production
+  name: prod
+  url: https://api.example.com
+- url: https://staging.example.com
+  name: staging

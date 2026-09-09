@@ -1,0 +1,7 @@
+---
+# Test wildcard ordering - '*' should catch unmatched keys
+zebra: last
+apple: first
+banana: second
+cherry: third
+dog: last-too

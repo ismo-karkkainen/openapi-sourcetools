@@ -1,0 +1,321 @@
+####COMMAND Order array-missing-keys
+####CODE 0
+####OUT
+---
+people:
+- name: Alice
+  age: 30
+  email: alice@example.com
+- name: Bob
+  email: bob@example.com
+- name: David
+  age: 35
+- name: David
+  email: david@example.com
+- age: 25
+  email: charlie@example.com
+####ERR
+####COMMAND Order array-multi-key
+####CODE 0
+####OUT
+---
+items:
+- category: A
+  priority: 1
+  name: Item0
+- category: A
+  priority: 1
+  name: Item1
+- category: A
+  priority: 2
+  name: Item3
+- category: B
+  priority: 1
+  name: Item2
+- category: B
+  priority: 2
+  name: Item4
+####ERR
+####COMMAND Order array-sort
+####CODE 0
+####OUT
+---
+servers:
+- url: https://dev.example.com
+  name: Development
+  description: Development server
+- url: https://prod.example.com
+  name: Production
+  description: Production server
+- url: https://staging.example.com
+  name: Staging
+####ERR
+####COMMAND Order basic-hash
+####CODE 0
+####OUT
+---
+openapi: 3.1.0
+info:
+  title: Test API
+  version: 1.0.0
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+servers: []
+paths: {}
+components: {}
+####ERR
+####COMMAND Order complex-openapi
+####CODE 0
+####OUT
+---
+openapi: 3.1.0
+info:
+  title: Complex API
+  version: 2.0.0
+  description: Complex API
+  contact:
+    name: API Team
+    email: api@example.com
+  license:
+    name: Apache 2.0
+servers:
+- description: Production
+  name: prod
+  url: https://api.example.com
+- url: https://staging.example.com
+  name: staging
+tags:
+- name: admin
+  description: Admin operations
+- description: User operations
+  name: users
+  summary: Users
+paths:
+  "/users":
+    parameters:
+    - "$ref": "#/components/parameters/Limit"
+    post:
+      summary: Create user
+      description: Create a user
+      operationId: createUser
+      requestBody:
+        description: User to create
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/User"
+            examples:
+              user1:
+                value:
+                  name: John
+      responses:
+        '201':
+          description: Created
+webhooks: {}
+components:
+  schemas:
+    User:
+      description: User model
+      type: object
+      required:
+      - id
+      - name
+      properties:
+        email:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      description: Pagination limit
+      schema:
+        type: integer
+####ERR
+####COMMAND Order deep-nesting
+####CODE 0
+####OUT
+---
+level1:
+  a_first: value
+  level2:
+    a_first: value
+    level3:
+      a_first: value
+      level4:
+        a_first: value
+        z_last: value
+      z_last: value
+    z_last: value
+  z_last: value
+####ERR
+####COMMAND Order empty
+####CODE 0
+####OUT
+---
+emptyHash: {}
+emptyArray: []
+hashWithEmpty:
+  nested: {}
+arrayWithEmpty:
+- name: test
+- {}
+####ERR
+####COMMAND Order layer
+####CODE 0
+####OUT
+---
+root:
+  something:
+    special:
+      special2: 1
+      special1: 2
+      special6: 3
+      numbers:
+        5: first/2
+        1: second/2
+        9: third/2
+        2: last/2
+        special:
+          special2: 21
+          special1: 22
+          special6: 23
+          special_other: 24
+      special_other: 4
+    numbers:
+      2: first
+      1: second
+      9: third
+      6: last
+####ERR
+####COMMAND Order mixed-array
+####CODE 0
+####OUT
+---
+mixedArray:
+- name: object1
+  value: 1
+- name: object2
+  value: 2
+- name: object3
+- just a string
+- 42
+####ERR
+####COMMAND Order nested
+####CODE 0
+####OUT
+---
+info:
+  title: Nested API
+  version: 1.0.0
+  description: Testing nested structures
+  contact:
+    name: Test Team
+    email: test@example.com
+    url: https://example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+paths:
+  "/users":
+    get:
+      operationId: getUsers
+      description: Get users
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: {}
+                  name: {}
+####ERR
+####COMMAND Order no-wildcard
+####CODE 0
+####OUT
+---
+first: 1
+second: 2
+third: 3
+unmatched1: should be second to last
+unmatched2: should be last
+####ERR
+####COMMAND Order priority
+####CODE 0
+####OUT
+---
+name: exact match
+description: exact match
+xCustom: matches x- pattern
+other: wildcard
+example: matches example pattern
+examples: matches example pattern
+####ERR
+####COMMAND Order ref
+####CODE 0
+####OUT
+---
+paths:
+  "/users/{id}":
+    parameters:
+    - "$ref": "#/components/parameters/UserId"
+    - name: include
+      in: query
+      schema:
+        type: string
+    get:
+      responses:
+        '200':
+          "$ref": "#/components/responses/UserResponse"
+        '404':
+          description: Not found
+components:
+  parameters:
+    UserId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+####ERR
+####COMMAND Order regex
+####CODE 0
+####OUT
+---
+name: first
+description: second
+schema: third
+x-custom: fourth
+x-vendor: fourth-too
+other: last-group
+example: should be last
+examples: should be last too
+####ERR
+####COMMAND Order self-ref
+####CODE 0
+####OUT
+---
+openapi: 3.1.0
+"$self": what's so special
+info:
+  title: Test
+  version: 1.0.0
+x-custom-top: value
+paths: {}
+####ERR
+####COMMAND Order wildcard
+####CODE 0
+####OUT
+---
+apple: first
+banana: second
+cherry: third
+dog: last-too
+zebra: last
+####ERR

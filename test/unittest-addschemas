@@ -1,115 +1,124 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright 2024-2025 Ismo Kärkkäinen
+# Copyright 2024-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
-require_relative '../shared/unittest'
+require 'test/unit'
 require 'yaml'
+include Test::Unit::Assertions
 
-$unit_test = 0
 load '../bin/openapi-addschemas'
 include OpenAPISourceTools
 
-def ref(path, name)
-  "#{path}/#{name}"
+class TestCompo
+  def anchor_ref_replacement(ref)
+    return ref if ref.start_with?('#/')
+    "x#{ref}"
+  end
 end
 
-$context = 'remove_subitem'
-obj = { a: { b: 'c', b2: 'd' }}
-path = [ :a, :b ]
-assert(remove_subitem(obj, path), 'c', 'Remove value')
-assert(obj[path.first].key?(path.last), false, 'No last key')
-assert(obj[path.first].fetch(:b2), 'd', 'Other key remains')
-obj = { a: 'sub', b: 'remain' }
-path = [ :a ]
-assert(remove_subitem(obj, path), 'sub', 'Remove value at root')
-assert(obj.key?(path.last), false, 'No single key')
-assert(obj.fetch(:b), 'remain', 'Other key and value remains')
+class AddSchemasTest < Test::Unit::TestCase
+  def ref(path, name)
+    "#{path}/#{name}"
+  end
 
-$context = 'replace_inlines'
-path = '#/components/schemas'
-comp = ApiObjects::Components.new(path, 'Schema')
-assert(replace_inlines('not_hash_nor_array', comp), true, 'Not hash or array')
-obj = YAML.safe_load(%(
+  def test_remove_subitem
+    obj = { a: { b: 'c', b2: 'd' }}
+    path = [ :a, :b ]
+    assert_equal(remove_subitem(obj, path), 'c', 'Remove value')
+    assert_equal(obj[path.first].key?(path.last), false, 'No last key')
+    assert_equal(obj[path.first].fetch(:b2), 'd', 'Other key remains')
+    obj = { a: 'sub', b: 'remain' }
+    path = [ :a ]
+    assert_equal(remove_subitem(obj, path), 'sub', 'Remove value at root')
+    assert_equal(obj.key?(path.last), false, 'No single key')
+    assert_equal(obj.fetch(:b), 'remain', 'Other key and value remains')
+  end
+
+  def test_replace_inlines
+    path = '#/components/schemas'
+    comp = ApiObjects::Components.new(path, 'Schema')
+    assert_equal(replace_inlines('not_hash_nor_array', comp), true, 'Not hash or array')
+    obj = YAML.safe_load(%(
 ---
 - $ref: "#{ref(path, 'Foo')}"
 - type: string
 ))
-comp = ApiObjects::Components.new(path, 'Schema')
-assert(replace_inlines(obj, comp), true, 'Array')
-s = comp.items
-assert(s.size, 1, 'Added one type')
-assert(obj.last.is_a?(Hash), true, 'Replaced is hash')
-assert(obj.last.key?('$ref'), true, 'Is reference')
-assert(s[s.keys.first].is_a?(Hash), true, 'Added schema is hash')
-assert(s[s.keys.first]['type'], 'string', 'Added schema is type: string')
+    comp = ApiObjects::Components.new(path, 'Schema')
+    assert_equal(replace_inlines(obj, comp), true, 'Array')
+    s = comp.items
+    assert_equal(s.size, 1, 'Added one type')
+    assert_equal(obj.last.is_a?(Hash), true, 'Replaced is hash')
+    assert_equal(obj.last.key?('$ref'), true, 'Is reference')
+    assert_equal(s[s.keys.first].is_a?(Hash), true, 'Added schema is hash')
+    assert_equal(s[s.keys.first]['type'], 'string', 'Added schema is type: string')
 
-obj = YAML.safe_load(%(
+    obj = YAML.safe_load(%(
 ---
 type: something
 ))
-comp = ApiObjects::Components.new(path, 'Schema')
-assert(replace_inlines(obj, comp), true, 'Hash')
-s = comp.items
-assert(s.size, 1, 'Added one type')
-assert(obj.is_a?(Hash), true, 'Still is hash')
-assert(obj.size, 1, 'Has only reference')
-assert(obj['$ref'], ref(path, s.keys.first), 'Correct reference')
+    comp = ApiObjects::Components.new(path, 'Schema')
+    assert_equal(replace_inlines(obj, comp), true, 'Hash')
+    s = comp.items
+    assert_equal(s.size, 1, 'Added one type')
+    assert_equal(obj.is_a?(Hash), true, 'Still is hash')
+    assert_equal(obj.size, 1, 'Has only reference')
+    assert_equal(obj['$ref'], ref(path, s.keys.first), 'Correct reference')
 
-obj = YAML.safe_load(%(
+    obj = YAML.safe_load(%(
 ---
 type: array
 items:
   type: string
 ))
-comp = ApiObjects::Components.new(path, 'Schema')
-assert(replace_inlines(obj, comp), true, 'Array type')
-s = comp.items
-assert(s.size, 2, 'Added 2 types')
-assert(obj.is_a?(Hash), true, 'Still is hash')
-assert(obj['$ref'], ref(path, s.keys.last), 'Has only reference')
-assert(s[s.keys.last]['items']['$ref'], ref(path, s.keys.first), 'Correct reference')
+    comp = ApiObjects::Components.new(path, 'Schema')
+    assert_equal(replace_inlines(obj, comp), true, 'Array type')
+    s = comp.items
+    assert_equal(s.size, 2, 'Added 2 types')
+    assert_equal(obj.is_a?(Hash), true, 'Still is hash')
+    assert_equal(obj['$ref'], ref(path, s.keys.last), 'Has only reference')
+    assert_equal(s[s.keys.last]['items']['$ref'], ref(path, s.keys.first), 'Correct reference')
 
-obj = YAML.safe_load(%(
+    obj = YAML.safe_load(%(
 ---
 type: array
 items:
   $ref: "#{ref(path, 'Foo')}"
 ))
-comp = ApiObjects::Components.new(path, 'Schema')
-assert(replace_inlines(obj, comp), true, 'Array type with reference')
-s = comp.items
-assert(s.size, 1, 'Added self')
-assert(obj['$ref'], ref(path, s.keys.first), 'Refers to array type')
+    comp = ApiObjects::Components.new(path, 'Schema')
+    assert_equal(replace_inlines(obj, comp), true, 'Array type with reference')
+    s = comp.items
+    assert_equal(s.size, 1, 'Added self')
+    assert_equal(obj['$ref'], ref(path, s.keys.first), 'Refers to array type')
 
-obj = YAML.safe_load(%(
+    obj = YAML.safe_load(%(
 ---
 type: object
 properties:
   name:
     $ref: "#{ref(path, 'Foo')}"
 ))
-comp = ApiObjects::Components.new(path, 'Schema')
-assert(replace_inlines(obj, comp), true, 'Object type ref')
-s = comp.items
-assert(s.size, 1, 'Added self again')
-assert(obj['$ref'], ref(path, s.keys.first), 'Refers to object type')
+    comp = ApiObjects::Components.new(path, 'Schema')
+    assert_equal(replace_inlines(obj, comp), true, 'Object type ref')
+    s = comp.items
+    assert_equal(s.size, 1, 'Added self again')
+    assert_equal(obj['$ref'], ref(path, s.keys.first), 'Refers to object type')
 
-obj = YAML.safe_load(%(
+    obj = YAML.safe_load(%(
 ---
 type: object
 properties:
   name:
     type: string
 ))
-comp = ApiObjects::Components.new(path, 'Schema')
-assert(replace_inlines(obj, comp), true, 'Object type string')
-s = comp.items
-assert(s.size, 2, 'Added one type for string, one for base')
-assert(s.dig(s.keys.last, 'properties', 'name', '$ref'), ref(path, s.keys.first), 'Correct reference')
+    comp = ApiObjects::Components.new(path, 'Schema')
+    assert_equal(replace_inlines(obj, comp), true, 'Object type string')
+    s = comp.items
+    assert_equal(s.size, 2, 'Added one type for string, one for base')
+    assert_equal(s.dig(s.keys.last, 'properties', 'name', '$ref'), ref(path, s.keys.first), 'Correct reference')
 
-obj = YAML.safe_load(%(
+    obj = YAML.safe_load(%(
 ---
 something:
   type: object
@@ -122,16 +131,16 @@ something:
     reffed:
       $ref: "#{ref(path, 'Foo')}"
 ))
-comp = ApiObjects::Components.new(path, 'Schema')
-assert(replace_inlines(obj, comp), true, 'something')
-s = comp.items
-assert(s.size, 2, 'Added one type from something, one for string')
-assert(obj.dig('something', '$ref'), ref(path, s.keys.last), 'Reference for something')
-assert(s.dig(s.keys.last, 'properties', 'name', '$ref'), ref(path, s.keys.first), 'Correct reference')
-assert(s[s.keys.first]['type'], 'string', 'String in schema')
-assert(s[s.keys.first]['other'], 'value', 'Other key in schema')
+    comp = ApiObjects::Components.new(path, 'Schema')
+    assert_equal(replace_inlines(obj, comp), true, 'something')
+    s = comp.items
+    assert_equal(s.size, 2, 'Added one type from something, one for string')
+    assert_equal(obj.dig('something', '$ref'), ref(path, s.keys.last), 'Reference for something')
+    assert_equal(s.dig(s.keys.last, 'properties', 'name', '$ref'), ref(path, s.keys.first), 'Correct reference')
+    assert_equal(s[s.keys.first]['type'], 'string', 'String in schema')
+    assert_equal(s[s.keys.first]['other'], 'value', 'Other key in schema')
 
-obj = YAML.safe_load(%(
+    obj = YAML.safe_load(%(
 ---
 oneOf:
 - type: object
@@ -144,15 +153,15 @@ oneOf:
     reffed:
       $ref: "#{ref(path, 'Foo')}"
 ))
-comp = ApiObjects::Components.new(path, 'Schema')
-assert(replace_inlines(obj, comp), true, 'oneOf with 1')
-s = comp.items
-assert(s.size, 2, 'Added 2 types from oneOf')
-assert(obj['oneOf'].first['$ref'], ref(path, s.keys.last), 'Correct reference for top-level type')
-assert(s[s.keys.last].dig('properties', 'name', '$ref'), ref(path, s.keys.first), 'Correct reference to string type')
-assert(s[s.keys.first]['other'], 'value', 'Other key in schema')
+    comp = ApiObjects::Components.new(path, 'Schema')
+    assert_equal(replace_inlines(obj, comp), true, 'oneOf with 1')
+    s = comp.items
+    assert_equal(s.size, 2, 'Added 2 types from oneOf')
+    assert_equal(obj['oneOf'].first['$ref'], ref(path, s.keys.last), 'Correct reference for top-level type')
+    assert_equal(s[s.keys.last].dig('properties', 'name', '$ref'), ref(path, s.keys.first), 'Correct reference to string type')
+    assert_equal(s[s.keys.first]['other'], 'value', 'Other key in schema')
 
-obj = YAML.safe_load(%(
+    obj = YAML.safe_load(%(
 anyOf:
 - type: object
   required:
@@ -166,17 +175,17 @@ anyOf:
 - type: string
   other: value
 ))
-comp = ApiObjects::Components.new(path, 'Schema')
-assert(replace_inlines(obj, comp), true, 'anyOf with 2')
-s = comp.items
-assert(s.size, 2, 'Added 2 types from anyOf')
-assert(obj['anyOf'].first['$ref'], ref(path, s.keys.last), 'Correct reference for object type')
-r = s[s.keys.last].dig('properties', 'name', '$ref')
-assert(r, ref(path, s.keys.first), 'Correct reference to string type')
-assert(obj['anyOf'].last['$ref'], r, 'Correct second reference for string type')
-assert(s[s.keys.first]['other'], 'value', 'Other key in schema')
+    comp = ApiObjects::Components.new(path, 'Schema')
+    assert_equal(replace_inlines(obj, comp), true, 'anyOf with 2')
+    s = comp.items
+    assert_equal(s.size, 2, 'Added 2 types from anyOf')
+    assert_equal(obj['anyOf'].first['$ref'], ref(path, s.keys.last), 'Correct reference for object type')
+    r = s[s.keys.last].dig('properties', 'name', '$ref')
+    assert_equal(r, ref(path, s.keys.first), 'Correct reference to string type')
+    assert_equal(obj['anyOf'].last['$ref'], r, 'Correct second reference for string type')
+    assert_equal(s[s.keys.first]['other'], 'value', 'Other key in schema')
 
-obj = YAML.safe_load(%(
+    obj = YAML.safe_load(%(
 allOf:
 - type: object
   required:
@@ -206,27 +215,22 @@ allOf:
     reffed:
       $ref: "#{ref(path, 'Foo')}"
 ))
-comp = ApiObjects::Components.new(path, 'Schema')
-assert(replace_inlines(obj, comp), true, 'allOf with 3')
-s = comp.items
-assert(s.size, 4, 'Added 4 types from allOf')
-n = %w[name field other]
-r = ref(path, s.keys.first)
-(0..2).each do |k|
-  assert(obj['allOf'][k]['$ref'], ref(path, s.keys[k + 1]), "Correct reference for type #[k]")
-  assert(s.dig(s.keys[k + 1], 'properties', n[k], '$ref'), r, "Type #{k} referes to string type")
-end
-assert(s[s.keys.first]['type'], 'string', 'Type key in schema')
-assert(s[s.keys.first]['other'], 'value', 'Other key in schema')
-
-$context = 'replace_anchor_refs'
-class TestCompo
-  def anchor_ref_replacement(ref)
-    return ref if ref.start_with?('#/')
-    "x#{ref}"
+    comp = ApiObjects::Components.new(path, 'Schema')
+    assert_equal(replace_inlines(obj, comp), true, 'allOf with 3')
+    s = comp.items
+    assert_equal(s.size, 4, 'Added 4 types from allOf')
+    n = %w[name field other]
+    r = ref(path, s.keys.first)
+    (0..2).each do |k|
+      assert_equal(obj['allOf'][k]['$ref'], ref(path, s.keys[k + 1]), "Correct reference for type #[k]")
+      assert_equal(s.dig(s.keys[k + 1], 'properties', n[k], '$ref'), r, "Type #{k} referes to string type")
+    end
+    assert_equal(s[s.keys.first]['type'], 'string', 'Type key in schema')
+    assert_equal(s[s.keys.first]['other'], 'value', 'Other key in schema')
   end
-end
-obj = YAML.safe_load(%(
+
+  def test_replace_anchor_refs
+    obj = YAML.safe_load(%(
 allOf:
 - type: object
   properties:
@@ -250,10 +254,10 @@ allOf:
     reffed:
       $ref: '#anch'
 ))
-replace_anchor_refs(obj, TestCompo.new)
-p = %w[properties reffed $ref]
-assert(obj['allOf'][0].dig(*p), 'x#anchored', 'First changed')
-assert(obj['allOf'][1].dig(*p), '#/components/schemas/Something', 'Second unchanged')
-assert(obj['allOf'][2].dig(*p), 'x#anch', 'Third changed')
-
-exit $unit_test
+    replace_anchor_refs(obj, TestCompo.new)
+    p = %w[properties reffed $ref]
+    assert_equal(obj['allOf'][0].dig(*p), 'x#anchored', 'First changed')
+    assert_equal(obj['allOf'][1].dig(*p), '#/components/schemas/Something', 'Second unchanged')
+    assert_equal(obj['allOf'][2].dig(*p), 'x#anch', 'Third changed')
+  end
+end

@@ -1,204 +1,211 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Copyright 2024-2025 Ismo Kärkkäinen
+# Copyright 2024-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
-require_relative '../shared/unittest'
+require 'test/unit'
 require_relative '../lib/openapi/sourcetools/docs'
 require_relative '../lib/openapi/sourcetools/task'
-require 'yaml'
-
-$unit_test = 0
 require_relative '../lib/openapi/sourcetools/loaders'
+require 'yaml'
+include Test::Unit::Assertions
 include OpenAPISourceTools
 
-
-$context = 'loaders'
-ldrs = Loaders.loaders
-assert(ldrs.empty?, false, 'Has loaders')
-ldrs.each do |ldr|
-  assert(ldr.is_a?(Method), true, 'Loader is a method')
-end
-
-$context = 'req_loader'
-begin
-  Loaders.req_loader('req:asoifgasdbvc')
-  assert(true, false, 'Exception not raised')
-rescue Exception => e
-  assert(e.is_a?(StandardError), true, 'Standard error raised')
-end
-begin
-  assert(Loaders.req_loader('not_a_gem'), false, 'Rejects plain name')
-rescue Exception => e
-  assert(true, false, "Exception #{e}")
-end
-begin
-  assert(Loaders.req_loader('req:rake'), true, 'Gem loaded')
-  assert(Gen.tasks.last.is_a?(RestoreProcessorStorage), true, 'Tasks data restore')
-rescue Exception => e
-  assert(true, false, "Exception #{e}")
-end
-
-$context = 'eval_loader'
-$code = nil
 def setcode
   $code = 'ok'
 end
-begin
-  Loaders.eval_loader('eval:asoifgasdbvc')
-  assert(true, false, 'Exception not raised')
-rescue Exception => e
-  assert(e.is_a?(StandardError), true, 'Standard error raised')
-end
-begin
-  assert(Loaders.eval_loader('not_code'), false, 'Rejects plain name')
-rescue Exception => e
-  assert(true, false, "Exception #{e}")
-end
-begin
-  assert(Loaders.eval_loader('eval:setcode'), true, 'Code accepted')
-  assert($code, 'ok', 'Code was run')
-  assert(Gen.tasks.last.is_a?(RestoreProcessorStorage), true, 'Tasks data restore')
-rescue Exception => e
-  assert(true, false, "Exception #{e}")
-end
 
-$context = 'ruby_loader'
-begin
-  Loaders.ruby_loader('../test-generate/unittest-loaders-error.rb')
-  assert(true, false, 'Exception not raised')
-rescue Exception => e
-  assert(e.is_a?(StandardError), true, 'Standard error raised on error in file')
-end
-begin
-  Loaders.ruby_loader('unittest-loaders-missing.rb')
-  assert(true, false, 'Exception not raised')
-rescue Exception => e
-  assert(e.is_a?(StandardError), true, 'Standard error raised on missing file')
-end
-begin
-  assert(Loaders.ruby_loader('not_handled.so'), false, 'Rejects other name')
-rescue Exception => e
-  assert(true, false, "Exception #{e}")
-end
-begin
-  assert(Loaders.ruby_loader('../test-generate/unittest-loaders-ok.rb'), true, 'File loaded')
-  assert(Gen.tasks.last.is_a?(Array), true, 'Added task')
-  t = Gen.tasks[-2]
-  assert(t.is_a?(RestoreProcessorStorage), true, 'Tasks data restore')
-  assert(t.x, Gen.x, 'Has same value as Gen.x')
-rescue Exception => e
-  assert(true, false, "Exception #{e}")
-end
+class LoadersTest < Test::Unit::TestCase
+  def test_loaders
+    ldrs = Loaders.loaders
+    assert_equal(ldrs.empty?, false, 'Has loaders')
+    ldrs.each do |ldr|
+      assert_equal(ldr.is_a?(Method), true, 'Loader is a method')
+    end
+  end
 
-$context = 'yaml_loader'
-begin
-  Loaders.yaml_loader('yaml:name:')
-  assert(true, false, 'Exception not raised')
-rescue Exception => e
-  assert(e.is_a?(StandardError), true, 'No filename')
-end
-begin
-  Loaders.yaml_loader('yaml::../test-generate/processed.yaml')
-  assert(true, false, 'Exception not raised')
-rescue Exception => e
-  assert(e.is_a?(StandardError), true, 'No name')
-end
-begin
-  Loaders.yaml_loader(':../test-generate/processed.yaml')
-  assert(true, false, 'Exception not raised')
-rescue Exception => e
-  assert(e.is_a?(StandardError), true, 'No name, no prefix')
-end
-begin
-  Loaders.yaml_loader('yaml:name:asoifgasdbvc')
-  assert(true, false, 'Exception not raised')
-rescue Exception => e
-  assert(e.is_a?(StandardError), true, 'Standard error raised')
-end
-begin
-  assert(Loaders.yaml_loader('not_yaml'), false, 'Rejects plain name')
-rescue Exception => e
-  assert(true, false, "Exception #{e}")
-end
-begin
-  assert(Loaders.yaml_loader('yaml:name:../test-generate/processed.yaml'), true, 'File loaded')
-  assert(Gen.d.name.nil?, false, 'name defined')
-rescue Exception => e
-  assert(true, false, "Exception #{e}")
-end
-begin
-  assert(Loaders.yaml_loader('ext:../test-generate/processed.yaml'), true, 'File loaded with extension')
-  assert(Gen.d.ext.nil?, false, 'ext defined')
-rescue Exception => e
-  assert(true, false, "Exception #{e}")
-end
+  def test_req_loader
+    begin
+      Loaders.req_loader('req:asoifgasdbvc')
+      assert_equal(true, false, 'Exception not raised')
+    rescue Exception => e
+      assert_equal(e.is_a?(StandardError), true, 'Standard error raised')
+    end
+    begin
+      assert_equal(Loaders.req_loader('not_a_gem'), false, 'Rejects plain name')
+    rescue Exception => e
+      assert_equal(true, false, "Exception #{e}")
+    end
+    begin
+      assert_equal(Loaders.req_loader('req:rake'), true, 'Gem loaded')
+      assert_equal(Gen.tasks.last.is_a?(RestoreProcessorStorage), true, 'Tasks data restore')
+    rescue Exception => e
+      assert_equal(true, false, "Exception #{e}")
+    end
+  end
 
-$context = 'bin_loader'
-begin
-  Loaders.bin_loader('bin:test:')
-  assert(true, false, 'Exception not raised')
-rescue Exception => e
-  assert(e.is_a?(StandardError), true, 'No filename')
-end
-begin
-  Loaders.bin_loader('bin::../test-generate/processed.yaml')
-  assert(true, false, 'Exception not raised')
-rescue Exception => e
-  assert(e.is_a?(StandardError), true, 'No name')
-end
-begin
-  Loaders.bin_loader('bin:test:iaeugfapsdjbvpsd')
-  assert(true, false, 'Exception not raised')
-rescue Exception => e
-  assert(e.is_a?(StandardError), true, 'Standard error raised')
-end
-begin
-  assert(Loaders.bin_loader('not_bin'), false, 'Rejects plain name')
-rescue Exception => e
-  assert(true, false, "Exception #{e}")
-end
-begin
-  assert(Loaders.bin_loader('bin:test:../test-generate/processed.yaml'), true, 'File loaded')
-  assert(Gen.d.test.nil?, false, 'test defined')
-rescue Exception => e
-  assert(true, false, "Exception #{e}")
-end
+  def test_eval_loader
+    $code = nil
+    begin
+      Loaders.eval_loader('eval:asoifgasdbvc')
+      assert_equal(true, false, 'Exception not raised')
+    rescue Exception => e
+      assert_equal(e.is_a?(StandardError), true, 'Standard error raised')
+    end
+    begin
+      assert_equal(Loaders.eval_loader('not_code'), false, 'Rejects plain name')
+    rescue Exception => e
+      assert_equal(true, false, "Exception #{e}")
+    end
+    begin
+      assert_equal(Loaders.eval_loader('eval:setcode'), true, 'Code accepted')
+      assert_equal($code, 'ok', 'Code was run')
+      assert_equal(Gen.tasks.last.is_a?(RestoreProcessorStorage), true, 'Tasks data restore')
+    rescue Exception => e
+      assert_equal(true, false, "Exception #{e}")
+    end
+  end
 
-$context = 'config_loader'
-begin
-  Loaders.config_loader('config:')
-  assert(true, false, 'Exception not raised')
-rescue Exception => e
-  assert(e.is_a?(StandardError), true, 'No name')
-end
-begin
-  assert(Loaders.config_loader('name'), false, 'Rejects plain name')
-rescue Exception => e
-  assert(true, false, "Exception #{e}")
-end
-begin
-  assert(Loaders.config_loader('config:test'), true, 'Name set')
-  assert(Gen.config.nil?, false, 'config set')
-  assert(Gen.config, 'test', 'config has value test')
-rescue Exception => e
-  assert(true, false, "Exception #{e}")
-end
-begin
-  Loaders.config_loader('config:name')
-  Loaders.config_loader('config:name2')
-  assert(true, false, 'Exception not raised')
-rescue Exception => e
-  assert(e.is_a?(StandardError), true, 'Name set while previous exists')
-end
+  def test_ruby_loader
+    begin
+      Loaders.ruby_loader('../test-generate/unittest-loaders-error.rb')
+      assert_equal(true, false, 'Exception not raised')
+    rescue Exception => e
+      assert_equal(e.is_a?(StandardError), true, 'Standard error raised on error in file')
+    end
+    begin
+      Loaders.ruby_loader('unittest-loaders-missing.rb')
+      assert_equal(true, false, 'Exception not raised')
+    rescue Exception => e
+      assert_equal(e.is_a?(StandardError), true, 'Standard error raised on missing file')
+    end
+    begin
+      assert_equal(Loaders.ruby_loader('not_handled.so'), false, 'Rejects other name')
+    rescue Exception => e
+      assert_equal(true, false, "Exception #{e}")
+    end
+    begin
+      assert_equal(Loaders.ruby_loader('../test-generate/unittest-loaders-ok.rb'), true, 'File loaded')
+      assert_equal(Gen.tasks.last.is_a?(Array), true, 'Added task')
+      t = Gen.tasks[-2]
+      assert_equal(t.is_a?(RestoreProcessorStorage), true, 'Tasks data restore')
+      assert_equal(t.x, Gen.x, 'Has same value as Gen.x')
+    rescue Exception => e
+      assert_equal(true, false, "Exception #{e}")
+    end
+  end
 
-$context = 'separator_loader'
-assert(Loaders.separator_loader('mismatch:'), false, 'Not separator')
-Gen.separator = 'foo'
-assert(Loaders.separator_loader('separator:'), true, 'Empty separator')
-assert(Gen.separator.nil?, true, 'separator set to nil')
-assert(Loaders.separator_loader('separator:bar'), true, 'separator set')
-assert(Gen.separator, 'bar', 'separator has value bar')
+  def test_yaml_loader
+    begin
+      Loaders.yaml_loader('yaml:name:')
+      assert_equal(true, false, 'Exception not raised')
+    rescue Exception => e
+      assert_equal(e.is_a?(StandardError), true, 'No filename')
+    end
+    begin
+      Loaders.yaml_loader('yaml::../test-generate/processed.yaml')
+      assert_equal(true, false, 'Exception not raised')
+    rescue Exception => e
+      assert_equal(e.is_a?(StandardError), true, 'No name')
+    end
+    begin
+      Loaders.yaml_loader(':../test-generate/processed.yaml')
+      assert_equal(true, false, 'Exception not raised')
+    rescue Exception => e
+      assert_equal(e.is_a?(StandardError), true, 'No name, no prefix')
+    end
+    begin
+      Loaders.yaml_loader('yaml:name:asoifgasdbvc')
+      assert_equal(true, false, 'Exception not raised')
+    rescue Exception => e
+      assert_equal(e.is_a?(StandardError), true, 'Standard error raised')
+    end
+    begin
+      assert_equal(Loaders.yaml_loader('not_yaml'), false, 'Rejects plain name')
+    rescue Exception => e
+      assert_equal(true, false, "Exception #{e}")
+    end
+    begin
+      assert_equal(Loaders.yaml_loader('yaml:name:../test-generate/processed.yaml'), true, 'File loaded')
+      assert_equal(Gen.d.name.nil?, false, 'name defined')
+    rescue Exception => e
+      assert_equal(true, false, "Exception #{e}")
+    end
+    begin
+      assert_equal(Loaders.yaml_loader('ext:../test-generate/processed.yaml'), true, 'File loaded with extension')
+      assert_equal(Gen.d.ext.nil?, false, 'ext defined')
+    rescue Exception => e
+      assert_equal(true, false, "Exception #{e}")
+    end
+  end
 
-exit $unit_test
+  def test_bin_loader
+    begin
+      Loaders.bin_loader('bin:test:')
+      assert_equal(true, false, 'Exception not raised')
+    rescue Exception => e
+      assert_equal(e.is_a?(StandardError), true, 'No filename')
+    end
+    begin
+      Loaders.bin_loader('bin::../test-generate/processed.yaml')
+      assert_equal(true, false, 'Exception not raised')
+    rescue Exception => e
+      assert_equal(e.is_a?(StandardError), true, 'No name')
+    end
+    begin
+      Loaders.bin_loader('bin:test:iaeugfapsdjbvpsd')
+      assert_equal(true, false, 'Exception not raised')
+    rescue Exception => e
+      assert_equal(e.is_a?(StandardError), true, 'Standard error raised')
+    end
+    begin
+      assert_equal(Loaders.bin_loader('not_bin'), false, 'Rejects plain name')
+    rescue Exception => e
+      assert_equal(true, false, "Exception #{e}")
+    end
+    begin
+      assert_equal(Loaders.bin_loader('bin:test:../test-generate/processed.yaml'), true, 'File loaded')
+      assert_equal(Gen.d.test.nil?, false, 'test defined')
+    rescue Exception => e
+      assert_equal(true, false, "Exception #{e}")
+    end
+  end
+
+  def test_config_loader
+    begin
+      Loaders.config_loader('config:')
+      assert_equal(true, false, 'Exception not raised')
+    rescue Exception => e
+      assert_equal(e.is_a?(StandardError), true, 'No name')
+    end
+    begin
+      assert_equal(Loaders.config_loader('name'), false, 'Rejects plain name')
+    rescue Exception => e
+      assert_equal(true, false, "Exception #{e}")
+    end
+    begin
+      assert_equal(Loaders.config_loader('config:test'), true, 'Name set')
+      assert_equal(Gen.config.nil?, false, 'config set')
+      assert_equal(Gen.config, 'test', 'config has value test')
+    rescue Exception => e
+      assert_equal(true, false, "Exception #{e}")
+    end
+    begin
+      Loaders.config_loader('config:name')
+      Loaders.config_loader('config:name2')
+      assert_equal(true, false, 'Exception not raised')
+    rescue Exception => e
+      assert_equal(e.is_a?(StandardError), true, 'Name set while previous exists')
+    end
+  end
+
+  def test_separator_loader
+    assert_equal(Loaders.separator_loader('mismatch:'), false, 'Not separator')
+    Gen.separator = 'foo'
+    assert_equal(Loaders.separator_loader('separator:'), true, 'Empty separator')
+    assert_equal(Gen.separator.nil?, true, 'separator set to nil')
+    assert_equal(Loaders.separator_loader('separator:bar'), true, 'separator set')
+    assert_equal(Gen.separator, 'bar', 'separator has value bar')
+  end
+end

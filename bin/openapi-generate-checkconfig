@@ -22,17 +22,17 @@ def main
     opts.banner = 'Usage: openapi-generate-checkconfig [options]'
     opts.separator ''
     opts.separator 'Options:'
-    opts.on('-c', '--config NAME', 'Use config prefix NAME.') do |c|
+    opts.on('-c', '--config NAME', 'Use config prefix NAME. (config:NAME)') do |c|
       prefix = c
     end
-    opts.on('-s', '--separator STRING', 'Use separator STRING.') do |s|
+    opts.on('-s', '--separator STRING', 'Use separator STRING. (separator:STRING)') do |s|
       Gen.separator = s unless s.empty?
     end
     opts.on('-r', '--[no-]read', "Show if file is read by read_contents, default #{Common.yesno(read)}.") do |b|
       read = b
     end
     opts.on('-k', '--keys KEYS', 'Show all values of KEYS.') do |ks|
-      keys = ks.split('/').reject { |k| k.empty? } unless ks.empty?
+      keys = ks.split('/').reject(&:empty?) unless ks.empty?
       keys = nil if !keys.nil? && keys.empty?
     end
     opts.on('-h', '--help', 'Print this help and exit.') do
@@ -59,13 +59,13 @@ That and read check require the configuration files to be YAML/JSON.
     ki = nil
     unless keys.nil? || cfg.content.nil?
       v = cfg.content.dig(*keys)
-      ki = "#{v}" unless v.nil?
+      ki = v.to_s unless v.nil?
     end
     ri = read ? !cfg.content.nil? : nil
     next if (read || !keys.nil?) && ki.nil? && ri.nil?
     puts info
     puts "  #{ki}" unless ki.nil?
-    puts "  File is #{ri ? '' : 'not ' }read." unless ri.nil?
+    puts "  File is #{ri ? '' : 'not '}read." unless ri.nil?
   end
   0
 end

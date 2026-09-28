@@ -82,7 +82,7 @@ module OpenAPISourceTools
       d = name.downcase
       if d.start_with?(YAML_PREFIX)
         name = name.slice(YAML_PREFIX.size...name.size)
-      elsif (YAML_EXTS.index { |s| d.end_with?(s) }).nil?
+      elsif YAML_EXTS.index { |s| d.end_with?(s) }.nil?
         return false
       end
       n, _sep, f = name.partition(':')
@@ -140,9 +140,9 @@ module OpenAPISourceTools
         method(:req_loader),
         method(:eval_loader),
         method(:ruby_loader),
+        method(:config_loader),
         method(:yaml_loader),
         method(:bin_loader),
-        method(:config_loader),
         method(:separator_loader)
       ]
     end
@@ -153,7 +153,7 @@ module OpenAPISourceTools
 - #{Loaders::EVAL_PREFIX}code : runs code to add gem tasks again.
 - ruby_file#{Loaders::RUBY_EXT} : changes to Ruby file directory and requires the file.
 - #{Loaders::YAML_PREFIX}name:filename : Loads YAML file into Gen.d.name.
-- name:filename.{#{(Loaders::YAML_EXTS.map { |s| s[1...s.size] }).join('|')}} : Loads YAML file into Gen.d.name.
+- name:filename.{#{Loaders::YAML_EXTS.map { |s| s[1...s.size] }.join('|')}} : Loads YAML file into Gen.d.name.
 - #{Loaders::BIN_PREFIX}name:filename : Loads binary file into Gen.d.name.
 - #{Loaders::CONFIG_PREFIX}name : Sets Gen.config for next gem/Ruby file configuration loading.
 - #{Loaders::SEPARATOR_PREFIX}string : Sets Gen.separator to string.

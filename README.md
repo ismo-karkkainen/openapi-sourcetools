@@ -141,7 +141,7 @@ Designed to order keys in objects, and arrays using keys in the array elements. 
 
 ### Configuration File Convenience Functions
 
-Using the config:name before a gem or Ruby file loading sets the configuration file name prefix that is cleared after the processor has been loaded. The default configration name is only set to the Ruby file base name excluding ".rb". The openapi-generate will not load any configuration files, but configuration file find and read functions are provided for convenience.
+Using the config:name before a gem or Ruby file loading sets the configuration file name prefix that is cleared after the processor has been loaded. The default configuration name is only set to the Ruby file base name excluding ".rb". The openapi-generate will not load any configuration files, but configuration file find and read functions are provided for convenience.
 
 The configuration file functions provided in OpenAPISourceTools::ConfigLoader provide a method to find files in the working direectory, read them and return them as an array. The intention is that you can provide multiple files that can be combined together. That allows you to have the general configuration, and other files that override parts of the configuration for example due to the needs of your local environment, or because you need something special this one time.
 
@@ -248,7 +248,7 @@ If your configuration files are not YAML/JSON then you can still use the conveni
 
 ### openapi-generate-checkconfig
 
-This is intended to check what config files are found if the configuration loading convenience functions are used. Allows you to specify config and separator, which are the same values you would use as argument to openapi-generate. Can report if the file is read by the read_contents convenience funcrion, and if value under given key is found in any files and what the value is.
+This is for checking what config files are found if the configuration loading convenience functions are used. Allows you to specify config and separator, which are the same values you would use as argument to openapi-generate. Can report if the file is read by the read_contents convenience funcrion, and if value under given key is found in any files and what the value is.
 
 ## openapi-merge
 

@@ -8,11 +8,11 @@ require_relative 'gen'
 require 'find'
 require 'yaml'
 
+# Gem namespace.
 module OpenAPISourceTools
   # Configuration file find and load convenience functions.
   # See the first 3 methods. The rest are intended to be internal helpers.
   module ConfigLoader
-
     # A function to find all files with a given prefix.
     # Prefix is taken from Gen.config if nil.
     # Returns an array of ConfigFileInfo objects.
@@ -43,9 +43,10 @@ module OpenAPISourceTools
 
     # Maps an array of ConfigFileInfo objects to an array of their contents.
     def self.contents_array(config_file_infos)
-      config_file_infos.map(&:content).reject(&:nil?)
+      config_file_infos.map(&:content).compact
     end
 
+    # The result with data about the config file.
     class ConfigFileInfo
       include Comparable
 

@@ -10,6 +10,7 @@ require_relative 'loaders'
 require_relative 'gen'
 
 
+# Gem namespace.
 module OpenAPISourceTools
   def self.executable_bits_on(mode)
     mode = mode.to_s(8).chars

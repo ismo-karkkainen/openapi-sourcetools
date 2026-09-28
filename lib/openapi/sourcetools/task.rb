@@ -7,8 +7,8 @@ require_relative 'common'
 require 'erb'
 
 
+# Gem namespace.
 module OpenAPISourceTools
-
   # Required interface for tasks, with default implementation for some methods.
   module TaskInterface
     def generate(context_binding)

@@ -56,7 +56,7 @@ def replace_inlines(obj, components, top_level_name = nil)
   end
   unless looks_like_type
     # Some kind of intermediate-level object.
-    (obj.keys.sort! { |a, b| a.to_s <=> b.to_s }).each do |key|
+    obj.keys.sort! { |a, b| a.to_s <=> b.to_s }.each do |key|
       next if key == 'securitySchemes'
       return false unless replace_inlines(obj[key], components)
     end

@@ -240,17 +240,11 @@ module OpenAPISourceTools
           pk = @parts[k]
           ppk = pp[k]
           if pk.key?('fixed')
-            if ppk.key?('fixed')
-              c = pk['fixed'] <=> ppk['fixed']
-            else
-              return -1
-            end
+            return -1 unless ppk.key?('fixed')
+            c = pk['fixed'] <=> ppk['fixed']
           else
-            if ppk.key?('fixed')
-              return 1
-            else
-              c = pk.fetch('parameter', '') <=> ppk.fetch('parameter', '')
-            end
+            return 1 if ppk.key?('fixed')
+            c = pk.fetch('parameter', '') <=> ppk.fetch('parameter', '')
           end
           return c unless c.zero?
         end

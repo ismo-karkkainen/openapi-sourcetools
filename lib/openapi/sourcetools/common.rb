@@ -10,7 +10,7 @@ module OpenAPISourceTools
   # Common methods used in programs and elsewhere gathered into one place.
   module Common
     def self.aargh(message, return_value = nil)
-      message = message.map(&:to_s).join("\n") if message.is_a? Array
+      message = message.join("\n") if message.is_a? Array
       $stderr.puts message
       return_value
     end

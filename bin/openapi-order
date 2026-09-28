@@ -213,6 +213,7 @@ def default_order_data(order_key, regexp_prefix)
       - parameters
       - '*'
       - additionalOperations
+      - re:^x-openapi-sourcetools.*$
       '*':
         #{order_key}: &OperationObject
         - '$ref'

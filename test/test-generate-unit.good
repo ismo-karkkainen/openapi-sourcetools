@@ -42,7 +42,7 @@ ok: : Gen defined
 ####COMMAND Config unit tests
 ####CODE 0
 ####OUT
-11 tests, 91 assertions, 0 failures, 0 errors, 0 pendings, 0 omissions, 0 notifications
+12 tests, 97 assertions, 0 failures, 0 errors, 0 pendings, 0 omissions, 0 notifications
 ####ERR
 ####COMMAND Generate unit tests
 ####CODE 0

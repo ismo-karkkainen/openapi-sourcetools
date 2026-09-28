@@ -3,9 +3,10 @@
 # Copyright © 2025-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
+# Gem namespace.
 module OpenAPISourceTools
   NAME = 'openapi-sourcetools'
-  VERSION = '0.12.0'
+  VERSION = '0.12.1'
 
   def self.info(separator = ': ')
     "#{NAME}#{separator}#{VERSION}"

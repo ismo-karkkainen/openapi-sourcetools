@@ -37,7 +37,7 @@ class ConfigTest < Test::Unit::TestCase
     pieces = [ 'foo', :dir, 'lvl0', :dir, 'lvl1', :separator, 'lvl2' ]
     path = 'foo/lvl0/lvl1+lvl2'
     c = ConfigLoader::ConfigFileInfo.new(pieces, path)
-    cn = { 'key' => 'value', 'key2' => { 'lvl1' => 'bar'} }
+    cn = { 'key' => 'value', 'key2' => { 'lvl1' => 'bar' } }
     c.bury_content(cn)
     ct = c.content
     c.keys.each do |k|
@@ -71,6 +71,13 @@ class ConfigTest < Test::Unit::TestCase
     end
   end
 
+  def test_find_filenames_exact
+    root, name_prefix = ConfigLoader.prepare_prefix('cfgname/name.yaml', File.join(Dir.pwd, '../test-generate/cfgname/'))
+    fps = ConfigLoader.find_filenames(root, name_prefix)
+    assert_equal(1, fps.size, '1 file found')
+    assert(fps.first.end_with?('/name.yaml'))
+  end
+
   def test_path_splitter
     s = ConfigLoader.path_splitter(nil)
     pcs = 'foo/bar+baz'.split(s)
@@ -100,6 +107,9 @@ class ConfigTest < Test::Unit::TestCase
     f, e = ConfigLoader.remove_extension('dir.ext/name', [ '.yaml', '.*' ])
     assert_equal(f, 'dir.ext/name', 'name returned as is')
     assert_equal(e.nil?, true, 'no extension')
+    f, e = ConfigLoader.remove_extension('name.yaml', [ '.*' ])
+    assert_equal('name', f)
+    assert_equal('.yaml', e)
   end
 
   def test_convert_path_end
@@ -114,6 +124,9 @@ class ConfigTest < Test::Unit::TestCase
     c = ConfigLoader.convert_path_end(r + 'foo/bar+baz.yaml', s, r.size, [ '.yaml' ])
     assert_equal(c.root, 'foo', 'correct root')
     assert_equal(c.keys, [ 'bar', 'baz' ], 'extension not in keys')
+    c = ConfigLoader.convert_path_end(r + 'cfgname/name.yaml', s, r.size, [ '.*' ])
+    assert_equal('cfgname', c.root)
+    assert_equal([ 'name' ], c.keys, 'extension not in keys')
   end
 
   def test_config_file_info_compare

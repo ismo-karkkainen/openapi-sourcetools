@@ -1,0 +1,32 @@
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+components:
+  schemas:
+    UserNumber:
+      type: object
+      description: From openapi.yaml
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        number:
+          type: number
+    User:
+      type: object
+      description: From openapi.yaml
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+    Something:
+      type: object
+      description: From openapi.yaml
+      properties:
+        prop_name:
+          type: string
+        other:
+          type: string
+    JustReference:
+      $ref: "#/components/schemas/User"

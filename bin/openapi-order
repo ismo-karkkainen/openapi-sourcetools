@@ -53,6 +53,7 @@ def default_order_data(order_key, regexp_prefix)
   server: *ServerObject
   parameters:
     #{order_key}: &ParameterObject_order
+    - required: '>' # True before false.
     - name
     - in
     '*': &ParameterObject
@@ -216,7 +217,7 @@ def default_order_data(order_key, regexp_prefix)
       - re:^x-openapi-sourcetools.*$
       '*':
         #{order_key}: &OperationObject
-        - '$ref'
+        - '\$ref'
         - operationId
         - summary
         - description
@@ -349,7 +350,7 @@ end
 
 # This needs to extract all path/order pairs, store and sort.
 
-def extract_orders(path, order, collection, order_key, regexp_prefix)
+def extract_orders(path, order, collection, order_key, regexp_prefix, visited)
   return true unless order.is_a?(Hash)
   order.each do |key, value|
     if key == order_key
@@ -357,9 +358,13 @@ def extract_orders(path, order, collection, order_key, regexp_prefix)
         OpenAPISourceTools::Common.aargh("Not an array: #{path.join('.')}.#{order_key} =\n#{YAML.dump(value)}")
         return false
       end
+      return true if visited.member?(value.object_id)
+      visited.add(value.object_id)
       value.each_with_index do |v, k|
-        next if v.is_a?(String)
-        OpenAPISourceTools::Common.aargh("Not a string: #{path}.#{order_key}[#{k}] =\n#{YAML.dump(v)}")
+        ov = OpenAPISourceTools::Ordering::Order.ordervalue(v)
+        value[k] = ov
+        next unless ov.nil?
+        OpenAPISourceTools::Common.aargh("Not valid order value: #{path}.#{order_key}[#{k}] =\n#{YAML.dump(v)}")
         return false
       end
       key_path = OpenAPISourceTools::Ordering::KeyPath.new(path, regexp_prefix)
@@ -368,7 +373,7 @@ def extract_orders(path, order, collection, order_key, regexp_prefix)
     else
       key = key.to_s unless key.is_a?(String)
       path.push(key)
-      return false unless extract_orders(path, value, collection, order_key, regexp_prefix)
+      return false unless extract_orders(path, value, collection, order_key, regexp_prefix, visited)
       path.pop
     end
   end
@@ -473,14 +478,17 @@ def main
       regexp_prefix = p
     end
     opts.on('-h', '--help', 'Print this help and exit.') do
-      $stdout.puts %(#{opts}
+      $stdout.puts <<EOF
+#{opts}
 Loads YAML document and applies ordering to object keys, and arrays with
 objects, when an order matches the key path to object.
 
 Can be used on generic YAML or JSON files. Default order is for OpenAPI
 documents.
 
-The order instructions key "#{order_key}" value must be an array of strings.
+The order instructions key "#{order_key}" value must be an array of strings
+or single-item map from string to "<" or ">" to indicate ascending (default)
+or descending order. Hence any 'key' is same as 'key: "<"'.
 The values can be any combination of the following:
 - Literal key name.
 - Regular expression starting with "#{regexp_prefix}".
@@ -493,13 +501,13 @@ position are sorted within that position.
 The path to the "#{order_key}" can have any combination of the following:
 - Literal key name.
 - Regular expression starting with "#{regexp_prefix}".
-- "*" that matches one key of any value.
-- "**" that matches one or more keys of any value.
+- "*" that matches one key of any content.
+- "**" that matches one or more keys of any content.
 The path is used to determine if a value in the document should be ordered
 using the instructions. At top level the path is empty and applies to the root
 of the document. Long paths are considered to be more specific than short
 paths, because they supposedly contain more literal keys or limiting regular
-expressions so thay are intended for a specific case. Of paths of same length
+expressions so they are intended for a specific case. Of paths of same length
 one with "**" is considered less specific than one without.
 
 The path to a value in the document is matched against paths to "#{order_key}"
@@ -539,7 +547,7 @@ so provide it if you want to keep it. Useful for readability.
 
 When reading an order file, --key and --regexp are over-ridden by root-level
 object "#{metadata}" keys "#{metadata_key}" and "#{metadata_regexp}" values.
-)
+EOF
       exit 0
     end
   end
@@ -562,7 +570,7 @@ object "#{metadata}" keys "#{metadata_key}" and "#{metadata_regexp}" values.
     order_key = md.fetch(metadata_key, order_key)
     regexp_prefix = md.fetch(metadata_regexp, regexp_prefix)
     path_orders = []
-    return 4 unless extract_orders([], order, path_orders, order_key, regexp_prefix)
+    return 4 unless extract_orders([], order, path_orders, order_key, regexp_prefix, Set.new)
     path_orders.sort!.reverse! # Longest key pattern sequence first.
     order_document(path_orders, [], doc)
     doc = formats[format].call(doc, line_width)

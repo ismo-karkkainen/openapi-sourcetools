@@ -45,6 +45,7 @@ To add split paths and to copy security requirement object arrays to operation o
 
 ```sh
 cat processed_document.yaml |
+openapi-logicsplit |
 openapi-processpaths |
 openapi-addsecurityschemes |
 cat > generation_source_document.yaml
@@ -52,7 +53,7 @@ cat > generation_source_document.yaml
 
 The main effect of the above programs is to add items under components and have other parts refer to those. Since existing items are not touched, there may be duplicates after the processing. For schemas run `openapi-checkschemas` to obtain information about the document.
 
-If the intent is to clean-up the document, omitting `--add` and `openapi-processpaths` is probably desired. Running programs one by one, applying changes and continuing until desired outcome has been reached is probably what you want to do.
+If the intent is to clean-up the document, omitting `--add`, `openapi-logicsplit` and `openapi-processpaths` is probably desired. Running programs one by one, applying changes and continuing until desired outcome has been reached is probably what you want to do.
 
 Merging multiple files into a single API document can be done as follows:
 
@@ -69,6 +70,15 @@ openapi-merge --first openapi --first info --first servers client_info.yaml tmp_
 rm tmp_doc*.yaml
 ```
 
+The openapi-schema-* programs can be used to list, extract, and embed schemas into a document. The intended use is to extract a schema, run it through external JSON schema tool such as linter, and put the altered schema back into the document. The various document and schema path formats allow for flexibility in the source and target documents.
+
+```sh
+openapi-schema-ls -i api_doc.yaml -o namelist.txt
+openapi-schema-out -i api_doc.yaml -n SchemaName -o schema.json
+# Modify schema.json content.
+openapi-schema-in -i api_doc.yaml --schema schema.json -n SchemaName -o api_doc2.json
+```
+
 ## openapi-addschemas
 
 Checks for presence of schema definitions first inside the schemas under "components/schemas", and then elsewhere in the document. Mappings under various keys are checked. For any definition found, adds a definition under "components/schemas" and replaces the original with a reference.
@@ -76,6 +86,10 @@ Checks for presence of schema definitions first inside the schemas under "compon
 This does not change existing schemas declared at level immediately under "components/schemas" that are practically identical, to use references. The properties of objects and array items will be changed to references.
 
 For simple types such as a string with no size or content limitations, output may appear annoying. For processing the document later, I think it is easier to detect that you have another string with different limitations and make a decision to treat it as a different type or provide a function to check the limitations, given a generic string, than to keep track of what you have already encountered when openapi-generate is being run.
+
+## openapi-logicsplit
+
+Checks each schema and if it is a mixture of logic and other keywords, the schema is split to logic and other parts, and the original schema becomes an "allOf" with reference to both created schemas. Intended to simplify code generation later on.
 
 ## openapi-addmediatypes
 
@@ -139,6 +153,18 @@ The input document can in practice be anything that Ruby YAML module can load. T
 
 Designed to order keys in objects, and arrays using keys in the array elements. Internal default order is for OpenAPI documents, but with custom order can be used to order other files as well, including JSON with optional JSON output. Output the default order using --default argument and check help description to get started with specifying your own order instructions file.
 
+## openapi-schema-in
+
+Takes document and schema files, pulls the named schema out of the schema file, and places it into the document. References are modified according to paths data. The default schema path data `jsonschema` indicates the schema is at root, so the root object is used, even if there is a schema by that name in the schema document. If the named schema is under `$defs` then use `jsonschemadefs` schema paths.
+
+## openapi-schema-ls
+
+Lists the names of all schemas in the given document. Using document paths format argument you can have change where the listed schemas are. Note that this only lists schemas with names, found using paths data. Also supports dumping the internal document path records so you can modify them as desired.
+
+## openapi-schema-out
+
+Takes document and schema name, and extracts it from the given document. By default also extracts all schemas that the original schema references. References are modified according to paths data.
+
 ### Configuration File Convenience Functions
 
 Using the config:name before a gem or Ruby file loading sets the configuration file name prefix that is cleared after the processor has been loaded. The default configuration name is only set to the Ruby file base name excluding ".rb". The openapi-generate will not load any configuration files, but configuration file find and read functions are provided for convenience.
@@ -147,7 +173,7 @@ The configuration file functions provided in OpenAPISourceTools::ConfigLoader pr
 
 The file search treats any directory as a key, and files in sub-directories are considered to be nested inside objects with keys equal to the sub-directory names. Any suffix in top-level is used to order the files, so "name" comes before "name1", and that comes before "name2", but they are all considered to be at the root. Consider the following files:
 
-```
+```sh
 cfgname.yaml
 cfgname/name.yaml
 cfgname/subdir/name.yaml
@@ -232,7 +258,7 @@ By default the separator is nil since the usage is not common. You probably want
 
 For example you set the separator to "+" by passing "separator:+" to openapi-generate before the configuration files are loaded. In that case the file "cfgname/subdir/name.yaml" can be named as any of the following:
 
-```
+```sh
 cfgname/subdir+name.yaml
 cfgname+subdir/name.yaml
 cfgname+subdir+name.yaml
@@ -352,8 +378,6 @@ If that is all you need to do, considering the gem has been required already, yo
 
 ## Work in Progress
 
-openapi-oftypes is intended for gathering information and making checks so that the code generation for allOf, oneOf, and anyOf becomes simpler.
-
 Separate program to force all values of xOf, if, then, else, not to be their separate schemas. Specifically anything from core document with applying subschemas with logic or conditionally. This would be done for the benefit of code generation. Keeps everything flat.
 
 Code generation then has to figure out if the schema itself offers a type or if it just represents code that eventually returns something. The types of something can be dug out by following references until a type schema is reached in each branch. This might be good as  a separate program so that user can run it and check that the outcome contains what is expected. Store as extension key.
@@ -362,8 +386,10 @@ Separate program like openapi-checkschemas to dig out the types and present to t
 
 Since the level below logic and combine operators may have schemas or further logic or combine, values need to be dug. It might be easier to store staightforward schema types first, then accumulate other types after that. If the schema root is simple type, the type is known but the properties may have unknown types. Logic and combining may have loops, but since we are gathering straightforward types, the loop can not add straightforward types to the known list.
 
+Add a program that turns each schema into intermediate representation that is suitable for code generation to follow. The question is whether to alter the schema in the document or just convert to logically equivalent representation during processing. Latter is needed, former might be desired.
+
 ## License
 
-Copyright © 2021-2026 Ismo Kärkkäinen
+Copyright © 2021-2026 Ismo Kärkkäinen except files generated by AI.
 
 Licensed under Universal Permissive License. See LICENSE.txt.

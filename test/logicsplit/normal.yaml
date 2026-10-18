@@ -1,0 +1,31 @@
+openapi: 3.0.0
+components:
+  schemas:
+    MixedSchema:
+      type: string
+      title: Mixed Schema
+      allOf: [
+        { '$ref': '#/components/schemas/Mixed2x' },
+        { '$ref': '#/components/schemas/Plain' }
+      ]
+    PureLogicSchema:
+      anyOf: [
+        { '$ref': '#/components/schemas/Mixed2x' },
+        { '$ref': '#/components/schemas/Plain' }
+      ]
+    DocumentedLogicSchema:
+      description: Something.
+      anyOf: [
+        { '$ref': '#/components/schemas/Mixed2x' },
+        { '$ref': '#/components/schemas/Plain' }
+      ]
+    Mixed2x:
+      type: string
+      oneOf: [
+        { '$ref': '#/components/schemas/Plain' },
+        { '$ref': '#/components/schemas/Number' }
+      ]
+    Plain:
+      type: string
+    Number:
+      type: number

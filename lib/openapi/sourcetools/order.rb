@@ -10,7 +10,7 @@ module OpenAPISourceTools
     # Used as replacement for '*'.
     ANY = Regexp.new('^.*$')
 
-    def self.array_item_compare(a, b)
+    def self.array_item_compare(a, b, patterns)
       a[:values].size.times do |k|
         av = a[:values][k]
         bv = b[:values][k]
@@ -18,8 +18,14 @@ module OpenAPISourceTools
           return 1 unless bv.nil?
         else
           return -1 if bv.nil?
-          r = av <=> bv
-          return r unless r.nil? || r.zero?
+          if (av.is_a?(TrueClass) || av.is_a?(FalseClass)) && (bv.is_a?(TrueClass) || bv.is_a?(FalseClass))
+            r = (av ? 1 : 0) <=> (bv ? 1 : 0)
+          else
+            r = av <=> bv
+          end
+          next if r.nil? || r.zero?
+          r = -r unless patterns[k].ascending
+          return r
         end
       end
       0
@@ -129,18 +135,23 @@ module OpenAPISourceTools
         # Hence items.size, and the more multiple, the earlier.
         d = @items.size <=> other.items.size
         return d unless d.zero?
-        -@items.count(:multi) <=> -other.items.count(:multi)
+        d = -@items.count(:multi) <=> -other.items.count(:multi)
+        return d unless d.zero?
+        # Questionable if I should compare to the object_id or equality.
+        # Now if you use same regular expression, they are the same.
+        -@items.count(ANY) <=> -other.items.count(ANY)
       end
     end
 
     # Book-keeping class for pattern and its location.
     class KeyPattern
-      attr_reader :pattern, :index, :priority
+      attr_reader :pattern, :index, :priority, :ascending
 
-      def initialize(pattern, index, priority)
+      def initialize(pattern, index, priority, sort_operator)
         @pattern = pattern
         @index = index
         @priority = priority
+        @ascending = sort_operator == '<'
       end
 
       def match?(string)
@@ -160,22 +171,34 @@ module OpenAPISourceTools
         false
       end
 
+      def self.ordervalue(item)
+        return [ item, '<' ] if item.is_a?(String)
+        return nil unless item.is_a?(Hash)
+        return nil unless item.size == 1
+        key = item.keys.first
+        return nil unless key.is_a?(String)
+        return nil unless ['<', '>'].include?(item[key])
+        [ key, item[key] ]
+      end
+
       attr_reader :patterns
 
       def initialize(keys, regexp_prefix)
         @patterns = []
         has_asterisk = false
-        keys.each_with_index do |string, idx|
+        keys.each_with_index do |ov, idx|
+          string = ov.first
+          sort_operator = ov.last
           if string.start_with?(regexp_prefix)
-            @patterns.push(KeyPattern.new(Regexp.new(string[regexp_prefix.size..]), idx, idx))
+            @patterns.push(KeyPattern.new(Regexp.new(string[regexp_prefix.size..]), idx, idx, sort_operator))
           elsif string == '*'
-            @patterns.push(KeyPattern.new(Regexp.new('^.*$'), idx, keys.size)) unless has_asterisk # First used.
+            @patterns.push(KeyPattern.new(Regexp.new('^.*$'), idx, keys.size, sort_operator)) unless has_asterisk # First used.
             has_asterisk = true
           else
-            @patterns.push(KeyPattern.new(Regexp.new("^#{Regexp.escape(string)}$"), idx, idx))
+            @patterns.push(KeyPattern.new(Regexp.new("^#{Regexp.escape(string)}$"), idx, idx, sort_operator))
           end
         end
-        @patterns.push(KeyPattern.new(Regexp.new('^.*$'), @patterns.size, keys.size + 1)) unless has_asterisk
+        @patterns.push(KeyPattern.new(Regexp.new('^.*$'), @patterns.size, keys.size + 1, '<')) unless has_asterisk
       end
 
       def apply_array(array)
@@ -207,13 +230,13 @@ module OpenAPISourceTools
           end
           values.push(amended)
         end
-        values.sort! { |a, b| OpenAPISourceTools::Ordering.array_item_compare(a, b) }
+        values.sort! { |a, b| OpenAPISourceTools::Ordering.array_item_compare(a, b, @patterns) }
         values.each_with_index { |amended, i| array[i] = amended[:item] }
         true
       end
 
-      def apply_hash(hash)
-        return true if hash.size < 2
+      def apply_hash(unordered_hash)
+        return true if unordered_hash.size < 2
         groups = @patterns.map do |kp|
           {
             kp: kp,
@@ -221,7 +244,7 @@ module OpenAPISourceTools
           }
         end
         s2orig = {}
-        hash.each_key do |key|
+        unordered_hash.each_key do |key|
           skey = key.is_a?(String) ? key : key.to_s
           s2orig[skey] = key
           best_priority = groups.size + 1
@@ -238,10 +261,11 @@ module OpenAPISourceTools
         ordered = {}
         groups.each do |group|
           group[:keys].sort!
-          group[:keys].each { |k| ordered[s2orig[k]] = hash[s2orig[k]] }
+          group[:keys].reverse! unless group[:kp].ascending
+          group[:keys].each { |k| ordered[s2orig[k]] = unordered_hash[s2orig[k]] }
         end
-        hash.clear
-        hash.merge!(ordered)
+        unordered_hash.clear
+        unordered_hash.merge!(ordered)
         true
       end
 

@@ -1,0 +1,143 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright © 2026 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../lib/openapi/sourcetools/common'
+require_relative '../lib/openapi/sourcetools/schemaio'
+require 'optparse'
+include OpenAPISourceTools
+
+
+# Functions related to saving the output.
+
+def to_json(doc, _line_width)
+  JSON.dump(doc)
+end
+
+def to_pretty_json(doc, _line_width)
+  JSON.pretty_generate(doc)
+end
+
+def to_yaml(doc, line_width)
+  YAML.dump(doc, line_width: line_width)
+end
+
+def main
+  input_file = nil
+  schema_file = nil
+  output_file = nil
+  name = nil
+  refs = true
+  format = 'yaml'
+  formats = {
+    'yaml' => method(:to_yaml),
+    'json' => method(:to_json),
+    'pretty_json' => method(:to_pretty_json)
+  }
+  line_width = 80
+  doc_paths = :openapi
+  schema_paths = :jsonschema
+  drops = []
+
+  parser = OptionParser.new do |opts|
+    opts.summary_indent = '  '
+    opts.summary_width = 26
+    opts.banner = 'Usage: openapi-schema-in [options]'
+    opts.separator ''
+    opts.separator 'Options:'
+    opts.on('-i', '--input FILE', 'Read input from FILE, not stdin.') do |f|
+      input_file = f
+    end
+    opts.on('-s', '--schema FILE', 'Read schema from FILE, not stdin.') do |f|
+      schema_file = f
+    end
+    opts.on('-o', '--output FILE', 'Write result to FILE, not stdout.') do |f|
+      output_file = f
+    end
+    opts.on('-n', '--name NAME', 'Use schema NAME.') do |n|
+      name = n
+    end
+    opts.on('--[no-]refs', "Include referred schemas (default #{Common.yesno(refs)}).") do |r|
+      refs = r
+    end
+    opts.on('-f', '--format FORMAT', "Document output format: #{formats.keys.sort!.join(', ')}.") do |fmt|
+      format = fmt
+    end
+    opts.on('-w', '--width WIDTH', "Set YAML line width, default: #{line_width}") do |w|
+      line_width = w.to_i
+    end
+    opts.on('--inputpaths DATA', 'Input path data.') do |data|
+      doc_paths = data
+    end
+    opts.on('--schemapaths DATA', 'Schema path data.') do |data|
+      schema_paths = data
+    end
+    opts.on('-d', '--drop KEY', 'Drop KEY from chosen schema.') do |k|
+      drops.push(k)
+    end
+    opts.on('-h', '--help', 'Print this help and exit.') do
+      $stdout.puts <<EOF
+#{opts}
+Takes schema with name and places it into document.
+
+The document and schema paths DATA is either a file name, internal data name,
+or a JSON-encoded object containing paths data. Internal data names are:
+#{SchemaIO::BUILTINS.keys.sort!.join(', ')}
+
+Depending on input, schema NAME is used to find and store the schema in the
+location indicated by DATA for input and output.
+
+DATA values default to input and output being OpenAPI format, schema file is
+JSON schema with the named schema at root.
+
+Dropping keys can be used to remove for example "$schema" and "$id" keys from
+the chosen schema, if present.
+EOF
+      return 0
+    end
+  end
+  parser.order!
+
+  drops.sort!.uniq! unless drops.size < 2
+
+  return Common.aargh('Cannot read both document and schema from stdin.', 1) if input_file.nil? && schema_file.nil?
+  return Common.aargh('Schema name must be given.', 1) if name.nil?
+
+  return Common.aargh("Unknown format: #{format}", 1) unless formats.key?(format)
+
+  dp = SchemaIO.key_data(doc_paths)
+  return Common.aargh("Not file or internal format name or format as JSON object: #{doc_paths}", 2) if dp.nil?
+  sp = SchemaIO.key_data(schema_paths)
+  return Common.aargh("Not file or internal format name or format as JSON object: #{schema_paths}", 2) if sp.nil?
+
+  return Common.aargh(%(Name "#{name}" has document path separator "#{dp.separator}"), 1) if name.include?(dp.separator)
+  return Common.aargh(%(Name "#{name}" has schema path separator "#{sp.separator}"), 1) if name.include?(sp.separator)
+
+  doc = Common.load_source(input_file)
+  return 2 if doc.nil?
+  return Common.aargh('Document is not an object.', 2) unless doc.is_a?(Hash)
+  schema = Common.load_source(schema_file)
+  return 2 if schema.nil?
+  return Common.aargh('Schema is not an object.', 2) unless schema.is_a?(Hash)
+
+  tgt = SchemaIO::SchemaAccess.new(dp, doc)
+  src = SchemaIO::SchemaAccess.new(sp, schema)
+
+  desired = src.find_named_schema(name)
+  return Common.aargh("Schema not found: #{name}", 1) if desired.nil?
+  drops.each { |k| desired.delete(k) }
+  tgt.put_named_schema(name, desired)
+
+  if refs
+    refd = src.find_referenced_schemas(name, desired)
+    refd.each { |n, s| tgt.put_referenced_schema(n, s) }
+  end
+  SchemaIO.alter_refs(tgt.document, src, tgt) # After referenced schemas have been found.
+
+  out = formats[format].call(tgt.document, line_width)
+  Common.dump_result(output_file, out, 3)
+end
+
+exit(main) if File.basename(__FILE__) == File.basename($PROGRAM_NAME)

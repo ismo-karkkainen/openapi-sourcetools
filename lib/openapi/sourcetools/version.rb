@@ -6,7 +6,7 @@
 # Gem namespace.
 module OpenAPISourceTools
   NAME = 'openapi-sourcetools'
-  VERSION = '0.12.1'
+  VERSION = '0.13'
 
   def self.info(separator = ': ')
     "#{NAME}#{separator}#{VERSION}"

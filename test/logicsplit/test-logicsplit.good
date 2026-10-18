@@ -1,0 +1,70 @@
+####COMMAND Input and output
+####CODE 0
+####OUT
+---
+openapi: 3.0.0
+components:
+  schemas:
+    MixedSchema:
+      allOf:
+      - "$ref": "#/components/schemas/MixedSchemaLogic"
+      - "$ref": "#/components/schemas/MixedSchemaOther"
+    PureLogicSchema:
+      anyOf:
+      - "$ref": "#/components/schemas/Mixed2x"
+      - "$ref": "#/components/schemas/Plain"
+    DocumentedLogicSchema:
+      description: Something.
+      anyOf:
+      - "$ref": "#/components/schemas/Mixed2x"
+      - "$ref": "#/components/schemas/Plain"
+    Mixed2x:
+      allOf:
+      - "$ref": "#/components/schemas/Mixed2xLogic"
+      - "$ref": "#/components/schemas/Mixed2xOther"
+    Plain:
+      type: string
+    Number:
+      type: number
+    Mixed2xLogic:
+      oneOf:
+      - "$ref": "#/components/schemas/Plain"
+      - "$ref": "#/components/schemas/Number"
+    Mixed2xOther:
+      type: string
+    MixedSchemaLogic:
+      allOf:
+      - "$ref": "#/components/schemas/Mixed2x"
+      - "$ref": "#/components/schemas/Plain"
+    MixedSchemaOther:
+      type: string
+      title: Mixed Schema
+####ERR
+####COMMAND No logic
+####CODE 0
+####OUT
+---
+openapi: 3.0.0
+components:
+  schemas:
+    String1x:
+      type: string
+    Number1x:
+      type: number
+    String2x:
+      type: string
+    NoSchema: {}
+####ERR
+####COMMAND No schemas
+####CODE 0
+####OUT
+---
+openapi: 3.0.0
+components:
+  schemas: {}
+####ERR
+####COMMAND No input file
+####CODE 2
+####OUT
+####ERR
+Could not load non-existent.yaml

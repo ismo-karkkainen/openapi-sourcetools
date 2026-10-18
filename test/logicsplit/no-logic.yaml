@@ -1,0 +1,10 @@
+openapi: 3.0.0
+components:
+  schemas:
+    String1x:
+      type: string
+    Number1x:
+      type: number
+    String2x:
+      type: string
+    NoSchema: {}

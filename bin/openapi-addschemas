@@ -16,6 +16,14 @@ def remove_subitem(obj, path)
   parent.delete(path.last) || {}
 end
 
+def replace_child_inlines(obj, components)
+  return true unless obj.is_a?(Hash)
+  obj.keys.sort!.each do |name|
+    return false unless replace_inlines(obj[name], components)
+  end
+  true
+end
+
 def replace_inlines(obj, components, top_level_name = nil)
   if obj.is_a?(Array)
     obj.each do |o|
@@ -29,22 +37,30 @@ def replace_inlines(obj, components, top_level_name = nil)
     return true
   end
   # Is inlined, process parts recursively.
-  %w[allOf anyOf oneOf items prefixItems additionalProperties unevaluatedItems
-    unevaluatedProperties if then else not
-  ].each do |prop_name|
-    return false unless replace_inlines(obj[prop_name], components)
-  end
-  %w[properties patternProperties dependentSchemas].each do |prop_name|
-    props = obj[prop_name]
-    next if props.nil?
-    props.keys.sort!.each do |name|
-      return false unless replace_inlines(props[name], components)
-    end
-  end
   looks_like_type = false
+  # Array-valued.
+  OpenAPISourceTools::Schemas::ARRAY_VALUED.each do |prop_name|
+    value = obj[prop_name]
+    next unless value.is_a?(Array)
+    return false unless replace_inlines(value, components)
+    looks_like_type = true
+  end
+  # Other-valued things.
+  OpenAPISourceTools::Schemas::OTHER_VALUED.each do |prop_name|
+    value = obj[prop_name]
+    next if value.nil? || value.is_a?(Array)
+    return false unless replace_inlines(value, components)
+    looks_like_type = true
+  end
+  # Keys of these have object values that should be processed.
+  OpenAPISourceTools::Schemas::KEY2SCHEMA.each do |prop_name|
+    props = obj[prop_name]
+    next if props.nil? || !props.is_a?(Hash)
+    return false unless replace_child_inlines(props, components)
+    looks_like_type = true
+  end
   # required is omitted since it is in schema and in parameters.
-  %w[type items prefixItems properties patternProperties additionalProperties
-    unevaluatedItems unevaluatedProperties enum const minimum maximum multipleOf
+  %w[type enum const minimum maximum multipleOf
     exclusiveMinimum exclusiveMaximum maxLength minLength pattern maxItems minItems
     uniqueItems maxContains minContains maxProperties minProperties propertyNames
     dependentRequired format contentEncoding contentMediaType contentSchema
@@ -57,7 +73,7 @@ def replace_inlines(obj, components, top_level_name = nil)
   unless looks_like_type
     # Some kind of intermediate-level object.
     obj.keys.sort! { |a, b| a.to_s <=> b.to_s }.each do |key|
-      next if key == 'securitySchemes'
+      next if key == 'securitySchemes' || OpenAPISourceTools::Schemas::IGNORED.include?(key) || OpenAPISourceTools::Schemas::HANDLED.include?(key)
       return false unless replace_inlines(obj[key], components)
     end
     return true

@@ -1,12 +1,23 @@
 # frozen_string_literal: true
 
-# Copyright © 2024-2025 Ismo Kärkkäinen
+# Copyright © 2024-2026 Ismo Kärkkäinen
 # Licensed under Universal Permissive License. See LICENSE.txt.
 
 module OpenAPISourceTools
+  # Various schema-related constants.
+  module Schemas
+    ARRAY_VALUED = %w[allOf anyOf oneOf prefixItems].freeze
+    OTHER_VALUED = %w[items additionalProperties unevaluatedItems unevaluatedProperties if then else not].freeze
+    KEY2SCHEMA = %w[properties patternProperties dependentSchemas].freeze
+    HANDLED = [].concat(ARRAY_VALUED, OTHER_VALUED, KEY2SCHEMA).freeze
+    IGNORED = %w[example examples].freeze
+  end
+
   # Various classes for handling objects in the API specification.
   # Used in various programs.
   module ApiObjects
+    LOGIC_KEYS = Set.new(%w[allOf anyOf oneOf not if then else dependentSchemas]).freeze
+    DOCUMENT_KEYS = %w[example examples title summary description deprecated readOnly writeOnly].freeze
 
     def self.same(a, b, ignored_keys = Set.new(%w[summary description]))
       return a == b unless a.is_a?(Hash) && b.is_a?(Hash)
@@ -89,7 +100,7 @@ module OpenAPISourceTools
               next if value.key?('$ref')
               @components.to_reference_object(value)
             end
-          else
+          elsif !Schemas::IGNORED.include?(key)
             replace(value)
           end
         end
@@ -114,6 +125,7 @@ module OpenAPISourceTools
         obj.each do |key, value|
           if key == @key && value.is_a?(Hash)
             value.keys.sort!.each do |sub_key|
+              next if Schemas::IGNORED.include?(sub_key)
               sub_value = value[sub_key]
               next unless sub_value.is_a?(Hash)
               next if sub_value.key?('$ref')
@@ -173,7 +185,7 @@ module OpenAPISourceTools
         @items.each do |k, v|
           return ref_string(k) if ApiObjects.same(obj, v, @ignored_keys)
         end
-        # One of the numbers will not match existing keys. More number than keys.
+        # One of the numbers will not match existing keys. More numbers than keys.
         (@items.size + 1).times do |n|
           # 'x' is to simplify find and replace (Schema1x vs Schema1 and Schema10)
           cand = "#{@prefix}#{n}x"

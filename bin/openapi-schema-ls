@@ -1,0 +1,100 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright © 2026 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../lib/openapi/sourcetools/common'
+require_relative '../lib/openapi/sourcetools/schemaio'
+require 'optparse'
+require 'yaml'
+require 'json'
+include OpenAPISourceTools
+
+
+# Functions related to saving the document path dump.
+
+def to_json(doc)
+  JSON.dump(doc)
+end
+
+def to_pretty_json(doc)
+  JSON.pretty_generate(doc)
+end
+
+def to_yaml(doc)
+  YAML.dump(doc)
+end
+
+def main
+  input_file = nil
+  output_file = nil
+  doc_paths = :openapi
+  output_default = nil
+  format = 'pretty_json'
+  formats = {
+    'yaml' => method(:to_yaml),
+    'json' => method(:to_json),
+    'pretty_json' => method(:to_pretty_json)
+  }
+
+  parser = OptionParser.new do |opts|
+    opts.summary_indent = '  '
+    opts.summary_width = 22
+    opts.banner = 'Usage: openapi-schema-ls [options]'
+    opts.separator ''
+    opts.separator 'Options:'
+    opts.on('-i', '--input FILE', 'Read input from FILE, not stdin.') do |f|
+      input_file = f
+    end
+    opts.on('-o', '--output FILE', 'Write result to FILE, not stdout.') do |f|
+      output_file = f
+    end
+    opts.on('--inputpaths DATA', 'Input path data.') do |data|
+      doc_paths = data
+    end
+    opts.on('--dump DATA', 'Dump internal path data to output and exit.') do |data|
+      output_default = data
+    end
+    opts.on('-f', '--format FORMAT', "DATA output format: #{formats.keys.sort!.join(', ')}.") do |fmt|
+      format = fmt
+    end
+    opts.on('-h', '--help', 'Print this help and exit.') do
+      $stdout.puts <<EOF
+#{opts}
+Lists named schemas in the input document.
+
+The document paths DATA is either a file name, internal data name, or a
+JSON-encoded object with necessary keys. Same data also applies to both
+openapi-schema-in and openapi-schema-out. Internal data names are:
+#{SchemaIO::BUILTINS.keys.sort!.join(', ')}
+
+DATA defaults to OpenAPI format.
+EOF
+      return 0
+    end
+  end
+  parser.order!
+
+  return Common.aargh("Unknown format: #{format}", 1) unless formats.key?(format)
+
+  unless output_default.nil?
+    doc = SchemaIO.get(output_default)
+    return Commpon.aargh("Not internal data format: #{output_default}", 1) if doc.nil?
+    out = (format == 'yaml') ? doc : formats[format].call(YAML.safe_load(doc))
+    return Common.dump_result(output_file, out, 3)
+  end
+
+  dp = SchemaIO.key_data(doc_paths)
+  return Common.aargh("Not file or internal format name or format as JSON object: #{doc_paths}", 2) if dp.nil?
+
+  doc = Common.load_source(input_file)
+  return 2 if doc.nil?
+
+  src = SchemaIO::SchemaAccess.new(dp, doc)
+  out = src.list_schema_names.join("\n")
+
+  Common.dump_result(output_file, out, 3)
+end
+
+exit(main) if File.basename(__FILE__) == File.basename($PROGRAM_NAME)

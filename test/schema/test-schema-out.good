@@ -1,0 +1,153 @@
+####COMMAND Missing name
+####CODE 1
+####OUT
+####ERR
+Schema name must be given.
+####COMMAND Bad inputpaths as not JSON
+####CODE 2
+####OUT
+####ERR
+Not file or internal format name or format as JSON object: invalid
+####COMMAND Bad inputpaths as JSON-encoded string
+####CODE 2
+####OUT
+####ERR
+Format is not an object.
+Not file or internal format name or format as JSON object: "invalid"
+####COMMAND Bad schemapaths as not JSON
+####CODE 2
+####OUT
+####ERR
+Not file or internal format name or format as JSON object: invalid
+####COMMAND Name has path separator
+####CODE 1
+####OUT
+####ERR
+Name "foo/bar" has document path separator "/"
+####COMMAND Document is not an object
+####CODE 2
+####OUT
+####ERR
+Document is not an object.
+####COMMAND Schema not found
+####CODE 1
+####OUT
+####ERR
+Schema not found: NonExistent
+####COMMAND Invalid format
+####CODE 1
+####OUT
+####ERR
+Unknown format: invalid
+####COMMAND Writing schema with dependencies
+####CODE 0
+####OUT
+{
+  "type": "object",
+  "description": "From openapi.yaml",
+  "properties": {
+    "user": {
+      "$ref": "#/$defs/User"
+    },
+    "number": {
+      "type": "number"
+    }
+  },
+  "$defs": {
+    "User": {
+      "type": "object",
+      "description": "From openapi.yaml",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
+####ERR
+####COMMAND Writing schema without dependencies
+####CODE 0
+####OUT
+{
+  "type": "object",
+  "description": "From openapi.yaml",
+  "properties": {
+    "user": {
+      "$ref": "#/$defs/User"
+    },
+    "number": {
+      "type": "number"
+    }
+  }
+}
+####ERR
+####COMMAND Reference schema with dependencies
+####CODE 0
+####OUT
+{
+  "$ref": "#/$defs/User",
+  "$defs": {
+    "User": {
+      "type": "object",
+      "description": "From openapi.yaml",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
+####ERR
+####COMMAND Adding keys and values
+####CODE 0
+####OUT
+{
+  "type": "object",
+  "description": "From openapi.yaml",
+  "properties": {
+    "user": {
+      "$ref": "#/$defs/User"
+    },
+    "number": {
+      "type": "number"
+    }
+  },
+  "foo": "bar",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "-key": {
+    "sub": "value"
+  },
+  "$defs": {
+    "User": {
+      "type": "object",
+      "description": "From openapi.yaml",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
+####ERR
+####COMMAND No key:value pair
+####CODE 1
+####OUT
+####ERR
+Invalid key-value pair: 
+####COMMAND Empty key to add
+####CODE 1
+####OUT
+####ERR
+Empty key: :value

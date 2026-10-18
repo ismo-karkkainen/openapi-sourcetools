@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "description": "From schema.json",
+  "properties": {
+    "user": { "$ref": "#/$defs/User" },
+    "address": { "$ref": "#/$defs/Address" }
+  },
+  "$defs": {
+    "User": {
+      "type": "object",
+      "description": "From schema.json",
+      "properties": {
+        "id": { "type": "integer" },
+        "name": { "type": "string" }
+      }
+    },
+    "Address": {
+      "type": "object",
+      "description": "From schema.json",
+      "properties": {
+        "street": { "type": "string" },
+        "city": { "type": "string" }
+      }
+    }
+  }
+}

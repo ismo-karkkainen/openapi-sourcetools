@@ -1,0 +1,39 @@
+####COMMAND Missing input
+####CODE 2
+####OUT
+####ERR
+Could not load nonexistent.yaml
+####COMMAND Bad inputpaths as not JSON
+####CODE 2
+####OUT
+####ERR
+Not file or internal format name or format as JSON object: invalid
+####COMMAND Bad inputpaths as JSON-encoded string
+####CODE 2
+####OUT
+####ERR
+Format is not an object.
+Not file or internal format name or format as JSON object: "invalid"
+####COMMAND Listing schemas
+####CODE 0
+####OUT
+JustReference
+Something
+User
+UserNumber
+####ERR
+####COMMAND Dump paths data
+####CODE 0
+####OUT
+---
+separator: "/"
+ignore: "#"
+named: ~
+reference: "$ref"
+referenced: "#/$defs"
+####ERR
+####COMMAND Invalid format
+####CODE 1
+####OUT
+####ERR
+Unknown format: invalid

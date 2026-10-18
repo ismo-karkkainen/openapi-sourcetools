@@ -9,7 +9,7 @@ task default: [:test]
 
 desc 'Clean.'
 task :clean do
-  sh 'rm -f openapi-sourcetools-*.gem'
+  sh 'rm -f openapi-sourcetools-*.gem test/*.res test/*/*.res'
 end
 
 desc 'Build gem.'
@@ -28,7 +28,7 @@ task :uninstall do
 end
 
 desc 'Test.'
-task test: %i[testclearrefs testaddrequestbodies testaddmediatypes testpatterntests testaddsecurityschemes testgeneratecheckconfig testmodifypaths testmerge testprocesspaths testfrequencies testaddschemas testaddresponses testaddheaders testaddparameters testcheckschemas testgenerate testoftypes testcommon testorder]
+task test: %i[testschema testlogicsplit testclearrefs testaddrequestbodies testaddmediatypes testpatterntests testaddsecurityschemes testgeneratecheckconfig testmodifypaths testmerge testprocesspaths testfrequencies testaddschemas testaddresponses testaddheaders testaddparameters testcheckschemas testgenerate testcommon testorder]
 
 desc 'Test modifypaths.'
 task :testmodifypaths do
@@ -90,11 +90,6 @@ task :testcommon do
   sh './test.sh common'
 end
 
-desc 'Test oftypes.'
-task :testoftypes do
-  sh './test.sh oftypes'
-end
-
 desc 'Test addsecurityschemes.'
 task :testaddsecurityschemes do
   sh './test.sh addsecurityschemes'
@@ -123,6 +118,16 @@ end
 desc 'Test order.'
 task :testorder do
   sh './test.sh order'
+end
+
+desc 'Test logicsplit.'
+task :testlogicsplit do
+  sh './test.sh logicsplit'
+end
+
+desc 'Test schema.'
+task :testschema do
+  sh './test.sh schema'
 end
 
 desc 'Lint using Rubocop'

@@ -1,0 +1,272 @@
+####COMMAND Missing name
+####CODE 1
+####OUT
+####ERR
+Schema name must be given.
+####COMMAND Both from stdin
+####CODE 1
+####OUT
+####ERR
+Cannot read both document and schema from stdin.
+####COMMAND Bad input path data as JSON-encoded string
+####CODE 2
+####OUT
+####ERR
+Format is not an object.
+Not file or internal format name or format as JSON object: "invalid"
+####COMMAND Bad input path data as not JSON
+####CODE 2
+####OUT
+####ERR
+Not file or internal format name or format as JSON object: invalid
+####COMMAND Bad schema path data as not JSON
+####CODE 2
+####OUT
+####ERR
+Not file or internal format name or format as JSON object: invalid
+####COMMAND Name has path separator
+####CODE 1
+####OUT
+####ERR
+Name "foo/bar" has document path separator "/"
+####COMMAND Input content is invalid
+####CODE 2
+####OUT
+####ERR
+Document is not an object.
+####COMMAND Schema content is invalid
+####CODE 2
+####OUT
+####ERR
+Schema is not an object.
+####COMMAND Invalid format
+####CODE 1
+####OUT
+####ERR
+Unknown format: invalid
+####COMMAND Insert with dependencies
+####CODE 0
+####OUT
+---
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+components:
+  schemas:
+    UserNumber:
+      type: object
+      description: From openapi.yaml
+      properties:
+        user:
+          "$ref": "#/components/schemas/User"
+        number:
+          type: number
+    User:
+      type: object
+      description: From schema.json
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+    Something:
+      type: object
+      description: From openapi.yaml
+      properties:
+        prop_name:
+          type: string
+        other:
+          type: string
+    JustReference:
+      "$ref": "#/components/schemas/User"
+    Inserted:
+      "$schema": https://json-schema.org/draft/2020-12/schema
+      type: object
+      description: From schema.json
+      properties:
+        user:
+          "$ref": "#/components/schemas/User"
+        address:
+          "$ref": "#/components/schemas/Address"
+    Address:
+      type: object
+      description: From schema.json
+      properties:
+        street:
+          type: string
+        city:
+          type: string
+####ERR
+####COMMAND Save to file, drop key
+####CODE 0
+####OUT
+---
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+components:
+  schemas:
+    UserNumber:
+      type: object
+      description: From openapi.yaml
+      properties:
+        user:
+          "$ref": "#/components/schemas/User"
+        number:
+          type: number
+    User:
+      type: object
+      description: From schema.json
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+    Something:
+      type: object
+      description: From openapi.yaml
+      properties:
+        prop_name:
+          type: string
+        other:
+          type: string
+    JustReference:
+      "$ref": "#/components/schemas/User"
+    Inserted:
+      type: object
+      description: From schema.json
+      properties:
+        user:
+          "$ref": "#/components/schemas/User"
+        address:
+          "$ref": "#/components/schemas/Address"
+    Address:
+      type: object
+      description: From schema.json
+      properties:
+        street:
+          type: string
+        city:
+          type: string
+####ERR
+####COMMAND Insert without dependencies
+####CODE 0
+####OUT
+---
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+components:
+  schemas:
+    UserNumber:
+      type: object
+      description: From openapi.yaml
+      properties:
+        user:
+          "$ref": "#/components/schemas/User"
+        number:
+          type: number
+    User:
+      type: object
+      description: From openapi.yaml
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+    Something:
+      type: object
+      description: From openapi.yaml
+      properties:
+        prop_name:
+          type: string
+        other:
+          type: string
+    JustReference:
+      "$ref": "#/components/schemas/User"
+    Inserted:
+      "$schema": https://json-schema.org/draft/2020-12/schema
+      type: object
+      description: From schema.json
+      properties:
+        user:
+          "$ref": "#/components/schemas/User"
+        address:
+          "$ref": "#/components/schemas/Address"
+####ERR
+####COMMAND Reverse overwrite with dependencies
+####CODE 0
+####OUT
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "description": "From openapi.yaml",
+  "properties": {
+    "user": {
+      "$ref": "#/$defs/User"
+    },
+    "number": {
+      "type": "number"
+    }
+  },
+  "$defs": {
+    "User": {
+      "type": "object",
+      "description": "From openapi.yaml",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Address": {
+      "type": "object",
+      "description": "From schema.json",
+      "properties": {
+        "street": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
+####ERR
+####COMMAND Reverse insert without dependencies
+####CODE 0
+####OUT
+---
+"$schema": https://json-schema.org/draft/2020-12/schema
+type: object
+description: From openapi.yaml
+properties:
+  user:
+    "$ref": "#/$defs/User"
+  number:
+    type: number
+"$defs":
+  User:
+    type: object
+    description: From schema.json
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+  Address:
+    type: object
+    description: From schema.json
+    properties:
+      street:
+        type: string
+      city:
+        type: string
+####ERR

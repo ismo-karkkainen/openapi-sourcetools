@@ -1,0 +1,270 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# By OpenCode/gemma4:26b-nvfp4 Ollama
+
+require 'test/unit'
+require 'json'
+require 'yaml'
+require_relative '../../lib/openapi/sourcetools/schemaio'
+
+
+include Test::Unit::Assertions
+include OpenAPISourceTools
+
+class SchemaFormatTest < Test::Unit::TestCase
+  def test_initialize_with_hash
+    format_hash = {
+      'separator' => '/',
+      'ignore' => '#',
+      'named' => '#/components/schemas',
+      'reference' => '$ref',
+      'referenced' => '#/components/schemas/'
+    }
+    sf = SchemaIO::SchemaFormat.new(format_hash)
+    assert_equal('/', sf.separator)
+    assert_equal('#/components/schemas/', sf.referenced)
+  end
+
+  def test_initialize_with_yaml
+    yaml_str = <<EOF
+separator: "/"
+ignore: "#"
+named: "#/components/schemas"
+reference: "$ref"
+referenced: "#/components/schemas"
+EOF
+    sf = SchemaIO::SchemaFormat.new(yaml_str)
+    assert_equal('/', sf.separator)
+    assert_equal('#/components/schemas/', sf.referenced)
+  end
+
+  def test_initialize_invalid_format
+    assert_raise(ArgumentError) { SchemaIO::SchemaFormat.new({ 'separator' => nil }) }
+    assert_raise(ArgumentError) { SchemaIO::SchemaFormat.new({ 'separator' => '/', 'ignore' => 123 }) }
+    assert_raise(ArgumentError) { SchemaIO::SchemaFormat.new({ 'separator' => '/', 'ignore' => [''], 'reference' => '$ref' }) }
+    assert_raise(ArgumentError) { SchemaIO::SchemaFormat.new({ 'separator' => '/', 'ignore' => '#', 'reference' => nil }) }
+  end
+
+  def test_ignore
+    sf = SchemaIO::SchemaFormat.new({
+      'separator' => '/',
+      'ignore' => ['#', 'ignore_me'],
+      'reference' => '$ref',
+      'referenced' => '#'
+    })
+    assert_true(sf.ignore?('#'))
+    assert_true(sf.ignore?('ignore_me'))
+    assert_false(sf.ignore?('not_ignored'))
+  end
+
+  def test_path
+    sf = SchemaIO::SchemaFormat.new({
+      'separator' => '/',
+      'ignore' => '#',
+      'reference' => '$ref',
+      'referenced' => '#'
+    })
+    assert_equal(['components', 'schemas'], sf.path('#/components/schemas'))
+    assert_equal(['a', 'b'], sf.path('a/b'))
+  end
+
+  def test_reference
+    sf = SchemaIO::SchemaFormat.new({
+      'separator' => '/',
+      'ignore' => '#',
+      'reference' => '$ref',
+      'referenced' => '#/components/schemas'
+    })
+    assert_true(sf.reference?('$ref', '#/components/schemas/MySchema'))
+    assert_false(sf.reference?('$ref', 'something_else'))
+    assert_false(sf.reference?('other', '#/components/schemas/MySchema'))
+  end
+
+  def test_reference_name
+    sf = SchemaIO::SchemaFormat.new({
+      'separator' => '/',
+      'ignore' => '#',
+      'reference' => '$ref',
+      'referenced' => '#/components/schemas'
+    })
+    assert_equal('MySchema', sf.reference_name('#/components/schemas/MySchema'))
+  end
+
+  def test_make_reference
+    sf = SchemaIO::SchemaFormat.new({
+      'separator' => '/',
+      'ignore' => '#',
+      'reference' => '$ref',
+      'referenced' => '#/components/schemas'
+    })
+    assert_equal('#/components/schemas/MySchema', sf.make_reference('MySchema'))
+  end
+
+  def test_root_schema
+    sf_root = SchemaIO::SchemaFormat.new({
+      'separator' => '/',
+      'ignore' => '#',
+      'named' => nil,
+      'reference' => '$ref',
+      'referenced' => '#'
+    })
+    assert_true(sf_root.root_schema?)
+
+    sf_not_root = SchemaIO::SchemaFormat.new({
+      'separator' => '/',
+      'ignore' => '#',
+      'named' => '#/components',
+      'reference' => '$ref',
+      'referenced' => '#'
+    })
+    assert_false(sf_not_root.root_schema?)
+  end
+end
+
+class SchemaIOTest < Test::Unit::TestCase
+  def test_get
+    assert_equal(OpenAPISourceTools::SchemaIO::OPENAPI_PATHS, SchemaIO.get(:openapi))
+    assert_equal(OpenAPISourceTools::SchemaIO::OPENAPI_PATHS, SchemaIO.get('openapi'))
+  end
+
+  def test_load_data_builtin
+    # Should compare with parsed hash, not the raw string.
+    expected = YAML.safe_load(OpenAPISourceTools::SchemaIO::OPENAPI_PATHS)
+    assert_equal(expected, SchemaIO.load_data('openapi'))
+  end
+
+  def test_load_data_json
+    json_data = '{"key": "value"}'
+    assert_equal({'key' => 'value'}, SchemaIO.load_data(json_data))
+  end
+
+  def test_key_data
+    json_data = '{"separator":"/","ignore":"#","named":"#/components/schemas","reference":"$ref","referenced":"#/components/schemas/"}'
+    sf = SchemaIO.key_data(json_data)
+    assert_instance_of(SchemaIO::SchemaFormat, sf)
+    assert_equal('/', sf.separator)
+  end
+
+  def test_alter_refs_value_update
+    source_format = SchemaIO::SchemaFormat.new({
+      'separator' => '/',
+      'ignore' => '#',
+      'named' => '#/components/schemas',
+      'reference' => '$ref',
+      'referenced' => '#/components/schemas/'
+    })
+    target_format = SchemaIO::SchemaFormat.new({
+      'separator' => '/',
+      'ignore' => '#',
+      'named' => '#/$defs',
+      'reference' => '$ref',
+      'referenced' => '#/$defs/'
+    })
+
+    schema = {
+      'components' => {
+        'schemas' => {
+          'MySchema' => {
+            '$ref' => '#/components/schemas/OtherSchema'
+          }
+        }
+      }
+    }
+
+    source_access = SchemaIO::SchemaAccess.new(source_format, schema)
+    target_access = SchemaIO::SchemaAccess.new(target_format, schema)
+
+    SchemaIO.alter_refs(schema, source_access, target_access)
+
+    assert_equal('#/$defs/OtherSchema', schema.dig('components', 'schemas', 'MySchema', '$ref'))
+  end
+
+  def test_alter_refs_key_update
+    source_format = SchemaIO::SchemaFormat.new({
+      'separator' => '/',
+      'ignore' => '#',
+      'named' => '#/components/schemas',
+      'reference' => '$ref',
+      'referenced' => '#/components/schemas/'
+    })
+    target_format = SchemaIO::SchemaFormat.new({
+      'separator' => '/',
+      'ignore' => '#',
+      'named' => '#/components/schemas',
+      'reference' => 'ref',
+      'referenced' => '#/components/schemas/'
+    })
+
+    schema = {
+      'components' => {
+        'schemas' => {
+          '$ref' => '#/components/schemas/OtherSchema'
+        }
+      }
+    }
+
+    source_access = SchemaIO::SchemaAccess.new(source_format, schema)
+    target_access = SchemaIO::SchemaAccess.new(target_format, schema)
+
+    SchemaIO.alter_refs(schema, source_access, target_access)
+
+    assert_nil(schema.dig('components', 'schemas', '$ref'))
+    assert_equal('#/components/schemas/OtherSchema', schema.dig('components', 'schemas', 'ref'))
+  end
+end
+
+class SchemaAccessTest < Test::Unit::TestCase
+  def setup
+    @format = SchemaIO::SchemaFormat.new({
+      'separator' => '/',
+      'ignore' => '#',
+      'named' => '#/components/schemas',
+      'reference' => '$ref',
+      'referenced' => '#/components/schemas/'
+    })
+    @document = {
+      'components' => {
+        'schemas' => {
+          'Schema1' => { 'type' => 'string' },
+          'Schema2' => {
+            '$ref' => '#/components/schemas/Schema1'
+          }
+        }
+      }
+    }
+    @access = SchemaIO::SchemaAccess.new(@format, @document)
+  end
+
+  def test_list_schema_names
+    assert_equal(['Schema1', 'Schema2'], @access.list_schema_names)
+  end
+
+  def test_find_named_schema
+    assert_equal({'type' => 'string'}, @access.find_named_schema('Schema1'))
+    assert_equal({'$ref' => '#/components/schemas/Schema1'}, @access.find_named_schema('Schema2'))
+  end
+
+  def test_find_referenced_schemas
+    # Schema2 references Schema1
+    result = @access.find_referenced_schemas('Schema2', @document.dig('components', 'schemas', 'Schema2'))
+    assert_equal({'Schema1' => @document.dig('components', 'schemas', 'Schema1')}, result)
+  end
+
+  def test_put_named_schema
+    @access.put_named_schema('Schema3', {'type' => 'integer'})
+    assert_equal({'type' => 'integer'}, @document.dig('components', 'schemas', 'Schema3'))
+  end
+
+  def test_put_referenced_schema
+    @access.put_referenced_schema('Schema4', {'type' => 'boolean'})
+    assert_equal({'type' => 'boolean'}, @document.dig('components', 'schemas', 'Schema4'))
+  end
+
+  def test_find_by_reference_private
+    # We use send to test private method
+    ref = '#/components/schemas/Schema1'
+    assert_equal({'type' => 'string'}, @access.send(:find_by_reference, ref))
+    assert_nil(@access.send(:find_by_reference, '#/components/schemas/NonExistent'))
+  end
+end

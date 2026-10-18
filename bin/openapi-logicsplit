@@ -1,0 +1,96 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Copyright © 2026 Ismo Kärkkäinen
+# Licensed under Universal Permissive License. See LICENSE.txt.
+
+require_relative '../lib/openapi/sourcetools/apiobjects'
+require_relative '../lib/openapi/sourcetools/common'
+require 'optparse'
+include OpenAPISourceTools
+
+
+def mixture?(schema)
+  has_logic = false
+  has_other = false
+  schema.each_key do |key|
+    if OpenAPISourceTools::ApiObjects::LOGIC_KEYS.member?(key)
+      has_logic = true
+      return true if has_other
+    elsif !OpenAPISourceTools::ApiObjects::DOCUMENT_KEYS.include?(key)
+      has_other = true
+      return true if has_logic
+    end
+  end
+  has_logic && has_other
+end
+
+def split(name, schema, added_schemas, schema_path)
+  logic = {}
+  other = {}
+  schema.each do |key, value|
+    if OpenAPISourceTools::ApiObjects::LOGIC_KEYS.member?(key)
+      logic[key] = value
+    else
+      other[key] = value
+    end
+  end
+  logic_name = "#{name}Logic"
+  other_name = "#{name}Other"
+  added_schemas[logic_name] = logic
+  added_schemas[other_name] = other
+  schema.clear
+  schema['allOf'] = [
+    { '$ref' => "#{schema_path}/#{logic_name}" },
+    { '$ref' => "#{schema_path}/#{other_name}" }
+  ]
+end
+
+def main
+  input_name = nil
+  output_name = nil
+  schema_path = '#/components/schemas'
+
+  parser = OptionParser.new do |opts|
+    opts.summary_indent = '  '
+    opts.summary_width = 26
+    opts.banner = 'Usage: openapi-logicsplit [options]'
+    opts.separator ''
+    opts.separator 'Options:'
+    opts.on('-i', '--input FILE', 'Read API spec from FILE, not stdin.') do |f|
+      input_name = f
+    end
+    opts.on('-o', '--output FILE', 'Output to FILE, not stdout.') do |f|
+      output_name = f
+    end
+    opts.on('-h', '--help', 'Print this help and exit.') do
+      $stdout.puts %(#{opts}
+
+Loads API document in OpenAPI format and splits each schema with a mixture of
+logic keywords and other keywords so that the schema has only allOf with
+references to logic and other schema. The aim is to simplify code generation.
+
+The openapi-addschemas must have been run. Processes "#{schema_path}".
+)
+      return 0
+    end
+  end
+  parser.order!
+
+  doc = Common.load_source(input_name)
+  return 2 if doc.nil?
+
+  path = schema_path.split('/').reject { |x| x == '#' || x.empty? }
+  schemas = doc.dig(*path)
+  added_schemas = {}
+  unless schemas.nil?
+    schemas.keys.sort.each do |name|
+      s = schemas[name]
+      split(name, s, added_schemas, schema_path) if mixture?(s)
+    end
+    schemas.merge!(added_schemas)
+  end
+  Common.dump_result(output_name, doc, 3)
+end
+
+exit(main) if File.basename(__FILE__) == File.basename($PROGRAM_NAME)
